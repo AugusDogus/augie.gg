@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { ReadingProgress } from "./reading-progress";
-import { calculateReadingTime } from "~/lib/blog";
+import { calculateReadingTime } from "~/lib/reading-time";
 
 interface BlogArticleProps {
   children: React.ReactNode;
