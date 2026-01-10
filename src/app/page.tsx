@@ -113,25 +113,52 @@ export default async function Home() {
 
       <Separator />
 
-      {/* Tech stack section */}
+      {/* Projects section */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Stack</h2>
-        <ul className="text-muted-foreground space-y-1">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-xl font-semibold tracking-tight">Projects</h2>
+          <a
+            href="https://github.com/AugusDogus"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            GitHub →
+          </a>
+        </div>
+        <ul className="text-muted-foreground space-y-2">
           <li>
-            <span className="text-foreground">Frontend:</span> TypeScript,
-            React, Next.js, Tailwind CSS
+            <a
+              href="https://opentab.sh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              opentab.sh
+            </a>{" "}
+            — Send tabs to your devices instantly
           </li>
           <li>
-            <span className="text-foreground">Backend:</span> Node.js, tRPC,
-            Hono, GraphQL
+            <a
+              href="https://whisp.chat"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              whisp.chat
+            </a>{" "}
+            — Ephemeral messages and photos
           </li>
           <li>
-            <span className="text-foreground">Database:</span> PostgreSQL,
-            Redis, Drizzle, Prisma
-          </li>
-          <li>
-            <span className="text-foreground">Tools:</span> Cursor, Bun,
-            Playwright, Sentry
+            <a
+              href="https://santahat.gg"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              santahat.gg
+            </a>{" "}
+            — Slap a Santa hat on your Discord avatar
           </li>
         </ul>
       </section>
