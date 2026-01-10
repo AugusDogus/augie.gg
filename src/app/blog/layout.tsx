@@ -1,4 +1,5 @@
 import { Header } from "~/components/header";
+import { BlogArticle } from "~/components/blog-article";
 
 export default function BlogLayout({
   children,
@@ -8,7 +9,7 @@ export default function BlogLayout({
   return (
     <>
       <Header />
-      <article className="space-y-4">{children}</article>
+      <BlogArticle>{children}</BlogArticle>
     </>
   );
 }
