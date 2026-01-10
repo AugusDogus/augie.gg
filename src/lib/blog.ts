@@ -9,17 +9,16 @@ export interface BlogPost {
 }
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
-  const blogDirectory = path.join(process.cwd(), "src", "app", "blog");
+  const contentDir = path.join(process.cwd(), "src", "content", "blog");
 
   try {
-    const entries = await fs.readdir(blogDirectory, { withFileTypes: true });
-    const slugs = entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name);
+    const files = await fs.readdir(contentDir);
+    const mdxFiles = files.filter((file) => file.endsWith(".mdx"));
 
     const posts = await Promise.all(
-      slugs.map(async (slug) => {
-        const filePath = path.join(blogDirectory, slug, "page.mdx");
+      mdxFiles.map(async (file) => {
+        const slug = file.replace(/\.mdx$/, "");
+        const filePath = path.join(contentDir, file);
         try {
           const content = await fs.readFile(filePath, "utf-8");
           const metadata = extractMetadata(content);
