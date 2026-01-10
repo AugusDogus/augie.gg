@@ -9,10 +9,10 @@ export function Header() {
   const isHome = pathname === "/";
 
   return (
-    <header className="flex items-center justify-between">
-      {isHome ? (
-        <div />
-      ) : (
+    <header
+      className={`flex items-center ${isHome ? "justify-end" : "justify-between"}`}
+    >
+      {!isHome && (
         <Link
           href="/"
           className="text-muted-foreground hover:text-foreground transition-colors"
@@ -20,7 +20,9 @@ export function Header() {
           ← Home
         </Link>
       )}
-      <ThemeToggle />
+      <ThemeToggle
+        className={isHome ? "absolute top-4 right-6 md:static" : ""}
+      />
     </header>
   );
 }

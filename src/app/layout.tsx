@@ -28,14 +28,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={jetbrainsMono.variable} suppressHydrationWarning>
-      <body className="bg-background text-foreground min-h-screen antialiased">
+      <body className="bg-background text-foreground min-h-dvh antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <div className="mx-auto flex min-h-screen max-w-[72ch] flex-col justify-between p-6 pt-0 md:pt-8">
+          <div className="mx-auto flex min-h-dvh max-w-[72ch] flex-col justify-between p-6 pt-4 md:pt-8">
             <main className="w-full space-y-6">{children}</main>
             <Footer />
           </div>

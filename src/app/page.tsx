@@ -10,23 +10,23 @@ export default async function Home() {
   const blogPosts = await getBlogPosts();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <Header />
 
       {/* Hero section */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-6">
+      <section className="space-y-3 md:space-y-4">
+        <div className="flex items-center gap-4 md:gap-6">
           <Avatar />
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
               Augie Luebbers
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm md:text-base">
               <AgeCounter />
             </p>
           </div>
         </div>
-        <p className="text-muted-foreground leading-relaxed">
+        <p className="text-muted-foreground text-sm leading-relaxed md:text-base">
           Full-stack developer based in Pensacola, FL. Currently building modern
           web experiences at{" "}
           <a
@@ -45,9 +45,11 @@ export default async function Home() {
       {blogPosts.length > 0 && (
         <>
           <Separator />
-          <section className="space-y-4">
-            <h2 className="text-xl font-semibold tracking-tight">Writing</h2>
-            <div className="grid gap-4">
+          <section className="space-y-3 md:space-y-4">
+            <h2 className="text-lg font-semibold tracking-tight md:text-xl">
+              Writing
+            </h2>
+            <div className="grid gap-3 md:gap-4">
               {blogPosts.slice(0, 3).map((post) => (
                 <Link
                   key={post.slug}
@@ -83,9 +85,11 @@ export default async function Home() {
       <Separator />
 
       {/* Work section */}
-      <section className="space-y-4">
+      <section className="space-y-3 md:space-y-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-xl font-semibold tracking-tight">Work</h2>
+          <h2 className="text-lg font-semibold tracking-tight md:text-xl">
+            Work
+          </h2>
           <Link
             href="/resume"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
@@ -93,7 +97,7 @@ export default async function Home() {
             Full resume →
           </Link>
         </div>
-        <ul className="text-muted-foreground space-y-2">
+        <ul className="text-muted-foreground space-y-2 text-sm md:text-base">
           <li>
             <span className="text-foreground">Senior Software Developer</span>{" "}
             at Provalus (2023–Present)
@@ -114,9 +118,11 @@ export default async function Home() {
       <Separator />
 
       {/* Projects section */}
-      <section className="space-y-4">
+      <section className="space-y-3 md:space-y-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-xl font-semibold tracking-tight">Projects</h2>
+          <h2 className="text-lg font-semibold tracking-tight md:text-xl">
+            Projects
+          </h2>
           <a
             href="https://github.com/AugusDogus"
             target="_blank"
@@ -126,7 +132,7 @@ export default async function Home() {
             GitHub →
           </a>
         </div>
-        <ul className="text-muted-foreground space-y-2">
+        <ul className="text-muted-foreground space-y-2 text-sm md:text-base">
           <li>
             <a
               href="https://opentab.sh"

@@ -28,7 +28,7 @@ export function Avatar() {
 
   return (
     <div
-      className="group relative size-24"
+      className="group relative size-16 md:size-24"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
