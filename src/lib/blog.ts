@@ -47,25 +47,25 @@ function extractMetadata(content: string): Record<string, string> {
   const metadata: Record<string, string> = {};
 
   // Match export const metadata = { ... }
-  const metadataMatch = content.match(
-    /export\s+const\s+metadata\s*=\s*\{([^}]+)\}/,
-  );
+  const metadataRegex = /export\s+const\s+metadata\s*=\s*\{([^}]+)\}/;
+  const metadataMatch = metadataRegex.exec(content);
 
   if (metadataMatch?.[1]) {
     const metadataContent = metadataMatch[1];
 
     // Extract title
-    const titleMatch = metadataContent.match(/title:\s*["'`]([^"'`]+)["'`]/);
+    const titleRegex = /title:\s*["'`]([^"'`]+)["'`]/;
+    const titleMatch = titleRegex.exec(metadataContent);
     if (titleMatch?.[1]) metadata.title = titleMatch[1];
 
     // Extract description
-    const descMatch = metadataContent.match(
-      /description:\s*["'`]([^"'`]+)["'`]/,
-    );
+    const descRegex = /description:\s*["'`]([^"'`]+)["'`]/;
+    const descMatch = descRegex.exec(metadataContent);
     if (descMatch?.[1]) metadata.description = descMatch[1];
 
     // Extract date
-    const dateMatch = metadataContent.match(/date:\s*["'`]([^"'`]+)["'`]/);
+    const dateRegex = /date:\s*["'`]([^"'`]+)["'`]/;
+    const dateMatch = dateRegex.exec(metadataContent);
     if (dateMatch?.[1]) metadata.date = dateMatch[1];
   }
 
