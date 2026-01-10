@@ -3,37 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 
-const faviconCache: Record<string, string> = {};
-
-async function createCircularFavicon(src: string): Promise<string> {
-  if (faviconCache[src]) return faviconCache[src];
-
-  const img = new window.Image();
-  img.crossOrigin = "anonymous";
-
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = reject;
-    img.src = src;
-  });
-
-  const canvas = document.createElement("canvas");
-  const size = 64;
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-
-  // Circular clip
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(img, 0, 0, size, size);
-
-  const dataUrl = canvas.toDataURL("image/png");
-  faviconCache[src] = dataUrl;
-  return dataUrl;
-}
-
 function setFavicon(href: string) {
   let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (!link) {
@@ -44,23 +13,17 @@ function setFavicon(href: string) {
   link.href = href;
 }
 
-function updateFavicon(src: string) {
-  void createCircularFavicon(src).then(setFavicon);
-}
-
 export function Avatar() {
   const [isHovered, setIsHovered] = useState(false);
 
   function handleMouseEnter() {
     setIsHovered(true);
-    updateFavicon("/avatar.png");
-    // Preload the other image for smooth transition back
-    void createCircularFavicon("/pfp.png");
+    setFavicon("/avatar.png");
   }
 
   function handleMouseLeave() {
     setIsHovered(false);
-    updateFavicon("/pfp.png");
+    setFavicon("/pfp.png");
   }
 
   return (
