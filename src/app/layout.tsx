@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { Footer } from "~/components/footer";
+import { ThemeProvider } from "~/components/theme-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://augie.gg"),
@@ -28,25 +29,18 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={jetbrainsMono.variable} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const stored = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const theme = stored ?? (prefersDark ? 'dark' : 'light');
-                if (theme === 'dark') document.documentElement.classList.add('dark');
-              })();
-            `,
-          }}
-        />
-      </head>
       <body className="bg-background text-foreground min-h-screen antialiased">
-        <div className="mx-auto flex min-h-screen max-w-[72ch] flex-col justify-between p-8 pt-0 md:pt-8">
-          <main className="w-full space-y-6">{children}</main>
-          <Footer />
-        </div>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="mx-auto flex min-h-screen max-w-[72ch] flex-col justify-between p-8 pt-0 md:pt-8">
+            <main className="w-full space-y-6">{children}</main>
+            <Footer />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
