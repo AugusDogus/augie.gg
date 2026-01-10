@@ -1,53 +1,131 @@
 import Link from "next/link";
-
-import { LatestPost } from "~/app/_components/post";
-import { api, HydrateClient } from "~/trpc/server";
+import { AgeCounter } from "~/components/age-counter";
+import { ThemeToggle } from "~/components/theme-toggle";
+import { Separator } from "~/components/ui/separator";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
+import { getBlogPosts } from "~/lib/blog";
 
 export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
-
-  void api.post.getLatest.prefetch();
+  const blogPosts = await getBlogPosts();
 
   return (
-    <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-          </h1>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/usage/first-steps"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">First Steps →</h3>
-              <div className="text-lg">
-                Just the basics - Everything you need to know to set up your
-                database and authentication.
-              </div>
-            </Link>
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/introduction"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">Documentation →</h3>
-              <div className="text-lg">
-                Learn more about Create T3 App, the libraries it uses, and how
-                to deploy it.
-              </div>
-            </Link>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl text-white">
-              {hello ? hello.greeting : "Loading tRPC query..."}
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header with theme toggle */}
+      <div className="flex items-center justify-between">
+        <div />
+        <ThemeToggle />
+      </div>
 
-          <LatestPost />
-        </div>
-      </main>
-    </HydrateClient>
+      {/* Hero section */}
+      <section className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight">Augie Luebbers</h1>
+        <p className="text-muted-foreground">
+          <AgeCounter />
+        </p>
+        <p className="text-muted-foreground leading-relaxed">
+          Full-stack developer based in Pensacola, FL. Currently building modern
+          web experiences at{" "}
+          <a
+            href="https://www.amli.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-foreground hover:text-primary underline underline-offset-4 transition-colors"
+          >
+            AMLI Residential
+          </a>
+          . Passionate about TypeScript, React, Next.js, and developer tooling.
+        </p>
+      </section>
+
+      {/* Blog section - only shows if there are posts */}
+      {blogPosts.length > 0 && (
+        <>
+          <Separator />
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold tracking-tight">Writing</h2>
+            <div className="grid gap-4">
+              {blogPosts.slice(0, 3).map((post) => (
+                <Link key={post.slug} href={`/blog/${post.slug}`}>
+                  <Card className="hover:bg-muted/50 transition-colors">
+                    <CardHeader>
+                      <CardTitle>{post.title}</CardTitle>
+                      <CardDescription>{post.description}</CardDescription>
+                      <CardDescription className="text-muted-foreground/60 text-xs">
+                        {new Date(post.date).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+            {blogPosts.length > 3 && (
+              <Link
+                href="/blog"
+                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              >
+                View all posts →
+              </Link>
+            )}
+          </section>
+        </>
+      )}
+
+      <Separator />
+
+      {/* Work section */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-tight">Work</h2>
+        <ul className="text-muted-foreground space-y-2">
+          <li>
+            <span className="text-foreground">Senior Software Developer</span>{" "}
+            at Provalus (2023–Present)
+          </li>
+          <li>
+            <span className="text-foreground">
+              Mid-Level Software Developer
+            </span>{" "}
+            at Provalus (2020–2022)
+          </li>
+          <li>
+            <span className="text-foreground">Software Developer</span> at
+            University of West Florida (2017–2019)
+          </li>
+        </ul>
+      </section>
+
+      <Separator />
+
+      {/* Tech stack section */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-tight">Stack</h2>
+        <ul className="text-muted-foreground space-y-1">
+          <li>
+            <span className="text-foreground">Frontend:</span> TypeScript,
+            React, Next.js, Tailwind CSS
+          </li>
+          <li>
+            <span className="text-foreground">Backend:</span> Node.js, tRPC,
+            Hono, GraphQL
+          </li>
+          <li>
+            <span className="text-foreground">Database:</span> PostgreSQL,
+            Redis, Drizzle, Prisma
+          </li>
+          <li>
+            <span className="text-foreground">Tools:</span> Cursor, Bun,
+            Playwright, Sentry
+          </li>
+        </ul>
+      </section>
+    </div>
   );
 }
