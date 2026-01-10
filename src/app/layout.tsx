@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
   description:
     "Full-stack developer based in Pensacola, FL. Building modern web experiences.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [{ rel: "icon", url: "/pfp.png" }],
 };
 
 const jetbrainsMono = JetBrains_Mono({
@@ -36,7 +36,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="mx-auto flex min-h-screen max-w-[72ch] flex-col justify-between p-8 pt-0 md:pt-8">
+          <div className="mx-auto flex min-h-screen max-w-[72ch] flex-col justify-between p-6 pt-0 md:pt-8">
             <main className="w-full space-y-6">{children}</main>
             <Footer />
           </div>

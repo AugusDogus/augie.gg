@@ -42,7 +42,7 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="mt-12 text-center">
+    <footer className="mt-6 text-center">
       <div className="flex justify-center gap-1">
         {socialLinks.map((link) => (
           <Tooltip key={link.name}>

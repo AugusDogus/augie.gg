@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AgeCounter } from "~/components/age-counter";
+import { Avatar } from "~/components/avatar";
 import { Header } from "~/components/header";
 import { Separator } from "~/components/ui/separator";
 import { CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
@@ -14,10 +15,17 @@ export default async function Home() {
 
       {/* Hero section */}
       <section className="space-y-4">
-        <h1 className="text-3xl font-bold tracking-tight">Augie Luebbers</h1>
-        <p className="text-muted-foreground">
-          <AgeCounter />
-        </p>
+        <div className="flex items-center gap-6">
+          <Avatar />
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Augie Luebbers
+            </h1>
+            <p className="text-muted-foreground">
+              <AgeCounter />
+            </p>
+          </div>
+        </div>
         <p className="text-muted-foreground leading-relaxed">
           Full-stack developer based in Pensacola, FL. Currently building modern
           web experiences at{" "}
