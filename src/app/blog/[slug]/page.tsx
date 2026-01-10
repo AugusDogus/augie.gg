@@ -29,6 +29,9 @@ function calculateReadingTime(content: string): number {
   return Math.max(1, Math.ceil(words / 225));
 }
 
+// Only allow pre-generated slugs, reject dynamic params to prevent path traversal
+export const dynamicParams = false;
+
 // Generate static params for all blog posts
 export async function generateStaticParams() {
   const contentDir = path.join(process.cwd(), "src/content/blog");
