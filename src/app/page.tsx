@@ -84,7 +84,15 @@ export default async function Home() {
 
       {/* Work section */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Work</h2>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-xl font-semibold tracking-tight">Work</h2>
+          <Link
+            href="/resume"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            Full resume →
+          </Link>
+        </div>
         <ul className="text-muted-foreground space-y-2">
           <li>
             <span className="text-foreground">Senior Software Developer</span>{" "}
