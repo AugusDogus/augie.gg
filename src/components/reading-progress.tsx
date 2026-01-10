@@ -11,6 +11,7 @@ export function ReadingProgress({ contentRef }: ReadingProgressProps) {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const rafRef = useRef<number>(0);
+  const prefersReducedMotionRef = useRef(false);
   const pathname = usePathname();
 
   const calculateProgress = useCallback(() => {
@@ -49,13 +50,18 @@ export function ReadingProgress({ contentRef }: ReadingProgressProps) {
   }, [pathname]);
 
   useEffect(() => {
-    // Check for reduced motion preference
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    // Set up reactive reduced motion preference tracking
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotionRef.current = motionQuery.matches;
+
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      prefersReducedMotionRef.current = e.matches;
+    };
+
+    motionQuery.addEventListener("change", handleMotionChange);
 
     const handleScroll = () => {
-      if (prefersReducedMotion) {
+      if (prefersReducedMotionRef.current) {
         // Update immediately without RAF for reduced motion
         calculateProgress();
       } else {
@@ -83,6 +89,7 @@ export function ReadingProgress({ contentRef }: ReadingProgressProps) {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      motionQuery.removeEventListener("change", handleMotionChange);
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleScroll);
       resizeObserver?.disconnect();
