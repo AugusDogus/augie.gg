@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useLayoutEffect } from "react";
 import { ReadingProgress } from "./reading-progress";
 import { calculateReadingTime } from "~/lib/reading-time";
 
@@ -12,13 +12,13 @@ export function BlogArticle({ children }: BlogArticleProps) {
   const articleRef = useRef<HTMLElement>(null);
   const [readingTime, setReadingTime] = useState<number | null>(null);
 
-  useEffect(() => {
-    // Extract text content from rendered MDX for reading time calculation
+  // Read from DOM after render - valid Effect for external system sync
+  useLayoutEffect(() => {
     if (articleRef.current) {
-      const textContent = articleRef.current.textContent ?? "";
-      setReadingTime(calculateReadingTime(textContent));
+      const text = articleRef.current.textContent ?? "";
+      setReadingTime(calculateReadingTime(text));
     }
-  }, [children]);
+  }, []);
 
   return (
     <>
