@@ -23,9 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Calculate reading time from raw MDX content
 function calculateReadingTime(content: string): number {
   const text = content
-    .replace(/```[\s\S]*?```/g, "") // code blocks
-    .replace(/<[^>]+>/g, "") // JSX tags
-    .replace(/export\s+const\s+metadata[\s\S]*?};/g, "") // metadata
+    .replace(/export\s+const\s+metadata[\s\S]*?};/g, "") // metadata export
     .replace(/import[\s\S]*?from\s*["'][^"']+["'];?/g, ""); // imports
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 225));
