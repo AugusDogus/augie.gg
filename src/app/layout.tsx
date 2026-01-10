@@ -14,8 +14,7 @@ export const metadata: Metadata = {
     default: "Augie Luebbers",
     template: "%s | Augie Luebbers",
   },
-  description:
-    "Full-stack developer based in Pensacola, FL. Building modern web experiences.",
+  description: "🍄 Learning • Building • Writing",
   icons: [{ rel: "icon", url: "/pfp.png" }],
 };
 
