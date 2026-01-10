@@ -11,7 +11,7 @@ type BlockquoteProps = ComponentPropsWithoutRef<"blockquote">;
 
 const components = {
   h1: (props: HeadingProps) => (
-    <h1 className="mb-0 pt-12 font-medium" {...props} />
+    <h1 className="mb-0 py-12 font-medium" {...props} />
   ),
   h2: (props: HeadingProps) => (
     <h2 className="text-foreground mt-8 mb-3 font-medium" {...props} />
@@ -72,14 +72,40 @@ const components = {
     const codeHTML = highlight(children as string);
     return <code dangerouslySetInnerHTML={{ __html: codeHTML }} {...props} />;
   },
+  Table: ({ data }: { data: { headers: string[]; rows: string[][] } }) => (
+    <div className="my-6 w-full overflow-x-auto">
+      <table className="text-muted-foreground w-full border-collapse text-sm">
+        <thead className="border-border border-b">
+          <tr>
+            {data.headers.map((header, index) => (
+              <th
+                key={index}
+                className="text-foreground px-4 py-2 text-left font-medium"
+              >
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.rows.map((row, index) => (
+            <tr key={index} className="border-border border-b last:border-0">
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex} className="px-4 py-2">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ),
   blockquote: (props: BlockquoteProps) => (
     <blockquote
-      className="border-border text-muted-foreground ml-[0.075em] border-l-2 pl-4"
+      className="border-border text-muted-foreground ml-[0.075em] border-l-3 pl-4 italic"
       {...props}
     />
-  ),
-  hr: (props: ComponentPropsWithoutRef<"hr">) => (
-    <hr className="border-border my-8" {...props} />
   ),
 };
 

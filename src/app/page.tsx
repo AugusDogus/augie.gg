@@ -1,13 +1,8 @@
 import Link from "next/link";
 import { AgeCounter } from "~/components/age-counter";
-import { ThemeToggle } from "~/components/theme-toggle";
+import { Header } from "~/components/header";
 import { Separator } from "~/components/ui/separator";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "~/components/ui/card";
+import { CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { getBlogPosts } from "~/lib/blog";
 
 export default async function Home() {
@@ -15,11 +10,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Header with theme toggle */}
-      <div className="flex items-center justify-between">
-        <div />
-        <ThemeToggle />
-      </div>
+      <Header />
 
       {/* Hero section */}
       <section className="space-y-4">
@@ -50,20 +41,22 @@ export default async function Home() {
             <h2 className="text-xl font-semibold tracking-tight">Writing</h2>
             <div className="grid gap-4">
               {blogPosts.slice(0, 3).map((post) => (
-                <Link key={post.slug} href={`/blog/${post.slug}`}>
-                  <Card className="hover:bg-muted/50 transition-colors">
-                    <CardHeader>
-                      <CardTitle>{post.title}</CardTitle>
-                      <CardDescription>{post.description}</CardDescription>
-                      <CardDescription className="text-muted-foreground/60 text-xs">
-                        {new Date(post.date).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                <Link
+                  key={post.slug}
+                  href={`/blog/${post.slug}`}
+                  className="ring-foreground/10 bg-card text-card-foreground hover:ring-foreground/20 flex flex-col gap-4 rounded-lg py-4 ring-1 transition-all"
+                >
+                  <CardHeader>
+                    <CardTitle>{post.title}</CardTitle>
+                    <CardDescription>{post.description}</CardDescription>
+                    <CardDescription className="text-muted-foreground/60 text-xs">
+                      {new Date(post.date).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </CardDescription>
+                  </CardHeader>
                 </Link>
               ))}
             </div>

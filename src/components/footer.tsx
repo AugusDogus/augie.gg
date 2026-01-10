@@ -35,7 +35,7 @@ const socialLinks = [
   },
   {
     name: "Discord",
-    url: "http://discord.com/users/272225843626115072",
+    url: "https://discord.com/users/272225843626115072",
     icon: DiscordLogo,
   },
 ];

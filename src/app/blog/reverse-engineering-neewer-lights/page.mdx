@@ -1,0 +1,235 @@
+export const metadata = {
+  title: "Reverse Engineering My Studio Lights in an Afternoon",
+  description: "How I used Frida and Claude to reverse engineer Neewer's proprietary protocol and build a 50KB tray app to control my lights.",
+  date: "2025-01-10",
+};
+
+# Reverse Engineering My Studio Lights in an Afternoon
+
+I have two Neewer studio lights for video calls. My regular overhead light casts shadows on my face, and since I have the luxury of working from home, I might as well put some effort into looking decent. But I don't keep them on all day. They're bright and I prefer working in the dark.
+
+The problem is turning them on and off.
+
+The Neewer Control Center app is hot garbage. Half the time it doesn't detect my lights. The mobile app ~~is~~ was slightly less garbage, except *recently* they pushed an update that added cloud sync, which means now I get a loading spinner every time I open the app for something that's completely local. The cloud sync doesn't even integrate with Google Home or Alexa. It's just... there. Making everything slower.
+
+So recently I've just been standing up, reaching behind my desk to the light, and flipping the physical switch. Then after my video call, standing back up and reaching behind to turn it off. Not a lot of work, but it was *annoying*.
+
+What I wanted was simple: a system tray icon that toggles my lights with one click. No app window. No waiting. Just click → lights on. Click → lights off.
+
+Neewer doesn't support this. There's no CLI, no API, no hotkey support. The lights use a proprietary 2.4GHz protocol through a USB dongle, and Neewer keeps it locked up in their Windows application.
+
+So I asked Claude to help me figure it out.
+
+## The starting point
+
+I'd been wanting to test Claude's new model, Opus 4.5, on a real project. This seemed like a good one. Reverse engineering is tedious, requires context-switching between tools, and benefits from having someone who can just write the boilerplate code while I focus on the problem.
+
+My first message was pretty vague:
+
+> Can you help me reverse engineer how an app on my PC works? It's called Neewer Control Center.exe and it controls my lights using a 2.4GHz dongle plugged into my PC via USB. There's a button in the UI that lets me turn on/off all my devices and I want to figure out how to do that programmatically. Maybe we use wireshark or a debugger? Can you attach to the running process?
+
+Claude suggested we start by looking at the Neewer installation folder. Poking around, we found some interesting DLLs:
+
+```
+C:\Neewer Control Center\Neewer\
+  ├── Set_Dongle_RF_API_x64.dll    ← This looks promising
+  ├── BLE_USB_LIB_API_x64.dll
+  └── ...
+```
+
+Running `dumpbin /exports` on the RF DLL revealed just two functions:
+
+```
+Send_RF_DATA
+Get_USB_State
+```
+
+That's it. The entire app is a fancy wrapper around these two calls.
+
+## Watching the app with Frida
+
+But what bytes do we actually send to `Send_RF_DATA`? We had no idea what the protocol looked like.
+
+Claude suggested using [Frida](https://frida.re/), a toolkit that lets you intercept function calls in real-time. The idea: attach to the running Neewer app, hook the `Send_RF_DATA` function, then click buttons in the UI and watch what data flows through.
+
+```python
+# Hook Send_RF_DATA in the Neewer app
+Interceptor.attach(sendRfData, {
+    onEnter: function(args) {
+        const ptr = args[0];
+        const len = args[1].toInt32();
+        const data = ptr.readByteArray(len);
+        console.log('Data (hex): ' + hexdump(data));
+    }
+});
+```
+
+I opened Neewer Control Center, ran the Frida hook, and started clicking the on/off button.
+
+We isolated the packet: `77 58 01 85 01 56`. That's the on/off toggle command.
+
+## Using the DLL directly
+
+Now that we knew the magic bytes, we could call the DLL ourselves:
+
+```python
+import ctypes
+
+dll = ctypes.CDLL(r"C:\Neewer Control Center\Neewer\Set_Dongle_RF_API_x64.dll")
+
+# Check if dongle is connected
+state = dll.Get_USB_State()  # Returns 1 if connected
+
+# Send the on/off command we captured from Frida
+ON_OFF_PACKET = bytes([0x77, 0x58, 0x01, 0x85, 0x01, 0x56]) + bytes(26)
+buffer = (ctypes.c_ubyte * len(ON_OFF_PACKET))(*ON_OFF_PACKET)
+dll.Send_RF_DATA(buffer, len(ON_OFF_PACKET))
+```
+
+> It worked!
+
+The lights toggled. We had a working solution, but it still depended on Neewer's DLL.
+
+## Making it pretty
+
+Now I wanted it as a system tray app. I asked Claude:
+
+> Instead of python can you write this using C++, Zig, or Rust? Then add a taskbar icon I can click that'll toggle the lights on/off?
+
+I pasted in my own C screenshot tool that had a tray icon implementation as a reference and asked for C++, Zig, or Rust. Claude chose Zig, a language I'd never touched, and produced a working tray app.
+
+Then came the icon saga. The first icon had a black background instead of transparent. Then it was completely white. Then too low resolution. Then too fuzzy. Then the lines were too thick.
+
+> Nvm that's too thick. How did the screenshot app render its icon? Didn't it use a built in glyph?
+
+I remembered that Windows has a built-in icon font called Segoe MDL2 Assets. Claude switched to rendering a lightbulb glyph from that font directly, and suddenly:
+
+> That's genuinely perfect
+
+## The problem with the DLL
+
+I had a working app, but it depended on Neewer's DLL. I wanted to make it standalone so I could finally uninstall Neewer Control Center entirely.
+
+## Going deeper with Frida
+
+We'd already used Frida to capture what the *app* sends to the DLL. Now we needed to see what the *DLL* sends to the *hardware*. Hook the Windows API functions, trigger our working Python script, and watch what bytes flow through.
+
+This part took some back and forth. Claude kept trying to hook the Neewer app and wait for me to click buttons, but we already had a working Python script that could trigger the lights programmatically. I had to push back a few times before Claude set up a proper Frida project in TypeScript with Bun that hooked `CreateFileW` and `WriteFile`:
+
+```typescript
+const createFileW = kernel32.findExportByName("CreateFileW");
+Interceptor.attach(createFileW, {
+  onEnter(args) {
+    this.path = args[0].readUtf16String();
+  },
+  onLeave(retval) {
+    console.log(`[CreateFileW] ${this.path} -> handle ${retval}`);
+  },
+});
+
+const writeFile = kernel32.findExportByName("WriteFile");
+Interceptor.attach(writeFile, {
+  onEnter(args) {
+    const size = args[2].toInt32();
+    const data = args[1].readByteArray(size);
+    console.log(hexdump(data));
+  },
+});
+```
+
+We ran the Python script that used the DLL, and Frida captured everything:
+
+```
+[CreateFileW] \\?\hid#vid_0581&pid_011d#... -> handle 0x1234
+
+[WriteFile] 64 bytes:
+           0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+00000000  ba 70 24 00 00 00 00 77 58 01 85 01 56 00 00 00
+00000010  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+```
+
+There it was. The actual bytes being sent to the dongle, and the device path that told us the USB identifiers: VID `0581`, PID `011d`.
+
+> Yes, my lights toggled!
+
+## Understanding the protocol
+
+Looking at the captured packet:
+
+<Table
+  data={{
+    headers: ["Offset", "Content", "What it is"],
+    rows: [
+      ["0-6", "ba 70 24 00 00 00 00", "Header (added by DLL)"],
+      ["7-12", "77 58 01 85 01 56", "The on/off toggle command"],
+      ["13-63", "zeros", "Padding to 64 bytes"],
+    ],
+  }}
+/>
+
+The command bytes `77 58 01 85 01 56` were what we'd been sending to the DLL. The DLL was wrapping them with a 7-byte header and padding to 64 bytes total.
+
+Now we could bypass the DLL entirely: find the device by VID/PID, open it with `CreateFileW`, and write the full 64-byte packet with `WriteFile`.
+
+## The final Zig implementation
+
+Claude updated the Zig app to communicate directly:
+
+```zig
+const NEEWER_VID: u16 = 0x0581;
+const NEEWER_PID: u16 = 0x011D;
+
+const PACKET_HEADER = [_]u8{ 0xba, 0x70, 0x24, 0x00, 0x00, 0x00, 0x00 };
+const ON_OFF_CMD = [_]u8{ 0x77, 0x58, 0x01, 0x85, 0x01, 0x56 };
+
+fn toggleLights() bool {
+    const handle = findAndOpenDevice(NEEWER_VID, NEEWER_PID);
+    var packet: [64]u8 = std.mem.zeroes([64]u8);
+    @memcpy(packet[0..7], &PACKET_HEADER);
+    @memcpy(packet[7..13], &ON_OFF_CMD);
+    return WriteFile(handle, &packet, 64, ...) != 0;
+}
+```
+
+> Yes it worked!
+
+The result: a ~50KB standalone executable. No DLL dependencies. No Neewer app needed. Just a tray icon that toggles my lights.
+
+## How long this took
+
+I did this in a single afternoon. Maybe 2-3 hours total. The rough timeline:
+
+<Table
+  data={{
+    headers: ["Time", "What happened"],
+    rows: [
+      ["~12:30 PM", "Found the DLL, set up Frida to hook the Neewer app"],
+      ["~1:00 PM", "Captured the on/off packet, Python script working with DLL"],
+      ["~1:30 PM", "Zig tray app working (with DLL dependency)"],
+      ["~2:00 PM", "Hooked the DLL's Windows API calls with Frida"],
+      ["~2:30 PM", "Zig app working without DLL"],
+      ["~3:00 PM", "Cleaned up, committed, set up GitHub Actions"],
+    ],
+  }}
+/>
+
+To be clear about my background: I mostly work in TypeScript. I can read and write Python but I hate it as a language. I took Java in school, wrote some Minecraft mods and RuneScape private server stuff. Took C/C++ in college. I've used Frida once before to reverse engineer an Android app with Magisk. I've poked around in IDA Pro and Ghidra, but never gotten very far. So I'm *familiar* with this stuff, but I wouldn't call myself experienced. I'd certainly never written Zig before that afternoon.
+
+The entire project was pair-programmed with Claude (Opus 4.5) in Cursor. I described what I wanted, Claude suggested approaches, I ran the code and reported what happened, Claude adjusted. When I got frustrated with inline Python or JavaScript, I pushed back and Claude adapted.
+
+## What made this possible
+
+The bottleneck wasn't writing code. It was understanding the problem well enough to ask the right questions. Claude handled the code. I handled the "what are we actually trying to do here" and "that didn't work, what's different about my setup."
+
+A few things that helped:
+
+- **Frida** for watching what the app actually does at the Windows API level
+- **Claude + Cursor** for writing code in languages I don't know
+- **Zig** for a tiny, dependency-free executable
+- **Stubbornness** about not wanting to depend on Neewer's DLL
+
+Proprietary software isn't magic. Data has to flow from A to B. If you can observe that flow, you can understand it—and reproduce it.
+
+---
+
+*The code is at [github.com/AugusDogus/neweer-tray](https://github.com/AugusDogus/neweer-tray). If you have Neewer lights with a 2.4GHz dongle, it might just work for you too.*
