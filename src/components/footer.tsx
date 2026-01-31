@@ -4,6 +4,7 @@ import {
   LinkedinLogo,
   EnvelopeSimple,
   DiscordLogo,
+  SpotifyLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "~/components/ui/button";
 import {
@@ -37,6 +38,11 @@ const socialLinks = [
     name: "Discord",
     url: "https://discord.com/users/272225843626115072",
     icon: DiscordLogo,
+  },
+  {
+    name: "Spotify",
+    url: "https://open.spotify.com/user/aurothic",
+    icon: SpotifyLogo,
   },
 ];
 
