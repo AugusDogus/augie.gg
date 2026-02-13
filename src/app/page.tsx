@@ -26,7 +26,7 @@ export default async function Home() {
             </p>
           </div>
         </div>
-        <p className="text-muted-foreground text-sm leading-relaxed md:text-base">
+        <p className="text-muted-foreground text-sm leading-relaxed text-pretty md:text-base">
           Full-stack developer based in Pensacola, FL. Currently building modern
           web experiences at{" "}
           <a
@@ -62,8 +62,12 @@ export default async function Home() {
               className="ring-foreground/10 bg-card text-card-foreground hover:ring-foreground/20 flex flex-col gap-4 rounded-lg py-4 ring-1 transition-all"
             >
               <CardHeader>
-                <CardTitle>{blogPosts[0]!.title}</CardTitle>
-                <CardDescription>{blogPosts[0]!.description}</CardDescription>
+                <CardTitle className="line-clamp-2">
+                  {blogPosts[0]!.title}
+                </CardTitle>
+                <CardDescription className="line-clamp-2">
+                  {blogPosts[0]!.description}
+                </CardDescription>
                 <CardDescription className="text-muted-foreground/60 text-xs">
                   {new Date(blogPosts[0]!.date).toLocaleDateString("en-US", {
                     year: "numeric",
