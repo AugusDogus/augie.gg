@@ -2,8 +2,8 @@ import Link from "next/link";
 import { AgeCounter } from "~/components/age-counter";
 import { Avatar } from "~/components/avatar";
 import { Header } from "~/components/header";
+import { CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
-import { CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { getBlogPosts } from "~/lib/blog";
 
 export default async function Home() {
@@ -46,38 +46,33 @@ export default async function Home() {
         <>
           <Separator />
           <section className="space-y-3 md:space-y-4">
-            <h2 className="text-lg font-semibold tracking-tight md:text-xl">
-              Writing
-            </h2>
-            <div className="grid gap-3 md:gap-4">
-              {blogPosts.slice(0, 3).map((post) => (
-                <Link
-                  key={post.slug}
-                  href={`/blog/${post.slug}`}
-                  className="ring-foreground/10 bg-card text-card-foreground hover:ring-foreground/20 flex flex-col gap-4 rounded-lg py-4 ring-1 transition-all"
-                >
-                  <CardHeader>
-                    <CardTitle>{post.title}</CardTitle>
-                    <CardDescription>{post.description}</CardDescription>
-                    <CardDescription className="text-muted-foreground/60 text-xs">
-                      {new Date(post.date).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </CardDescription>
-                  </CardHeader>
-                </Link>
-              ))}
-            </div>
-            {blogPosts.length > 3 && (
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold tracking-tight md:text-xl">
+                Writing
+              </h2>
               <Link
                 href="/blog"
                 className="text-muted-foreground hover:text-foreground text-sm transition-colors"
               >
-                View all posts →
+                Blog →
               </Link>
-            )}
+            </div>
+            <Link
+              href={`/blog/${blogPosts[0]!.slug}`}
+              className="ring-foreground/10 bg-card text-card-foreground hover:ring-foreground/20 flex flex-col gap-4 rounded-lg py-4 ring-1 transition-all"
+            >
+              <CardHeader>
+                <CardTitle>{blogPosts[0]!.title}</CardTitle>
+                <CardDescription>{blogPosts[0]!.description}</CardDescription>
+                <CardDescription className="text-muted-foreground/60 text-xs">
+                  {new Date(blogPosts[0]!.date).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </CardDescription>
+              </CardHeader>
+            </Link>
           </section>
         </>
       )}
@@ -94,7 +89,7 @@ export default async function Home() {
             href="/resume"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
-            Full resume →
+            Resume →
           </Link>
         </div>
         <ul className="text-muted-foreground space-y-2 text-sm md:text-base">
