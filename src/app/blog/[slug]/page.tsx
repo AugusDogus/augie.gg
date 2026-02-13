@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { promises as fs } from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import { BlogArticle } from "~/components/blog-article";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -66,9 +67,9 @@ export default async function BlogPostPage({ params }: PageProps) {
   }
 
   return (
-    <>
+    <BlogArticle>
       <p className="text-muted-foreground text-sm">{readingTime} min read</p>
       <MDXContent />
-    </>
+    </BlogArticle>
   );
 }
