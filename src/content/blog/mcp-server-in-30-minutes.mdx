@@ -1,0 +1,41 @@
+export const metadata = {
+  title:
+    "I Built an MCP Server in 30 Minutes Because I Was Too Lazy to Alt-Tab",
+  description:
+    "How a support ticket and a markdown file turned into a Freshservice MCP server for Cursor.",
+  date: "2025-02-12",
+};
+
+# I Built an MCP Server in 30 Minutes Because I Was Too Lazy to Alt-Tab
+
+Today a support ticket came in about stale data. Some pages on our site were showing the right information, others weren't. We're in the middle of migrating a legacy Create React App to Next.js, and the Next.js pages had fresh data while the legacy app was stuck on something old. I couldn't remember the caching behavior of the legacy app off the top of my head, so I wanted to hand the problem to Cursor and let it investigate.
+
+But the ticket context — the description, the conversation, which pages were affected — all lived in Freshservice. I didn't want to manually summarize all of that for Cursor. I didn't want to copy-paste the ticket details, explain that I'm a developer, that we have a support portal, that this is ticket number 1234. I just wanted to give it a ticket number and point it at the two codebases.
+
+From previous curiosity perusing, I remembered that Freshservice exposes a personal API key right in your profile settings, and their API is documented at [api.freshservice.com/v2](https://api.freshservice.com/v2). So I figured: what if I just wired that up as an MCP server?
+
+## What's MCP?
+
+MCP (Model Context Protocol) is a way to give AI tools access to external data sources. In Cursor, you can configure MCP servers that expose "tools" the AI can call — think of it like giving your assistant the ability to look things up instead of you having to paste everything in.
+
+## The build
+
+I pointed Cursor at the Freshservice API docs and gave it a few example cURL requests I'd grabbed from my browser's network tab — the docs weren't perfect for auth, so real requests helped fill in the gaps. Cursor put together a markdown file with the working API details, and from there I told it what I wanted: a stdio MCP server with two tools — one to get a ticket by ID, one to list tickets. It wrote the whole thing. The initial implementation took maybe five minutes.
+
+I spent another 30 minutes or so cleaning it up — adding proper environment variable validation so it fails fast on startup instead of giving you a cryptic error later, writing a small setup doc for anyone else who might want to use it, and committing it to the repo.
+
+## What it actually looks like
+
+Now next time a ticket comes in, I can just tell Cursor "look at ticket 243014" and it'll pull the full ticket with conversations directly into the chat. No more manually relaying context.
+
+## Why I think this is interesting
+
+This isn't a product. It's not going on a roadmap. It solved a problem I had _today_, and it took less time to build than it would have taken to context-switch back and forth through the ticket a few more times.
+
+I've been doing this kind of thing more and more lately. The [Neewer tray app](/blog/reverse-engineering-my-studio-lights) was the same impulse — I was tired of reaching behind my desk to flip a light switch, so I spent an afternoon reverse engineering the protocol and building a 50KB tray app. This Freshservice server is smaller, but it's the same idea: notice a friction, fix it, move on.
+
+The cost of building these little tools has gotten absurdly low. A markdown file with some cURL examples and a description of what I wanted was enough for Cursor to produce a working MCP server. The hard part isn't the code anymore. It's noticing the friction in the first place.
+
+## What's next for this
+
+For now it lives in our main repo as a proof of concept. If other people on the team find it useful, I'll probably break it out into its own repository or host it somewhere so it's easier to set up. Right now you need to add your own Freshservice API key to `.env`, which is fine for developers but not exactly plug-and-play for everyone.
