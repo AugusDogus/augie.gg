@@ -2,11 +2,6 @@ import Link from "next/link";
 import { CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { getBlogPosts } from "~/lib/blog";
 
-export const metadata = {
-  title: "Blog",
-  description: "All blog posts",
-};
-
 export default async function BlogPage() {
   const posts = await getBlogPosts();
 
