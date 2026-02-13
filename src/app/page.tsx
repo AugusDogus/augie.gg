@@ -156,14 +156,14 @@ export default async function Home() {
           </li>
           <li>
             <a
-              href="https://santahat.gg"
+              href="https://junkyardindex.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground hover:text-primary transition-colors"
             >
-              santahat.gg
+              junkyardindex.com
             </a>{" "}
-            — Slap a Santa hat on your Discord avatar
+            — Search salvage yard inventory nationwide
           </li>
         </ul>
       </section>
