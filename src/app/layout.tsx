@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { Footer } from "~/components/footer";
 import { ThemeProvider } from "~/components/theme-provider";
+import { DEFAULT_APP_TITLE } from "~/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://augie.gg"),
@@ -11,8 +12,8 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   title: {
-    default: "Augie Luebbers",
-    template: "%s | Augie Luebbers",
+    default: DEFAULT_APP_TITLE,
+    template: `%s | ${DEFAULT_APP_TITLE}`,
   },
   description: "🍄 Learning • Building • Writing",
   icons: [{ rel: "icon", url: "/pfp.png" }],

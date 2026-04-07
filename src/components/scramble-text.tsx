@@ -13,7 +13,8 @@ type ScrambleTextProps = {
 };
 
 function getRandomScrambleChar() {
-  return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+  const index = Math.floor(Math.random() * SCRAMBLE_CHARS.length);
+  return SCRAMBLE_CHARS[index] ?? SCRAMBLE_CHARS[0] ?? "A";
 }
 
 export function ScrambleText({

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { DEFAULT_APP_TITLE, HOVER_APP_TITLE } from "~/lib/site";
 
 type AvatarProps = {
   isHovered?: boolean;
@@ -10,7 +11,6 @@ type AvatarProps = {
 
 const DEFAULT_FAVICON = "/pfp.png";
 const HOVER_FAVICON = "/avatar.png";
-const HOVER_TITLE = "@AugusDogus";
 
 function setFavicon(href: string) {
   let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -37,21 +37,21 @@ export function Avatar({
 
   function handleMouseEnter() {
     updateHoverState(true);
-    originalTitleRef.current ??= document.title;
-    document.title = HOVER_TITLE;
+    originalTitleRef.current ??= document.title || DEFAULT_APP_TITLE;
+    document.title = HOVER_APP_TITLE;
     setFavicon(HOVER_FAVICON);
   }
 
   function handleMouseLeave() {
     updateHoverState(false);
-    document.title = originalTitleRef.current ?? "Augie Luebbers";
+    document.title = originalTitleRef.current ?? DEFAULT_APP_TITLE;
     originalTitleRef.current = null;
     setFavicon(DEFAULT_FAVICON);
   }
 
   useEffect(() => {
     return () => {
-      document.title = originalTitleRef.current ?? document.title;
+      document.title = originalTitleRef.current ?? DEFAULT_APP_TITLE;
       setFavicon(DEFAULT_FAVICON);
     };
   }, []);
