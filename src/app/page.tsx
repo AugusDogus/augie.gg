@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { AgeCounter } from "~/components/age-counter";
-import { Avatar } from "~/components/avatar";
 import { Header } from "~/components/header";
+import { Hero } from "~/components/hero";
 import { CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { getBlogPosts } from "~/lib/blog";
@@ -13,33 +12,7 @@ export default async function Home() {
     <div className="space-y-4 md:space-y-6">
       <Header />
 
-      {/* Hero section */}
-      <section className="space-y-3 md:space-y-4">
-        <div className="flex items-center gap-4 md:gap-6">
-          <Avatar />
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Augie Luebbers
-            </h1>
-            <p className="text-muted-foreground text-sm md:text-base">
-              <AgeCounter />
-            </p>
-          </div>
-        </div>
-        <p className="text-muted-foreground text-sm leading-relaxed text-pretty md:text-base">
-          Full-stack developer based in Pensacola, FL. Currently building modern
-          web experiences at{" "}
-          <a
-            href="https://www.amli.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-foreground hover:text-primary underline underline-offset-4 transition-colors"
-          >
-            AMLI Residential
-          </a>
-          . Passionate about TypeScript, React, Next.js, and developer tooling.
-        </p>
-      </section>
+      <Hero />
 
       {/* Blog section - only shows if there are posts */}
       {blogPosts.length > 0 && (

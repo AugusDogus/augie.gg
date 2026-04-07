@@ -1,7 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type AvatarProps = {
+  isHovered?: boolean;
+  onHoverChange?: (isHovered: boolean) => void;
+};
+
+const DEFAULT_FAVICON = "/pfp.png";
+const HOVER_FAVICON = "/avatar.png";
+const HOVER_TITLE = "@AugusDogus";
 
 function setFavicon(href: string) {
   let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -13,18 +22,39 @@ function setFavicon(href: string) {
   link.href = href;
 }
 
-export function Avatar() {
-  const [isHovered, setIsHovered] = useState(false);
+export function Avatar({
+  isHovered: controlledIsHovered,
+  onHoverChange,
+}: AvatarProps) {
+  const [uncontrolledIsHovered, setUncontrolledIsHovered] = useState(false);
+  const originalTitleRef = useRef<string | null>(null);
+  const isHovered = controlledIsHovered ?? uncontrolledIsHovered;
+
+  function updateHoverState(nextIsHovered: boolean) {
+    setUncontrolledIsHovered(nextIsHovered);
+    onHoverChange?.(nextIsHovered);
+  }
 
   function handleMouseEnter() {
-    setIsHovered(true);
-    setFavicon("/avatar.png");
+    updateHoverState(true);
+    originalTitleRef.current ??= document.title;
+    document.title = HOVER_TITLE;
+    setFavicon(HOVER_FAVICON);
   }
 
   function handleMouseLeave() {
-    setIsHovered(false);
-    setFavicon("/pfp.png");
+    updateHoverState(false);
+    document.title = originalTitleRef.current ?? "Augie Luebbers";
+    originalTitleRef.current = null;
+    setFavicon(DEFAULT_FAVICON);
   }
+
+  useEffect(() => {
+    return () => {
+      document.title = originalTitleRef.current ?? document.title;
+      setFavicon(DEFAULT_FAVICON);
+    };
+  }, []);
 
   return (
     <div
