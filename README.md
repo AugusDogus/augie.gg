@@ -1,6 +1,6 @@
 # augie.gg
 
-My personal website and blog.
+My personal website.
 
 ## Tech Stack
 

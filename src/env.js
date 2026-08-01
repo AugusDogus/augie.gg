@@ -8,6 +8,14 @@ export const env = createEnv({
    */
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]),
+    /**
+     * Reads the public GitHub contribution calendar. GitHub's GraphQL API
+     * requires auth even for public data (unauthenticated requests get a 403),
+     * so this is mandatory rather than optional.
+     *
+     * A classic PAT with NO scopes selected is sufficient.
+     */
+    GITHUB_TOKEN: z.string().min(1),
   },
 
   /**
@@ -25,6 +33,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**

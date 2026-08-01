@@ -89,7 +89,11 @@
 
 .dark {
   color-scheme: dark;
-  --background: color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white));
+  --background: color-mix(
+    in srgb,
+    var(--color-neutral-950) 95%,
+    var(--color-white)
+  );
   --foreground: var(--color-neutral-100);
   --card: color-mix(in srgb, var(--background) 98%, var(--color-white));
   --card-foreground: var(--color-neutral-100);
@@ -107,7 +111,11 @@
   );
   --accent: --alpha(var(--color-white) / 4%);
   --accent-foreground: var(--color-neutral-100);
-  --destructive: color-mix(in srgb, var(--color-red-500) 90%, var(--color-white));
+  --destructive: color-mix(
+    in srgb,
+    var(--color-red-500) 90%,
+    var(--color-white)
+  );
   --border: --alpha(var(--color-white) / 6%);
   --input: --alpha(var(--color-white) / 8%);
   --ring: oklch(0.552 0.016 285.938);
@@ -142,82 +150,4 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-    text-rendering: optimizeLegibility;
-  }
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 256px 256px;
-  }
-  html {
-    min-width: 360px;
-    scrollbar-gutter: stable;
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    text-wrap: balance;
-  }
-}
-
-/* Code block styling */
-pre {
-  background-color: #16161e;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  padding: 1rem;
-  margin: 1.5rem 0;
-  line-height: 1;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-pre::-webkit-scrollbar {
-  display: none;
-}
-
-code {
-  font-family: var(--font-sans), "Menlo", "Monaco", "Courier New", monospace;
-  font-size: 14px;
-  padding: 0.2em 0.4em;
-  border-radius: 0.3em;
-  background-color: var(--muted);
-}
-
-pre code {
-  background-color: transparent;
-  padding: 0;
-  border: none;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-pre code > span .sh__token--identifier {
-  color: white !important;
-}
-
-code:not(pre code) span {
-  font-weight: 500;
-  color: var(--foreground) !important;
-}
-
-pre code span {
-  font-weight: 500;
-}
-
-/* Table styling for MDX */
-table {
-  display: block;
-  max-width: fit-content;
-  overflow-x: auto;
-  white-space: nowrap;
-  text-align: left;
 }
