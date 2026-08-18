@@ -3,12 +3,11 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 import { fetchContributionCalendar } from "~/lib/github";
 
 /**
- * Square and gap sizing, shared by the grid, blank cells, and day squares so
- * they can't drift apart. Shrunk below md so all ~53 week columns fit narrow
- * viewports (53×4 + 52×1 = 264px) instead of clipping the newest weeks.
+ * Gap sizing is shared by the week and day axes. Squares derive their width
+ * from the 53-column grid so the graph fills its container at every viewport.
  */
 const gridGap = "gap-[1px] md:gap-[3px]";
-const square = "size-[4px] rounded-[2px] md:size-[9px]";
+const square = "aspect-square w-full rounded-[2px]";
 
 /** GitHub's own five-step scale, derived from the max in the current window. */
 function level(count: number, max: number): string {
@@ -61,9 +60,14 @@ export async function ContributionGraph() {
   return (
     <TooltipProvider>
       <section className="space-y-2" aria-label="GitHub contributions">
-        <div className={`flex overflow-hidden ${gridGap}`}>
+        <div
+          className={`grid w-full overflow-hidden ${gridGap}`}
+          style={{
+            gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))`,
+          }}
+        >
           {weeks.map((week, w) => (
-            <div key={w} className={`flex flex-col ${gridGap}`}>
+            <div key={w} className={`flex min-w-0 flex-col ${gridGap}`}>
               {week.map((day, d) =>
                 day === null ? (
                   <div key={d} className={square} aria-hidden="true" />
