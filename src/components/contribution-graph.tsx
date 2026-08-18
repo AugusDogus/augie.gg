@@ -3,11 +3,12 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 import { fetchContributionCalendar } from "~/lib/github";
 
 /**
- * Gap sizing is shared by the week and day axes. Squares derive their width
- * from the 53-column grid so the graph fills its container at every viewport.
+ * Mobile matches the larger, horizontally scrollable GitHub-style calendar.
+ * At md and above, squares derive their width from the 53-column grid.
  */
-const gridGap = "gap-[1px] md:gap-[3px]";
-const square = "aspect-square w-full rounded-[2px]";
+const gridGap = "gap-[3px]";
+const square =
+  "size-[10px] shrink-0 rounded-[2px] md:aspect-square md:size-auto md:w-full";
 
 /** GitHub's own five-step scale, derived from the max in the current window. */
 function level(count: number, max: number): string {
@@ -60,27 +61,29 @@ export async function ContributionGraph() {
   return (
     <TooltipProvider>
       <section className="space-y-2" aria-label="GitHub contributions">
-        <div
-          className={`grid w-full overflow-hidden ${gridGap}`}
-          style={{
-            gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))`,
-          }}
-        >
-          {weeks.map((week, w) => (
-            <div key={w} className={`flex min-w-0 flex-col ${gridGap}`}>
-              {week.map((day, d) =>
-                day === null ? (
-                  <div key={d} className={square} aria-hidden="true" />
-                ) : (
-                  <ContributionDay
-                    key={d}
-                    className={`${square} ${level(day.count, max)}`}
-                    label={`${day.count} contribution${day.count === 1 ? "" : "s"} on ${dayLabel(day.date)}`}
-                  />
-                ),
-              )}
-            </div>
-          ))}
+        <div className="w-full overflow-x-auto [direction:rtl]">
+          <div
+            className={`inline-flex min-w-max [direction:ltr] md:grid md:w-full md:min-w-0 ${gridGap}`}
+            style={{
+              gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {weeks.map((week, w) => (
+              <div key={w} className={`flex min-w-0 flex-col ${gridGap}`}>
+                {week.map((day, d) =>
+                  day === null ? (
+                    <div key={d} className={square} aria-hidden="true" />
+                  ) : (
+                    <ContributionDay
+                      key={d}
+                      className={`${square} ${level(day.count, max)}`}
+                      label={`${day.count} contribution${day.count === 1 ? "" : "s"} on ${dayLabel(day.date)}`}
+                    />
+                  ),
+                )}
+              </div>
+            ))}
+          </div>
         </div>
         <p className="text-muted-foreground/60 text-xs">
           {total.toLocaleString()} contributions ·{" "}
