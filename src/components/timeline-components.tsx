@@ -1,5 +1,15 @@
+import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
 import type { ComponentPropsWithoutRef } from "react";
 import { createMdxAnchor, createMdxCode } from "~/components/mdx";
+
+function TimelineLockIcon() {
+  return (
+    <LockSimpleIcon
+      alt="Private repository"
+      className="mr-1 inline-block size-3.5 -translate-y-px"
+    />
+  );
+}
 
 /**
  * Overrides for src/content/timeline.mdx, passed to the MDX component in
@@ -7,6 +17,7 @@ import { createMdxAnchor, createMdxCode } from "~/components/mdx";
  * year headings, bare links, and label chips instead of inline-code pills.
  */
 export const timelineComponents = {
+  LockIcon: TimelineLockIcon,
   h2: (props: ComponentPropsWithoutRef<"h2">) => (
     <h2
       className="text-muted-foreground/50 mb-3 text-xs font-normal tracking-[0.1em] text-balance not-first:mt-6"
