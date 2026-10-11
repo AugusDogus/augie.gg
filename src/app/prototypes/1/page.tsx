@@ -11,8 +11,9 @@ import {
 export const metadata: Metadata = { title: "Prototype 1 · Selected" };
 
 const selected = allProjects.filter((p) => p.featured && !isUpstream(p));
-const upstream = allProjects.filter(isUpstream);
-const archive = allProjects.filter((p) => !p.featured && !isUpstream(p));
+const upstream = allProjects.filter((p) => p.featured && isUpstream(p));
+const upstreamTotal = allProjects.filter(isUpstream).length;
+const archive = allProjects.filter((p) => !p.featured);
 const archiveYears = groupByYear(archive);
 
 function SectionHeading({
@@ -56,7 +57,7 @@ export default function SelectedPrototype() {
         <section aria-labelledby="upstream">
           <SectionHeading
             id="upstream"
-            aside={`${upstream.length} contributions`}
+            aside={`${upstream.length} of ${upstreamTotal} contributions`}
           >
             open source
           </SectionHeading>

@@ -13,7 +13,7 @@ export function PrototypeSwitcher() {
   const pathname = usePathname();
   const links = [
     { href: "/prototypes", label: "all", title: "All prototypes" },
-    { href: "/", label: "now", title: "Current home page" },
+    { href: "/", label: "live", title: "Current home page" },
     ...PROTOTYPES.map((prototype) => ({
       href: prototypeHref(prototype.slug),
       label: prototype.slug,
