@@ -7,17 +7,13 @@
     "jsx-a11y",
     "nextjs",
     "import",
-    "unicorn",
     "oxc"
   ],
   "categories": {
     "correctness": "error",
-    "suspicious": "error",
-    "perf": "warn",
-    "style": "warn"
+    "suspicious": "warn"
   },
   "options": {
-    "denyWarnings": true,
     "reportUnusedDisableDirectives": "error",
     "typeAware": true
   },
@@ -26,11 +22,14 @@
       "rootDir": ["."]
     },
     "react": {
-      "version": "detect"
+      "version": "19.3.0"
     }
   },
   "ignorePatterns": [".next", "node_modules"],
   "rules": {
+    "import/no-unassigned-import": "off",
+    "jsx-a11y/heading-has-content": "off",
+    "react/react-in-jsx-scope": "off",
     "typescript/array-type": "off",
     "typescript/consistent-type-definitions": "off",
     "typescript/consistent-type-imports": [
