@@ -1,9 +1,34 @@
 import Link from "next/link";
-import type { ComponentPropsWithoutRef } from "react";
+import {
+  isValidElement,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
 import { highlight } from "sugar-high";
 
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type CodeProps = ComponentPropsWithoutRef<"code">;
+
+function codeText(children: ReactNode): string {
+  if (typeof children === "string") return children;
+  if (typeof children === "number" || typeof children === "bigint") {
+    return String(children);
+  }
+  if (
+    children === null ||
+    children === undefined ||
+    typeof children === "boolean"
+  ) {
+    return "";
+  }
+  if (Array.isArray(children)) {
+    return children.map(codeText).join("");
+  }
+  if (isValidElement<{ children?: ReactNode }>(children)) {
+    return codeText(children.props.children);
+  }
+  return "";
+}
 
 /**
  * MDX link with the site's routing conventions: internal links go through
@@ -51,7 +76,7 @@ export function createMdxCode(className: string) {
     return (
       <code
         className={className}
-        dangerouslySetInnerHTML={{ __html: highlight(children as string) }}
+        dangerouslySetInnerHTML={{ __html: highlight(codeText(children)) }}
         {...props}
       />
     );
