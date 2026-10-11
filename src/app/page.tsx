@@ -167,9 +167,9 @@ export default function Home() {
           Organized by what someone is probably looking for first.
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Newest first inside each group. The archive keeps the old timeline's
-          dates, labels, private locks, and fork markers without making every
-          visitor parse one long chronology.
+          Newest first inside each group. The archive keeps the old
+          timeline&rsquo;s dates, labels, private locks, and fork markers
+          without making every visitor parse one long chronology.
         </p>
       </section>
 
