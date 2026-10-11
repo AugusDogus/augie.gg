@@ -93,8 +93,8 @@ declare global {
 }
 
 /**
- * Defaults for every MDX document, merged with per-document overrides (the
- * homepage timeline passes its own via `<Timeline components={...} />`).
+ * Defaults for every MDX document, merged with any per-document overrides
+ * passed as `<Doc components={...} />`.
  */
 export function useMDXComponents(
   components: MDXProvidedComponents = {},
