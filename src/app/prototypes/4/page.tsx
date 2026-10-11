@@ -80,12 +80,12 @@ export default function ChroniclePrototype() {
           <summary
             className={`text-muted-foreground hover:text-foreground grid cursor-pointer list-none gap-x-8 text-sm transition-colors md:grid-cols-[5ch_1fr] [&::-webkit-details-marker]:hidden ${focusRing}`}
           >
-            <span className="tabular-nums">
-              {first}–{String(last).slice(2)}
-            </span>
-            <span>
+            <span className="md:col-start-2">
               <span className="group-open:hidden">
-                {earlierCount} earlier projects
+                {earlierCount} earlier projects,{" "}
+                <span className="tabular-nums">
+                  {first}–{last}
+                </span>
               </span>
               <span className="hidden group-open:inline">
                 hide earlier work
