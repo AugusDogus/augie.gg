@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { ContributionGraph } from "~/components/contribution-graph";
+import { ProjectFilterIndex } from "~/components/project-filter-index";
 import { ThemeToggle } from "~/components/theme-toggle";
-import { timelineComponents } from "~/components/timeline-components";
-import Timeline from "~/content/timeline.mdx";
+import { projects } from "~/content/projects";
 
 const navLink =
   "text-muted-foreground hover:text-foreground text-sm transition-colors";
 
 export default function Home() {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <nav className="flex gap-4">
           <Link href="/resume" className={navLink}>
@@ -33,7 +33,7 @@ export default function Home() {
 
       <ContributionGraph />
 
-      <Timeline components={timelineComponents} />
+      <ProjectFilterIndex projects={projects} />
     </div>
   );
 }
