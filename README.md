@@ -4,7 +4,7 @@ My personal website.
 
 ## Tech Stack
 
-- [Next.js 15](https://nextjs.org)
+- [Next.js 16](https://nextjs.org)
 - [Tailwind CSS](https://tailwindcss.com)
 - [shadcn/ui](https://ui.shadcn.com)
 - [MDX](https://mdxjs.com)
