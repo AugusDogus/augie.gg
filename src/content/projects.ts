@@ -10,7 +10,8 @@
  * - `featured: n` puts a project at position n of "Selected work". Give it a
  *   `highlight`: one line of verifiable evidence (stack, hard problem, scale).
  *   No invented numbers; round live counts down so they age gracefully.
- * - `notable` names an upstream contribution in the open source line.
+ * - `notable` names a merged upstream contribution in the "oss contributions"
+ *   line.
  * - Everything else is listed in the archive, grouped by year.
  */
 
@@ -40,7 +41,7 @@ export interface Project {
   featured?: number;
   /** Evidence line shown under a featured project. */
   highlight?: string;
-  /** Named in the open source line under "Selected work". */
+  /** Named in the "oss contributions" line under "Selected work". */
   notable?: boolean;
 }
 
