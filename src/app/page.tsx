@@ -49,11 +49,13 @@ function ContributionList() {
   return notableContributions.map((project, i) => (
     <Fragment key={project.title}>
       {i > 0 && (i === last ? (last > 1 ? ", and " : " and ") : ", ")}
-      {project.href ? (
-        <ExternalLink href={project.href}>{project.title}</ExternalLink>
-      ) : (
-        project.title
-      )}
+      <span className="whitespace-nowrap">
+        {project.href ? (
+          <ExternalLink href={project.href}>{project.title}</ExternalLink>
+        ) : (
+          project.title
+        )}
+      </span>
     </Fragment>
   ));
 }
@@ -94,8 +96,10 @@ export default function Home() {
           </ul>
           {notableContributions.length > 0 && (
             <p className="text-muted-foreground mt-10 text-sm leading-normal text-pretty">
-              <span className={`${eyebrow} mr-3`}>oss contributions</span>
-              Minor fixes and features, merged upstream in <ContributionList />.
+              <span className={`${eyebrow} mr-1.5 whitespace-nowrap`}>
+                OSS (albeit minor) contributions
+              </span>{" "}
+              <ContributionList />
             </p>
           )}
         </section>

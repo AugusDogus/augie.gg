@@ -36,8 +36,8 @@ Everything lands in the archive, grouped by year, unless you mark it:
 - `featured: n` moves it into **Selected work** at position `n` (1 is first).
   Add a `highlight`: one line of concrete, verifiable evidence such as the
   stack, a hard problem, or real usage. Don't invent numbers.
-- `notable: true` names a merged upstream contribution in the **oss
-  contributions** line under Selected work. It also stays in the archive.
+- `notable: n` names a merged upstream contribution at position `n` of the OSS
+  line under Selected work. It also stays in the archive.
 
 ## Development
 

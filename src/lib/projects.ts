@@ -13,9 +13,9 @@ export const featuredProjects: readonly Project[] = projects
   .filter((project) => project.featured !== undefined)
   .sort((a, b) => (a.featured ?? 0) - (b.featured ?? 0));
 
-export const notableContributions: readonly Project[] = newestFirst.filter(
-  (project) => project.notable,
-);
+export const notableContributions: readonly Project[] = projects
+  .filter((project) => project.notable !== undefined)
+  .sort((a, b) => (a.notable ?? 0) - (b.notable ?? 0));
 
 export const archivedProjects: readonly Project[] = newestFirst.filter(
   (project) => project.featured === undefined,

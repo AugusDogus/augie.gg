@@ -10,8 +10,8 @@
  * - `featured: n` puts a project at position n of "Selected work". Give it a
  *   `highlight`: one line of verifiable evidence (stack, hard problem, scale).
  *   No invented numbers; round live counts down so they age gracefully.
- * - `notable` names a merged upstream contribution in the "oss contributions"
- *   line.
+ * - `notable: n` names a merged upstream contribution at position n of the
+ *   OSS line.
  * - Everything else is listed in the archive, grouped by year.
  */
 
@@ -41,8 +41,8 @@ export interface Project {
   featured?: number;
   /** Evidence line shown under a featured project. */
   highlight?: string;
-  /** Named in the "oss contributions" line under "Selected work". */
-  notable?: boolean;
+  /** Position in the OSS line under "Selected work", starting at 1. */
+  notable?: number;
 }
 
 export const projects: Project[] = [
@@ -142,7 +142,7 @@ export const projects: Project[] = [
     blurb:
       "Fixed missing GNOME and KDE launcher icons in the in-repo AUR packages by installing the AppImage's hicolor icon set.",
     labels: ["oss"],
-    notable: true,
+    notable: 1,
   },
   {
     title: "Little Age",
@@ -403,7 +403,7 @@ export const projects: Project[] = [
     blurb:
       "Fixed a WebView2 deadlock on window resize from worker threads ([#83](https://github.com/blackboardsh/electrobun/pull/83)) and Windows tar extraction failures under MSYS and Git Bash ([#76](https://github.com/blackboardsh/electrobun/pull/76)).",
     labels: ["oss"],
-    notable: true,
+    notable: 3,
   },
   {
     title: "screenshot",
@@ -484,7 +484,6 @@ export const projects: Project[] = [
     blurb:
       "Contributed FFmpeg audio language preferences, adopted upstream with [credit in the changelog and release](https://github.com/chrisbenincasa/tunarr/pull/1039#issuecomment-2600977338).",
     labels: ["oss"],
-    notable: true,
   },
 
   // 2024
@@ -537,7 +536,7 @@ export const projects: Project[] = [
     blurb:
       "Made the curl install script hand off to the Windows installer when run through Cygwin.",
     labels: ["oss"],
-    notable: true,
+    notable: 2,
   },
 
   // 2023
