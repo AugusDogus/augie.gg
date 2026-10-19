@@ -1,6 +1,9 @@
 import { ContributionDay } from "~/components/contribution-day";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import { fetchContributionCalendar } from "~/lib/github";
+import {
+  type ContributionLevel,
+  fetchContributionCalendar,
+} from "~/lib/github";
 
 /**
  * Mobile matches the larger, horizontally scrollable GitHub-style calendar.
@@ -10,14 +13,23 @@ const gridGap = "gap-[3px]";
 const square =
   "size-[10px] shrink-0 rounded-[2px] md:aspect-square md:size-auto md:w-full";
 
-/** GitHub's own five-step scale, derived from the max in the current window. */
-function level(count: number, max: number): string {
-  if (count === 0) return "bg-foreground/[0.06]";
-  const ratio = count / Math.max(max, 1);
-  if (ratio < 0.25) return "bg-foreground/20";
-  if (ratio < 0.5) return "bg-foreground/40";
-  if (ratio < 0.75) return "bg-foreground/60";
-  return "bg-foreground/85";
+function shade(level: ContributionLevel): string {
+  switch (level) {
+    case "NONE":
+      return "bg-foreground/[0.06]";
+    case "FIRST_QUARTILE":
+      return "bg-foreground/20";
+    case "SECOND_QUARTILE":
+      return "bg-foreground/40";
+    case "THIRD_QUARTILE":
+      return "bg-foreground/60";
+    case "FOURTH_QUARTILE":
+      return "bg-foreground/85";
+    default: {
+      const unreachable: never = level;
+      return unreachable;
+    }
+  }
 }
 
 function monthRange(firstDay: string, lastDay: string): string {
@@ -56,7 +68,6 @@ export async function ContributionGraph() {
   }
 
   const { total, weeks, firstDay, lastDay } = result.calendar;
-  const max = Math.max(...weeks.flat().map((day) => day?.count ?? 0), 1);
 
   return (
     <TooltipProvider>
@@ -76,7 +87,7 @@ export async function ContributionGraph() {
                   ) : (
                     <ContributionDay
                       key={d}
-                      className={`${square} ${level(day.count, max)}`}
+                      className={`${square} ${shade(day.level)}`}
                       label={`${day.count} contribution${day.count === 1 ? "" : "s"} on ${dayLabel(day.date)}`}
                     />
                   ),

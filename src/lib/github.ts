@@ -22,6 +22,7 @@ const QUERY = `
               date
               weekday
               contributionCount
+              contributionLevel
             }
           }
         }
@@ -29,6 +30,20 @@ const QUERY = `
     }
   }
 `;
+
+const contributionLevelSchema = z.enum([
+  "NONE",
+  "FIRST_QUARTILE",
+  "SECOND_QUARTILE",
+  "THIRD_QUARTILE",
+  "FOURTH_QUARTILE",
+]);
+
+/**
+ * GitHub's own shade for the day. It buckets by quartiles of the user's
+ * contribution counts, so one outlier day doesn't wash out the rest.
+ */
+export type ContributionLevel = z.infer<typeof contributionLevelSchema>;
 
 const responseSchema = z.object({
   data: z.object({
@@ -44,6 +59,7 @@ const responseSchema = z.object({
                     date: z.string(),
                     weekday: z.number().min(0).max(6),
                     contributionCount: z.number(),
+                    contributionLevel: contributionLevelSchema,
                   }),
                 ),
               }),
@@ -59,6 +75,7 @@ export interface ContributionDay {
   /** Calendar date, `YYYY-MM-DD`. */
   date: string;
   count: number;
+  level: ContributionLevel;
 }
 
 export interface ContributionCalendar {
@@ -143,7 +160,11 @@ export async function fetchContributionCalendar(): Promise<CalendarResult> {
       null,
     ];
     for (const day of week.contributionDays) {
-      column[day.weekday] = { date: day.date, count: day.contributionCount };
+      column[day.weekday] = {
+        date: day.date,
+        count: day.contributionCount,
+        level: day.contributionLevel,
+      };
     }
     return column;
   });
