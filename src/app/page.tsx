@@ -94,8 +94,8 @@ export default function Home() {
           </ul>
           {notableContributions.length > 0 && (
             <p className="text-muted-foreground mt-10 text-sm leading-normal text-pretty">
-              <span className={`${eyebrow} mr-3`}>open source</span>
-              Fixes and features upstream in <ContributionList />.
+              <span className={`${eyebrow} mr-3`}>oss contributions</span>
+              Minor fixes and features, merged upstream in <ContributionList />.
             </p>
           )}
         </section>
