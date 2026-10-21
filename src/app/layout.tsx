@@ -30,6 +30,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${instrument.variable} ${newsreader.variable}`}>
+      <head>
+        <link rel="preload" as="image" href="/flight4cover_redux_spread.jpg" />
+      </head>
       <body className="min-h-dvh antialiased [text-rendering:optimizeLegibility]">
         <a className="skip-link" href="#main">
           Skip to content

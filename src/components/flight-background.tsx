@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "~/components/ui/button";
-import type { createBackground } from "~/lib/flight/background";
+import { createBackground } from "~/lib/flight/background";
 
 // The persistent root background and the home caption share one motion preference.
 let paused = false;
@@ -51,12 +51,9 @@ export function FlightBackground() {
     image.src = "/flight4cover_redux_spread.jpg";
     async function initialize() {
       try {
-        const [module] = await Promise.all([
-          import("~/lib/flight/background"),
-          image.decode(),
-        ]);
+        await image.decode();
         if (disposed || !canvas.current) return;
-        const background = module.createBackground(canvas.current, image);
+        const background = createBackground(canvas.current, image);
         renderer.current = background;
         background.setPlaying(activeRef.current);
         setReady(true);

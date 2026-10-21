@@ -37,14 +37,8 @@ export function renderTexture(image: HTMLImageElement) {
     true,
   );
   sampleContext.drawImage(image, 0, 0, sampleWidth, sampleHeight);
-  const pixels = sampleContext.getImageData(
-    0,
-    0,
-    sampleWidth,
-    sampleHeight,
-  ).data;
-  context.fillStyle = "rgb(8,40,57)";
-  context.fillRect(0, 0, width, height);
+  const imageData = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
+  const pixels = imageData.data;
   for (let y = 0; y < sampleHeight; y++) {
     for (let x = 0; x < sampleWidth; x++) {
       const index = (y * sampleWidth + x) * 4;
@@ -53,13 +47,16 @@ export function renderTexture(image: HTMLImageElement) {
         b = pixels[index + 2];
       if (r === undefined || g === undefined || b === undefined)
         throw new Error("Artwork pixel buffer is incomplete");
-      const color = [r, g, b].map((c) =>
-        ditherChannel(contrastChannel(c, 110), x, y),
-      );
-      context.fillStyle = `rgb(${color.join(",")})`;
-      context.fillRect(x * 2, y * 2, 2.5, 2.5);
+      pixels[index] = ditherChannel(contrastChannel(r, 110), x, y);
+      pixels[index + 1] = ditherChannel(contrastChannel(g, 110), x, y);
+      pixels[index + 2] = ditherChannel(contrastChannel(b, 110), x, y);
     }
   }
+  // Expand the dither cells in one draw instead of issuing 262,200 rectangles.
+  sampleContext.putImageData(imageData, 0, 0);
+  context.imageSmoothingEnabled = false;
+  context.drawImage(sample, 0, 0, width, height);
+  context.imageSmoothingEnabled = true;
   context.globalAlpha = 0.15;
   context.drawImage(image, 0, 0, width, height);
   let seed = 1607;
