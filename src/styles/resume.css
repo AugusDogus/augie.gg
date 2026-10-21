@@ -1,0 +1,220 @@
+.resume-content .contact-link {
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.resume-content .contact-link:hover {
+  color: var(--ink);
+}
+.resume-content .copy-note {
+  left: 0;
+  right: auto;
+  max-width: min(240px, 60vw);
+  transform-origin: bottom left;
+}
+.resume-content .copy-note::after {
+  right: auto;
+  left: 20px;
+}
+.resume-page {
+  width: min(780px, 100%);
+  padding: 32px var(--gutter) 50px;
+  box-sizing: content-box;
+}
+.resume-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.resume-sheet {
+  padding: 36px 40px;
+}
+.resume-content h1 {
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  margin-bottom: 20px;
+}
+.resume-content h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  margin: 28px 0 18px;
+}
+.resume-content h3 {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 24px 0 8px;
+}
+.resume-content p,
+.resume-content li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4d5e65;
+}
+.resume-content em {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--muted);
+}
+.resume-content strong {
+  font-weight: 500;
+}
+.resume-content ul {
+  margin: 14px 0 0;
+  padding-left: 18px;
+}
+.resume-content li {
+  padding-left: 3px;
+  margin-bottom: 7px;
+}
+.resume-content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 26px 0 0;
+}
+.resume-content a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.resume-content ul {
+  list-style: disc;
+}
+@media (max-width: 1000px) {
+  .resume-page {
+    width: auto;
+    box-sizing: border-box;
+  }
+}
+@media (max-width: 600px) {
+  .resume-page {
+    padding-top: 20px;
+  }
+  .resume-sheet {
+    padding: 26px 22px;
+    border-radius: 15px;
+  }
+  .resume-content h1 {
+    font-size: 29px;
+  }
+  .resume-content h2 {
+    font-size: 21px;
+  }
+  .resume-content h3 {
+    font-size: 15px;
+  }
+  .resume-content p,
+  .resume-content li {
+    font-size: 13px;
+  }
+  .resume-nav .raised-button {
+    padding: 0 11px;
+    font-size: 11px;
+  }
+}
+@page {
+  size: letter;
+  margin: 0.4in 0.5in;
+}
+@media print {
+  :root,
+  body {
+    background: white;
+    color: black;
+  }
+  .artwork,
+  .resume-nav,
+  .skip-link,
+  .copy-note,
+  .art-caption {
+    display: none;
+  }
+  .resume-page,
+  .resume-sheet {
+    margin: 0;
+    padding: 0;
+    width: auto;
+    max-width: none;
+  }
+  .material {
+    background: white;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .resume-content,
+  .resume-content * {
+    color: black;
+  }
+  .resume-content h1 {
+    font-size: 22pt;
+    line-height: 1.1;
+    margin: 0 0 4pt;
+  }
+  .resume-content > p:first-of-type {
+    margin: 0 0 6pt;
+  }
+  .resume-content > p:first-of-type br {
+    display: none;
+  }
+  .resume-content > p:first-of-type strong:not(:first-child) {
+    margin-left: 12pt;
+  }
+  .resume-content h2 {
+    font-size: 11.5pt;
+    margin: 5pt 0 3pt;
+    break-after: avoid;
+  }
+  .resume-content h3 {
+    font-size: 10pt;
+    line-height: 1.2;
+    margin: 4pt 0 2pt;
+    break-after: avoid;
+  }
+  .resume-content p,
+  .resume-content li {
+    font-size: 9.5pt;
+    line-height: 1.15;
+    color: black;
+  }
+  .resume-content ul {
+    padding-left: 12pt;
+    margin: 2pt 0 0;
+  }
+  .resume-content li {
+    margin-bottom: 0.75pt;
+    padding-left: 1pt;
+    break-inside: avoid;
+  }
+  .resume-content em {
+    font-size: 9pt;
+    color: #444;
+  }
+  .resume-content hr {
+    margin: 4pt 0 0;
+    border-color: #bbb;
+  }
+  .resume-role {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12pt;
+    margin: 4pt 0 2pt;
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  .resume-role h3 {
+    margin: 0;
+  }
+  .resume-role p {
+    white-space: nowrap;
+  }
+  .resume-content .contact-link {
+    padding: 0;
+    margin: 0;
+    text-decoration: none;
+  }
+}
