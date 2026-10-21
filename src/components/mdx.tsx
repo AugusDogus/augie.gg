@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmailCopy } from "~/components/email-copy";
 import {
   isValidElement,
   type ComponentPropsWithoutRef,
@@ -37,6 +38,7 @@ function codeText(children: ReactNode): string {
  */
 export function createMdxAnchor(className: string) {
   function MdxAnchor({ href, children, ...props }: AnchorProps) {
+    if (href === "mailto:hi@augie.gg") return <EmailCopy />;
     if (href?.startsWith("/")) {
       return (
         <Link href={href} className={className} {...props}>

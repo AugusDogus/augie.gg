@@ -6,13 +6,13 @@
  *   GitHub metadata; display order is derived from it and ties keep file order.
  * - `blurb` is one sentence and supports inline links: `[text](https://...)`.
  * - Leave `href` off for private repos and pre-GitHub work; set `private` to
- *   show the lock icon, `fork` to show the ⑂ marker (name upstream in the blurb).
+ *   show a private repository note; name upstream forks in the blurb.
  * - `featured: n` puts a project at position n of "Selected work". Give it a
  *   `highlight`: one line of verifiable evidence (stack, hard problem, scale).
  *   No invented numbers; round live counts down so they age gracefully.
  * - `notable: n` names a merged upstream contribution at position n of the
  *   OSS line.
- * - Everything else is listed in the archive, grouped by year.
+ * - Non-featured projects appear in Everything else, grouped by year.
  */
 
 export type Label =
@@ -33,7 +33,7 @@ export interface Project {
   date: string;
   blurb: string;
   labels?: Label[];
-  /** Private repo; rendered with a lock icon. */
+  /** Private repo; rendered with a private repository note. */
   private?: boolean;
   /** Fork of another repo; the blurb names upstream. */
   fork?: boolean;
@@ -43,6 +43,8 @@ export interface Project {
   highlight?: string;
   /** Position in the OSS line under "Selected work", starting at 1. */
   notable?: number;
+  /** Short label for the contribution footer. */
+  contributionName?: string;
 }
 
 export const projects: Project[] = [
@@ -106,7 +108,7 @@ export const projects: Project[] = [
     private: true,
     featured: 5,
     highlight:
-      "Built on GPUI, the GPU-accelerated UI framework behind the Zed editor",
+      "Built on GPUI, the GPU-accelerated UI framework behind the Zed editor.",
   },
   {
     title: "pomodoro",
@@ -143,6 +145,7 @@ export const projects: Project[] = [
       "Fixed missing GNOME and KDE launcher icons in the in-repo AUR packages by installing the AppImage's hicolor icon set.",
     labels: ["oss"],
     notable: 1,
+    contributionName: "T3 Code",
   },
   {
     title: "Little Age",
@@ -255,6 +258,8 @@ export const projects: Project[] = [
   },
   {
     title: "vercel-labs/portless",
+    notable: 3,
+    contributionName: "Portless",
     href: "https://github.com/vercel-labs/portless/pull/122",
     date: "2026-03-16",
     blurb: "Documented the Windows requirements.",
@@ -339,7 +344,7 @@ export const projects: Project[] = [
     labels: ["active"],
     featured: 4,
     highlight:
-      "iOS, Android, and browser extension on one tRPC API; tabs arrive live over SSE",
+      "iOS, Android, and a browser extension share one tRPC API. Tabs arrive live over server-sent events.",
   },
   {
     title: "hyperimport",
@@ -387,7 +392,7 @@ export const projects: Project[] = [
     labels: ["active"],
     featured: 3,
     highlight:
-      "End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native",
+      "End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native.",
   },
   {
     title: "create-electrobun-react",
@@ -403,7 +408,6 @@ export const projects: Project[] = [
     blurb:
       "Fixed a WebView2 deadlock on window resize from worker threads ([#83](https://github.com/blackboardsh/electrobun/pull/83)) and Windows tar extraction failures under MSYS and Git Bash ([#76](https://github.com/blackboardsh/electrobun/pull/76)).",
     labels: ["oss"],
-    notable: 3,
   },
   {
     title: "screenshot",
@@ -422,7 +426,7 @@ export const projects: Project[] = [
     labels: ["active"],
     featured: 2,
     highlight:
-      "220k+ vehicles across 200+ yards and seven inventory networks, with paid plans",
+      "Inventory refreshed daily, with saved searches and new-vehicle alerts by email or Discord.",
   },
   {
     title: "metrics",
@@ -447,7 +451,7 @@ export const projects: Project[] = [
     labels: ["wip"],
     featured: 1,
     highlight:
-      "Native GameCube and Wii clients in C: H.264 over HLS, TLS 1.2, synced with web viewers",
+      "Native GameCube and Wii clients in C stream H.264 over HLS, with TLS 1.2 and playback synced to web viewers.",
   },
   {
     title: "awesome-windows",
@@ -537,6 +541,7 @@ export const projects: Project[] = [
       "Made the curl install script hand off to the Windows installer when run through Cygwin.",
     labels: ["oss"],
     notable: 2,
+    contributionName: "Bun",
   },
 
   // 2023

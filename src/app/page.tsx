@@ -1,139 +1,127 @@
 import Link from "next/link";
-import { Fragment, type ReactNode } from "react";
-import { ContributionGraph } from "~/components/contribution-graph";
 import {
+  FileTextIcon,
+  GithubLogoIcon,
+  CaretDownIcon,
+} from "@phosphor-icons/react/ssr";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Accordion } from "~/components/ui/accordion";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "~/components/ui/collapsible";
+import {
+  FeaturedEntry,
   ArchiveEntry,
   ExternalLink,
-  FeaturedEntry,
-  eyebrow,
 } from "~/components/projects";
-import { ThemeToggle } from "~/components/theme-toggle";
+import { EmailCopy } from "~/components/email-copy";
+import { ArtworkCaption } from "~/components/flight-background";
 import {
-  archivedProjects,
   featuredProjects,
-  groupByYear,
+  archivedProjects,
   notableContributions,
+  groupByYear,
 } from "~/lib/projects";
 
-const navLink =
-  "text-muted-foreground hover:text-foreground text-sm transition-colors";
-
-const archiveYears = groupByYear(archivedProjects);
-
-function SectionHeading({
-  id,
-  children,
-  aside,
-}: {
-  id: string;
-  children: ReactNode;
-  aside?: ReactNode;
-}) {
+export default function HomePage() {
   return (
-    <div className="mb-6 flex items-baseline justify-between gap-4">
-      <h2 id={id} className={eyebrow}>
-        {children}
-      </h2>
-      {aside && (
-        <span className="text-muted-foreground/80 text-xs tabular-nums">
-          {aside}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/** "a, b, c, and d" with each contribution linked. */
-function ContributionList() {
-  const last = notableContributions.length - 1;
-  return notableContributions.map((project, i) => (
-    <Fragment key={project.title}>
-      {i > 0 && (i === last ? (last > 1 ? ", and " : " and ") : ", ")}
-      <span className="whitespace-nowrap">
-        {project.href ? (
-          <ExternalLink href={project.href}>{project.title}</ExternalLink>
-        ) : (
-          project.title
-        )}
-      </span>
-    </Fragment>
-  ));
-}
-
-export default function Home() {
-  return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <nav className="flex gap-4">
-          <Link href="/resume" className={navLink}>
-            resume
-          </Link>
-          <a
-            href="https://github.com/AugusDogus"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={navLink}
-          >
-            github
-          </a>
+    <main
+      id="main"
+      tabIndex={-1}
+      className="portfolio-page px-(--gutter) pt-[34px] pb-6 max-[600px]:pt-[26px]"
+    >
+      <header className="site-header mb-[30px] flex items-center justify-between gap-6 max-[600px]:mb-[25px] max-[600px]:flex-col max-[600px]:items-start max-[600px]:gap-5">
+        <div>
+          <h1 className="font-[family-name:var(--font-newsreader)] text-[34px]/[1.15] font-medium tracking-[-.015em] text-[#f1f2e9] [text-shadow:0_1px_12px_#19344040] max-[600px]:text-[30px]">
+            Augie Luebbers
+          </h1>
+          <p className="mt-[9px] font-[system-ui,sans-serif] text-xs/normal text-[#e0e7e3] [text-shadow:0_1px_6px_#19344066]">
+            Product Engineer
+          </p>
+        </div>
+        <nav className="flex flex-wrap gap-[9px]" aria-label="Personal links">
+          <Button asChild>
+            <Link href="/resume">
+              <FileTextIcon aria-hidden="true" />
+              Résumé
+            </Link>
+          </Button>
+          <Button asChild>
+            <a
+              href="https://github.com/AugusDogus"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <GithubLogoIcon aria-hidden="true" />
+              GitHub
+            </a>
+          </Button>
         </nav>
-        <ThemeToggle />
       </header>
-
-      <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
-        Augie Luebbers
-      </h1>
-
-      <ContributionGraph />
-
-      <div className="space-y-16 pt-2">
-        <section aria-labelledby="selected">
-          <SectionHeading id="selected">selected work</SectionHeading>
-          <ul className="space-y-7">
+      <div className="portfolio-content w-full max-w-[560px] max-[1000px]:max-w-[520px]">
+        <Card
+          className="work-sheet px-[26px] pt-[23px] max-[600px]:rounded-[15px] max-[600px]:px-5 max-[600px]:pt-5"
+          aria-labelledby="work-title"
+        >
+          <h2
+            id="work-title"
+            className="pb-[17px] text-[17px]/[1.4] font-medium tracking-[-.02em] max-[600px]:pb-[15px]"
+          >
+            Selected work
+          </h2>
+          <Accordion type="multiple">
             {featuredProjects.map((project) => (
               <FeaturedEntry key={project.title} project={project} />
             ))}
-          </ul>
-          {notableContributions.length > 0 && (
-            <p className="text-muted-foreground mt-10 text-sm leading-normal text-pretty">
-              <span className={`${eyebrow} mr-1.5 whitespace-nowrap`}>
-                OSS (albeit minor) contributions
-              </span>{" "}
-              <ContributionList />
-            </p>
-          )}
-        </section>
-
-        <section aria-labelledby="archive">
-          <SectionHeading
-            id="archive"
-            aside={`${archivedProjects.length} projects since ${archiveYears.at(-1)?.year}`}
-          >
-            everything else
-          </SectionHeading>
-          <div className="space-y-8">
-            {archiveYears.map(({ year, projects }) => (
-              <section
-                key={year}
-                aria-labelledby={`year-${year}`}
-                className="grid gap-x-6 gap-y-2 md:grid-cols-[4ch_1fr]"
-              >
-                <h3
-                  id={`year-${year}`}
-                  className="text-muted-foreground/80 text-xs leading-6 font-normal tabular-nums md:sticky md:top-6 md:self-start"
-                >
-                  {year}
-                </h3>
-                <ul className="space-y-2.5">
-                  {projects.map((project) => (
-                    <ArchiveEntry key={project.title} project={project} />
-                  ))}
-                </ul>
-              </section>
-            ))}
+          </Accordion>
+          <Collapsible className="more-work border-border border-t">
+            <CollapsibleTrigger className="more-trigger flex w-full items-center justify-between py-5 text-[13px] font-medium [&>svg]:size-3.5 [&>svg]:text-[#718087] data-[state=open]:[&>svg]:rotate-180">
+              Everything else
+              <CaretDownIcon aria-hidden="true" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="project-history pb-[18px]">
+              {groupByYear(archivedProjects).map((group) => (
+                <section className="project-year pt-[25px]" key={group.year}>
+                  <h3 className="text-muted-foreground mb-[15px] text-xs/[1.6] font-medium">
+                    {group.year}
+                  </h3>
+                  <ul>
+                    {group.projects.map((project) => (
+                      <ArchiveEntry key={project.title} project={project} />
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+        <footer className="site-footer flex flex-wrap items-center justify-between gap-x-6 gap-y-[18px] px-[3px] pt-[23px] pb-3 text-[#e0e7e2] [text-shadow:0_1px_7px_#19344080] max-[600px]:gap-x-[18px] max-[600px]:pt-[22px] [&>.email-contact]:ml-auto [&>.email-contact]:shrink-0">
+          <div className="contributions max-w-full flex-none">
+            <h2 className="mb-2.5 text-[11px] font-normal">
+              Open source (minor) contributions
+            </h2>
+            <div className="flex flex-wrap gap-[18px]">
+              {notableContributions.map(
+                (project) =>
+                  project.href && (
+                    <ExternalLink
+                      key={project.title}
+                      href={project.href}
+                      className="inline-flex items-center gap-1.5 text-[11px] hover:text-white"
+                    >
+                      {project.contributionName ?? project.title}
+                    </ExternalLink>
+                  ),
+              )}
+            </div>
           </div>
-        </section>
+          <EmailCopy />
+        </footer>
       </div>
-    </div>
+      <ArtworkCaption />
+    </main>
   );
 }
