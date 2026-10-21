@@ -68,10 +68,18 @@ The background uses Kazu Kibuishi's _Flight_ artwork, linked to its
 The artwork belongs to its artist, not this repository's code license.
 Fonts and their licenses live in `src/assets/fonts`.
 
+`src/styles/flight-poster.css` embeds the initial filtered frame (AVIF) and a
+small backdrop (WebP) in the render-blocking stylesheet. This makes the first
+paint complete without waiting for image requests or animation JavaScript.
+The poster was captured from `FlowSurface.render` at time zero with the initial
+whale and speck snapshots, before viewport scaling and feathering. If the
+artwork or treatment changes, recapture that frame. The live canvas replaces
+it only after its first draw; its sizing, shading, and masks match the poster.
+
 `src/lib/flight` contains the two-pixel dither, GPU filter displacement,
 particle whales, and sparse cursor trails. The animation stops on the résumé,
 when the tab is hidden, when paused, or when reduced motion is requested.
 WebGL failure falls back to the 2D artwork; loading or canvas failure preserves
-the CSS image. React cleanup releases listeners, observers, frame callbacks,
+the pre-rendered background. React cleanup releases listeners, observers, frame callbacks,
 and GPU resources. Physics tests cover tail strokes, continuous crossings,
 offscreen re-entry, fixed-step springs, cursor falloff, and particle lifetime.

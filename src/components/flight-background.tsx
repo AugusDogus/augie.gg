@@ -62,7 +62,7 @@ export function FlightBackground() {
         setReady(true);
       } catch (error) {
         console.warn(
-          "The animated artwork could not load. The static background remains available.",
+          "The animated artwork could not load. The pre-rendered background remains available.",
           error,
         );
       }
@@ -75,8 +75,8 @@ export function FlightBackground() {
     };
   }, []);
   return (
-    <div className="artwork" aria-hidden="true">
-      <div className="artwork-static" data-ready={ready} />
+    <div className="artwork" data-ready={ready} aria-hidden="true">
+      <div className="artwork-poster" />
       <canvas id="sky" ref={canvas} />
     </div>
   );
