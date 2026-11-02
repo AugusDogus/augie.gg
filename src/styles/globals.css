@@ -147,7 +147,8 @@
     outline: 2px solid #365d70;
     outline-offset: 4px;
   }
-  h1:focus {
+  h1:focus,
+  main:focus {
     outline: none;
   }
   [hidden] {

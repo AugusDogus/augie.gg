@@ -39,8 +39,10 @@ export function createBackground(
     renderer.paint(context);
     context.globalCompositeOperation = "destination-out";
     context.fillStyle = fit.wide ? feathers.wide : feathers.tall;
-    if (fit.wide) context.fillRect(0, 0, 200, ART_HEIGHT);
-    else context.fillRect(0, 700, ART_WIDTH, ART_HEIGHT - 700);
+    // Start past the art edge: at a fractional offset its partly covered column
+    // would otherwise keep some alpha and show as a seam.
+    if (fit.wide) context.fillRect(-4, 0, 204, ART_HEIGHT);
+    else context.fillRect(0, 700, ART_WIDTH, ART_HEIGHT - 696);
     context.globalCompositeOperation = "source-over";
   }
   function layout() {
