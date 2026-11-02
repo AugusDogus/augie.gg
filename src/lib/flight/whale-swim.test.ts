@@ -126,3 +126,77 @@ test("a far whale fades in by age and dissolves by position", () => {
   }
   expect(far.opacity).toBe(0);
 });
+
+test("a neutral response leaves the swim bit-identical", () => {
+  const neutral = {
+    laneShift: 0,
+    bend: 0,
+    rateGain: 1,
+    airKick: 0,
+    coupling: 1,
+  };
+  const plain = hero(300, 0.4),
+    responding = hero(300, 0.4);
+  for (let i = 0; i < 60 * 30; i++) {
+    responding.respond(neutral);
+    expect(responding.step(H, under)).toEqual(plain.step(H, under));
+    expect([
+      responding.s,
+      responding.air,
+      responding.phase,
+      responding.lane,
+    ]).toEqual([plain.s, plain.air, plain.phase, plain.lane]);
+  }
+});
+
+test("moods shift the lane from the pass's base lane, slow the carry and kick the airspeed", () => {
+  const whale = hero(700);
+  whale.respawn(700, -12);
+  expect(whale.baseLane).toBe(-12);
+  whale.respond({
+    laneShift: -6,
+    bend: 3,
+    rateGain: 2,
+    airKick: 0,
+    coupling: 1,
+  });
+  expect(whale.lane).toBe(-18);
+  expect(whale.bend).toBe(3);
+  expect(whale.rate).toBeCloseTo(2 * whale.pace, 9);
+  const before = whale.air;
+  whale.respond({
+    laneShift: 0,
+    bend: 0,
+    rateGain: 1,
+    airKick: 1,
+    coupling: 1,
+  });
+  expect(whale.air).toBeCloseTo(before + POD.hero.cruise, 9);
+  const curious = {
+    laneShift: 0,
+    bend: 0,
+    rateGain: 1,
+    airKick: 0,
+    coupling: 0.55,
+  };
+  const lingering = hero(700);
+  for (let i = 0; i < 600; i++) {
+    lingering.respond(curious);
+    lingering.step(H, under);
+  }
+  const s = lingering.s;
+  for (let i = 0; i < 600; i++) {
+    lingering.respond(curious);
+    lingering.step(H, under);
+  }
+  expect((lingering.s - s) / 10).toBeCloseTo(26, 0);
+});
+
+test("a whale is hidden exactly while its opacity is zero", () => {
+  const far = new Swimmer(POD.far, 330, 0, 0, 3.9);
+  far.respawn(330, POD.far.lane, 1);
+  far.step(H, high);
+  expect(far.hidden).toBe(true);
+  while (far.age < 0.5) far.step(H, high);
+  expect(far.hidden).toBe(false);
+});

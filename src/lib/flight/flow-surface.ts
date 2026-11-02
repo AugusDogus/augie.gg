@@ -10,6 +10,9 @@ import { ART_HEIGHT, ART_WIDTH } from "./viewport";
 export type SurfaceSources = {
   print: PrintedArt;
   image: HTMLImageElement;
+  /** 600x437 RGBA: the baked lattice cells, with the rig code in alpha. */
+  cells: Uint8Array;
+  /** 600x437 RGB occluder layers. */
   mask: Uint8Array;
   streams: Readonly<Record<StreamId, Stream>>;
   vertices: Float32Array;
@@ -21,6 +24,7 @@ type Composite = {
   sky: SkyLayer;
   time: WebGLUniformLocation | null;
   brushes: WebGLUniformLocation | null;
+  rig: WebGLUniformLocation | null;
 };
 
 /**
@@ -72,7 +76,7 @@ export class FlowSurface {
 
   private initialize(): Composite {
     const gl = this.gl;
-    const { print, image, mask, streams, vertices } = this.sources;
+    const { print, image, cells, mask, streams, vertices } = this.sources;
     const sky = SkyLayer.create(this.scope, streams, mask, vertices);
     const program = this.scope.program(
       FULLSCREEN_VERTEX,
@@ -104,12 +108,26 @@ export class FlowSurface {
     };
     upload(0, gl.LINEAR, "printed artwork", print.canvas);
     upload(1, gl.LINEAR, "original artwork", image);
-    upload(2, gl.NEAREST, "print cell", print.cells);
+    upload(6, gl.LINEAR, "paint", print.sample);
+    // Raw bytes: the alpha channel is a rig code, not opacity.
+    this.scope.texture(2, gl.NEAREST, "print cell");
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      600,
+      437,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      cells,
+    );
     gl.useProgram(program);
     for (const [name, unit] of [
       ["artwork", 0],
       ["originalArt", 1],
       ["cells", 2],
+      ["paint", 6],
       ["light", LIGHT_UNIT],
       ["whales", WHALE_UNIT],
     ] as const)
@@ -121,6 +139,7 @@ export class FlowSurface {
       sky,
       time: gl.getUniformLocation(program, "time"),
       brushes: gl.getUniformLocation(program, "brushes[0]"),
+      rig: gl.getUniformLocation(program, "rig[0]"),
     };
   }
 
@@ -156,6 +175,7 @@ export class FlowSurface {
       this.brushData.set([brush.x, brush.y, brush.dx, brush.dy], index * 4),
     );
     gl.uniform4fv(composite.brushes, this.brushData);
+    gl.uniform4fv(composite.rig, sky.rig);
     gl.uniform1f(composite.time, time);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     return this.canvas;

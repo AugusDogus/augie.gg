@@ -20,6 +20,8 @@ type Run = {
 export class FramePolicy {
   /** Seconds since the last rendered frame, clamped; 0 on the first frame after reset(). */
   dt = 0;
+  /** The same gap unclamped, for measuring real input speeds across a stall. */
+  gap = 0;
   private current: FrameCap;
   private run: Run | null = null;
 
@@ -37,12 +39,14 @@ export class FramePolicy {
     if (!run) {
       this.run = { started: now, last: now, average: null, slowSince: null };
       this.dt = 0;
+      this.gap = 0;
       return true;
     }
     const gap = now - run.last;
     if (gap < MIN_GAP[this.current]) return false;
     run.last = now;
-    this.dt = Math.min(gap / 1000, MAX_DT);
+    this.gap = gap / 1000;
+    this.dt = Math.min(this.gap, MAX_DT);
     run.average =
       run.average === null
         ? gap

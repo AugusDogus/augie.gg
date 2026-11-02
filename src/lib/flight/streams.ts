@@ -8,10 +8,13 @@ import {
 import { random } from "./texture";
 
 export { ROUTE_SAMPLES };
-export type StreamId = "high" | "under";
-/** Draw order. */
-export const STREAM_IDS: readonly StreamId[] = ["high", "under"];
-export const WAKE_SLOTS = 8,
+export type StreamId = "high" | "under" | "veil";
+/** Draw order; bead seeds follow it, so new currents are appended. */
+export const STREAM_IDS: readonly StreamId[] = ["high", "under", "veil"];
+export const WHALE_WAKES = 8,
+  PLUCK_RECORDS = 3,
+  /** Whale wakes in slots 0..7, two pulses per pluck record in 8..13. */
+  WAKE_SLOTS = WHALE_WAKES + 2 * PLUCK_RECORDS,
   BODY_SLOTS = 3,
   BEAD_FLOATS = 6;
 
@@ -22,6 +25,35 @@ export const WOBBLE = { amplitude: 0.5, wavelength: 170, rate: 0.27 } as const;
 export const MEANDER = { amplitude: 1.2, wavelength: 41 } as const;
 /** Wake bulge in px (also a shader literal), and pulse decay and life in s. */
 export const WAKE = { lateral: 4, decay: 1.6, life: 4.8 } as const;
+/** Pluck pulses: speed split from the flow, amplitude share, decay and life in s, packed age scale; and crossing detection. */
+export const PLUCK = {
+  split: 90,
+  share: 0.7,
+  decay: 1.4,
+  life: 3.5,
+  onset: 6,
+  /** Extra sideways kink of a pluck pulse, px, on top of the shared wake bulge. */
+  kink: 10,
+  /** Normal speeds in px/s: below `threshold` nothing plucks, full strength at threshold + scale. */
+  threshold: 150,
+  scale: 500,
+  /** Crossing band beyond the half width, px. */
+  reach: 40,
+  /** Per-stream refractory, s. */
+  refractory: 0.3,
+} as const;
+/** The visitor's hand as a parting stone: band margin and speed limit, half length, heights and easing in s. */
+export const PARTING = {
+  margin: 12,
+  speed: 250,
+  length: 34,
+  hover: 9,
+  press: 12,
+  rise: 0.25,
+  fall: 0.3,
+  /** Parting is held off this long after a pluck on the same stream, s. */
+  hush: 0.3,
+} as const;
 
 export type StreamSpec = {
   controls: readonly Point[];
@@ -39,8 +71,14 @@ export type StreamSpec = {
   anchor: number;
   /** Arcs where whales dissolve in. */
   gate: readonly [number, number] | null;
+  /** Arcs where whales dissolve out. */
+  exit: readonly [number, number] | null;
   /** Arcs over which whale coupling ramps from 0 to 1. */
   boost: readonly [number, number] | null;
+  /** Mask layers that hide this current and its whales: near, wing, puffs. */
+  behind: readonly [near: number, wing: number, puffs: number];
+  /** Body slot the visitor's hand parts. */
+  handSlot: number;
 };
 
 export const STREAMS: Readonly<Record<StreamId, StreamSpec>> = {
@@ -66,7 +104,10 @@ export const STREAMS: Readonly<Record<StreamId, StreamSpec>> = {
     presence: { face: 0.55, fold: 1 },
     anchor: 782,
     gate: [315, 355],
+    exit: null,
     boost: [303, 390],
+    behind: [1, 0, 0],
+    handSlot: 2,
   },
   high: {
     controls: [
@@ -89,7 +130,37 @@ export const STREAMS: Readonly<Record<StreamId, StreamSpec>> = {
     presence: { face: 0.5, fold: 1 },
     anchor: 531,
     gate: null,
+    exit: null,
     boost: null,
+    behind: [1, 0, 0],
+    handSlot: 1,
+  },
+  veil: {
+    controls: [
+      [180, 470],
+      [300, 490],
+      [400, 518],
+      [490, 558],
+      [580, 565],
+      [680, 566.5],
+      [770, 566],
+      [870, 560],
+      [980, 552],
+    ],
+    span: [24, 736],
+    fade: [110, 100],
+    halfWidth: 18,
+    fibersPerSheet: 3,
+    flow: 11,
+    twist: { wavelength: 380, drift: 7 },
+    swell: { amplitude: 3, wavelength: 520, speed: 6 },
+    presence: { face: 0.4, fold: 0.95 },
+    anchor: 474,
+    gate: [153, 205],
+    exit: [676, 716],
+    boost: null,
+    behind: [0, 1, 1],
+    handSlot: 1,
   },
 };
 
@@ -104,6 +175,8 @@ export type StreamStatic = {
   /** Fade-in px, fade-out px, face presence, fold presence. */
   look: Float32Array;
   swell: number;
+  /** Mask layers (near, wing, puffs) that hide the beads. */
+  behind: Float32Array;
   /** count × (v, sheet, arc0, hash, meander phase, strength). */
   beads: Float32Array;
   count: number;
@@ -118,6 +191,9 @@ export type StreamFrame = {
   wakes: Float32Array;
 };
 
+/** 2σ² of a pulse along the current, px²; a shader literal. */
+const PULSE_SPREAD = 968;
+const probe: RouteFrame = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
 const modulo = (value: number, size: number) => ((value % size) + size) % size;
 export const smoothstep = (from: number, to: number, value: number) => {
   const t = Math.max(0, Math.min(1, (value - from) / (to - from)));
@@ -126,10 +202,10 @@ export const smoothstep = (from: number, to: number, value: number) => {
 
 /** Stroke records, packed as pulses that ride the current at its flow speed. */
 export class WakeRing {
-  static readonly CAPACITY = WAKE_SLOTS;
-  private readonly arcs = new Float64Array(WAKE_SLOTS);
-  private readonly times = new Float64Array(WAKE_SLOTS).fill(-Infinity);
-  private readonly strengths = new Float64Array(WAKE_SLOTS);
+  static readonly CAPACITY = WHALE_WAKES;
+  private readonly arcs = new Float64Array(WHALE_WAKES);
+  private readonly times = new Float64Array(WHALE_WAKES).fill(-Infinity);
+  private readonly strengths = new Float64Array(WHALE_WAKES);
   private next = 0;
 
   /** Overwrites the oldest record once all slots are used. */
@@ -137,32 +213,79 @@ export class WakeRing {
     this.arcs[this.next] = s;
     this.times[this.next] = time;
     this.strengths[this.next] = strength;
-    this.next = (this.next + 1) % WAKE_SLOTS;
+    this.next = (this.next + 1) % WHALE_WAKES;
   }
 
-  pack(time: number, flow: number, out: Float32Array) {
-    for (let k = 0; k < WAKE_SLOTS; k++) {
+  /** Writes CAPACITY slots starting at slot `offset`. */
+  pack(time: number, flow: number, out: Float32Array, offset = 0) {
+    for (let k = 0; k < WHALE_WAKES; k++) {
       const age = time - valueAt(this.times, k);
       const live = age >= 0 && age <= WAKE.life;
-      out[k * 4] = live ? valueAt(this.arcs, k) + flow * age : 0;
-      out[k * 4 + 1] = live
+      const slot = (offset + k) * 4;
+      out[slot] = live ? valueAt(this.arcs, k) + flow * age : 0;
+      out[slot + 1] = live
         ? valueAt(this.strengths, k) * Math.exp(-age / WAKE.decay)
         : 0;
-      out[k * 4 + 2] = live ? age : 0;
-      out[k * 4 + 3] = 0;
+      out[slot + 2] = live ? age : 0;
+      out[slot + 3] = 0;
     }
     return out;
   }
 }
 
-function beadAttributes(index: number, spec: StreamSpec) {
-  const next = random(1607 + index);
-  const fibers = spec.fibersPerSheet * 2;
-  const perFiber = Math.floor((spec.span[1] - spec.span[0]) / SPACING);
+/** Plucks, each packed as two pulses that run downstream and upstream of the crossing like a struck string. */
+export class PluckRing {
+  static readonly CAPACITY = PLUCK_RECORDS;
+  private readonly arcs = new Float64Array(PLUCK_RECORDS);
+  private readonly times = new Float64Array(PLUCK_RECORDS).fill(-Infinity);
+  private readonly strengths = new Float64Array(PLUCK_RECORDS);
+  private next = 0;
+
+  emit(s: number, time: number, strength: number) {
+    this.arcs[this.next] = s;
+    this.times[this.next] = time;
+    this.strengths[this.next] = strength;
+    this.next = (this.next + 1) % PLUCK_RECORDS;
+  }
+
+  /** Writes 2 × CAPACITY slots starting at slot `offset`; the packed age is scaled for a quick onset. */
+  pack(time: number, flow: number, out: Float32Array, offset = WHALE_WAKES) {
+    for (let k = 0; k < PLUCK_RECORDS; k++) {
+      const age = time - valueAt(this.times, k);
+      const live = age >= 0 && age <= PLUCK.life;
+      const amplitude = live
+        ? PLUCK.share *
+          valueAt(this.strengths, k) *
+          Math.exp(-age / PLUCK.decay)
+        : 0;
+      for (let q = 0; q < 2; q++) {
+        const side = q === 0 ? 1 : -1,
+          slot = (offset + 2 * k + q) * 4;
+        out[slot] = live
+          ? valueAt(this.arcs, k) + (flow + side * PLUCK.split) * age
+          : 0;
+        out[slot + 1] = amplitude;
+        out[slot + 2] = live ? PLUCK.onset * age : 0;
+        out[slot + 3] = 0;
+      }
+    }
+    return out;
+  }
+}
+
+/** Bead attributes for 2 × fibersPerSheet fibers with one bead per SPACING px of `span`. */
+export function beadAttributes(
+  seed: number,
+  span: number,
+  fibersPerSheet: number,
+) {
+  const next = random(seed);
+  const fibers = fibersPerSheet * 2;
+  const perFiber = Math.floor(span / SPACING);
   const beads = new Float32Array(fibers * perFiber * BEAD_FLOATS);
   let offset = 0;
   for (let f = 0; f < fibers; f++) {
-    const n = spec.fibersPerSheet,
+    const n = fibersPerSheet,
       j = Math.floor(f / 2);
     const v = -1 + (2 * j + 1) / n + ((next() * 2 - 1) * 0.3) / n;
     const phase = TAU * next(),
@@ -193,7 +316,9 @@ export class Stream {
   readonly end: number;
   readonly foldPhase: number;
   readonly gate: readonly [number, number] | null;
+  readonly exit: readonly [number, number] | null;
   readonly wakes = new WakeRing();
+  readonly plucks = new PluckRing();
   readonly uniforms: StreamStatic;
   readonly frame: StreamFrame = {
     clock: new Float32Array(4),
@@ -211,6 +336,7 @@ export class Stream {
     this.route = new Route(spec.controls);
     [this.start, this.end] = spec.span;
     this.gate = spec.gate;
+    this.exit = spec.exit;
     this.twistRate = TAU / spec.twist.wavelength;
     this.swellRate = TAU / spec.swell.wavelength;
     this.foldPhase = modulo(
@@ -219,7 +345,11 @@ export class Stream {
         WOBBLE.amplitude * Math.sin(spec.anchor / WOBBLE.wavelength),
       TAU,
     );
-    const beads = beadAttributes(STREAM_IDS.indexOf(id), spec);
+    const beads = beadAttributes(
+      1607 + STREAM_IDS.indexOf(id),
+      this.end - this.start,
+      spec.fibersPerSheet,
+    );
     this.uniforms = {
       route: this.route.table,
       range: Float32Array.of(
@@ -241,6 +371,7 @@ export class Stream {
         spec.presence.fold,
       ),
       swell: spec.swell.amplitude,
+      behind: Float32Array.from(spec.behind),
       beads,
       count: beads.length / BEAD_FLOATS,
     };
@@ -271,6 +402,60 @@ export class Stream {
   coupling(s: number) {
     const boost = this.spec.boost;
     return boost ? smoothstep(boost[0], boost[1], s) : 1;
+  }
+
+  /** Arc and signed offset (positive ventral) of painting point (x, y) from the swelling centerline. */
+  lateral(
+    x: number,
+    y: number,
+    time: number,
+    out: { s: number; d: number },
+  ): { s: number; d: number } {
+    const guess = this.route.arcAtX(x);
+    const at = this.centerline(guess, time, probe);
+    const s = guess + (x - at.x) * at.tx + (y - at.y) * at.ty;
+    this.centerline(s, time, at);
+    out.s = s;
+    out.d = (x - at.x) * at.nx + (y - at.y) * at.ny;
+    return out;
+  }
+
+  /** Whether arc s and offset d lie in the band, `margin` px past its half width. */
+  holds(s: number, d: number, margin: number) {
+    return (
+      s >= this.start &&
+      s <= this.end &&
+      Math.abs(d) < this.halfWidth(s) + margin
+    );
+  }
+
+  /** Kinks the current at arc s; the sign of `strength` is the side it is pushed toward. */
+  pluck(s: number, strength: number, time: number) {
+    this.plucks.emit(s, time, strength);
+  }
+
+  /** Sets the hand's parting body; a zero height frees the slot. */
+  part(s: number, d: number, height: number) {
+    const slot = this.spec.handSlot * 4,
+      bodies = this.frame.bodies;
+    const open = height > 0;
+    bodies[slot] = open ? s : 0;
+    bodies[slot + 1] = open ? d : 0;
+    bodies[slot + 2] = open ? PARTING.length : 1;
+    bodies[slot + 3] = open ? height : 0;
+  }
+
+  /** The bead shader's wake pulse at arc s for packed `wakes`, clamped to ±1 so WAKE.lateral bounds the bulge. */
+  pulse(s: number, wakes: Float32Array) {
+    let sum = 0;
+    for (let k = 0; k < WAKE_SLOTS; k++) {
+      const d = s - valueAt(wakes, k * 4);
+      sum +=
+        valueAt(wakes, k * 4 + 1) *
+        smoothstep(0, 0.6, valueAt(wakes, k * 4 + 2)) *
+        Math.exp((-d * d) / PULSE_SPREAD);
+    }
+    return Math.max(-1, Math.min(1, sum));
   }
 
   /** Ribbon twist angle without wake pulses; folds sit where cos is 0. */

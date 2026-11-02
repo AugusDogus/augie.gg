@@ -33,9 +33,11 @@ test("dt is the clamped gap, and 0 on the first frame after reset", () => {
   expect(policy.dt).toBeCloseTo(0.02, 9);
   expect(policy.ready(1500)).toBe(true);
   expect(policy.dt).toBe(0.06);
+  expect(policy.gap).toBeCloseTo(0.48, 9);
   policy.reset();
   expect(policy.ready(1501)).toBe(true);
   expect(policy.dt).toBe(0);
+  expect(policy.gap).toBe(0);
 });
 
 test("sustained slow frames drop to 30 fps for good", () => {

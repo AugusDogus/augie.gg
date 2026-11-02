@@ -54,7 +54,7 @@ export class Specks {
       const dy = (pointer.y - this.pointer.y) * 874 * scale;
       const distance = Math.hypot(dx, dy);
       if (distance > 3) {
-        this.emission += (distance / scale) * 0.055;
+        this.emission += (distance / scale) * 0.03;
         while (this.emission >= 1) {
           this.emission -= 1;
           // Deterministic randomness keeps exports and tests reproducible.

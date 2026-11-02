@@ -20,6 +20,17 @@ export function ditherChannel(value: number, x: number, y: number) {
 export function contrastChannel(channel: number, contrast: number) {
   return clamp(((channel - 127.5) * contrast) / 100 + 127.5);
 }
+/** Mirror of the composite's lattice(): print level 0..3 of a 0..1 channel at Bayer rank threshold t = (rank + .5) / 16, contrast 110. */
+export function latticeLevel(v01: number, t: number) {
+  return clamp(Math.floor(clamp((v01 - 0.5) * 1.1 + 0.5, 0, 1) * 3 + t), 0, 3);
+}
+
+/** Deterministic 0..1 hash of an integer. */
+export function hash(n: number) {
+  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
 
 export function canvas2d(width: number, height: number, readOften = false) {
   const canvas = document.createElement("canvas");

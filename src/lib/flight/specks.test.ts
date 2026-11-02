@@ -49,3 +49,11 @@ test("fast pointer movement emits a sparse fading trail", () => {
   for (let i = 0; i < 90; i++) specks.step(1 / 60, 2 + i / 60);
   expect(specks.points.every((point) => !point.trail)).toBe(true);
 });
+
+test("trails emit 0.03 specks per px of pointer travel", () => {
+  const specks = new Specks();
+  specks.step(1 / 30, 1, { x: 0.2, y: 0.5, active: true });
+  // 10 px stays under one emission, so only 0.03 per px leaves 0.3 behind.
+  specks.step(1 / 30, 1 + 1 / 30, { x: 0.2 + 10 / 1200, y: 0.5, active: true });
+  expect(specks.emission).toBeCloseTo(0.3, 9);
+});

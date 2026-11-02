@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { bayerIndex, contrastChannel, ditherChannel, random } from "./texture";
+import {
+  bayerIndex,
+  contrastChannel,
+  ditherChannel,
+  latticeLevel,
+  random,
+} from "./texture";
 
 describe("ordered dither", () => {
   test("preserves pure black and white", () => {
@@ -29,6 +35,32 @@ describe("ordered dither", () => {
         expect(bayerIndex(x, y)).toBe(table[(y % 4) * 4 + (x % 4)] ?? -1);
     expect(() => bayerIndex(-1, 0)).toThrow(RangeError);
     expect(() => bayerIndex(0.5, 0)).toThrow(RangeError);
+  });
+  test("latticeLevel re-prints the bake for every value and rank", () => {
+    for (let y = 0; y < 4; y++)
+      for (let x = 0; x < 4; x++) {
+        const t = (bayerIndex(x, y) + 0.5) / 16;
+        for (let v = 0; v < 256; v++)
+          expect(latticeLevel(v / 255, t) * 85).toBe(
+            ditherChannel(contrastChannel(v, 110), x, y),
+          );
+      }
+  });
+  test("unclamped lattice inputs stay clear of every level edge", () => {
+    // The lattice input times 13600 is 176v + 425(2r + 1) - 2040, always odd,
+    // so it sits at least 1/13600 from an edge: GPU float error cannot flip a level.
+    const margin = 7e-5;
+    for (let rank = 0; rank < 16; rank++)
+      for (let v = 0; v < 256; v++) {
+        const contrasted = contrastChannel(v, 110);
+        if (contrasted === 0 || contrasted === 255) continue;
+        const t = (rank + 0.5) / 16;
+        expect([v, rank, latticeLevel(v / 255, t - margin)]).toEqual([
+          v,
+          rank,
+          latticeLevel(v / 255, t + margin),
+        ]);
+      }
   });
   test("the grain generator keeps its sequence", () => {
     const next = random(1607);

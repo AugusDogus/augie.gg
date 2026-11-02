@@ -1,3 +1,4 @@
+import type { Response } from "./attention";
 import type { RouteFrame } from "./route";
 import { type Stream, type StreamId, smoothstep } from "./streams";
 import { ROOT_LAG } from "./whale-body";
@@ -47,9 +48,15 @@ const nose: RouteFrame = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
 /** A whale riding a current: momentum between tail strokes, a stroke rate that follows airspeed. */
 export class Swimmer {
   air: number;
+  /** This pass's lane; `lane` adds the mood's shift. */
+  baseLane: number;
   lane: number;
+  bend = 0;
   opacity = 1;
   cycle = 0;
+  /** Stroke rate factor and current coupling factor from the mood. */
+  private gain = 1;
+  private carry = 1;
 
   constructor(
     readonly spec: SwimmerSpec,
@@ -61,6 +68,7 @@ export class Swimmer {
     air: number,
   ) {
     this.air = air;
+    this.baseLane = spec.lane;
     this.lane = spec.lane;
   }
 
@@ -68,15 +76,32 @@ export class Swimmer {
     return this.spec.length;
   }
 
-  /** Stroke rate in rad/s, proportional to airspeed: carried whales glide. */
-  get rate() {
+  /** Stroke rate in rad/s before the mood's gain, proportional to airspeed: carried whales glide. */
+  get pace() {
     const { cruise, period } = this.spec;
     return (TAU / period) * clamp(this.air / cruise, 0.6, 1.25);
   }
 
+  get rate() {
+    return this.pace * this.gain;
+  }
+
+  get hidden() {
+    return this.opacity <= 0;
+  }
+
+  /** Applies a mood's response before the next step. */
+  respond(response: Response) {
+    this.lane = this.baseLane + response.laneShift;
+    this.bend = response.bend;
+    this.gain = response.rateGain;
+    this.carry = response.coupling;
+    this.air += response.airKick * this.spec.cruise;
+  }
+
   step(h: number, stream: Stream): StrokeEvent | null {
     const { cruise, relax, length, fadeIn, dissolve } = this.spec;
-    const carried = stream.coupling(this.s);
+    const carried = stream.coupling(this.s) * this.carry;
     // Both half-strokes push, strongest mid-stroke; drag smooths it into surge and glide.
     const target =
       cruise *
@@ -97,6 +122,7 @@ export class Swimmer {
   /** Re-enter at arc s after `wait` hidden seconds; momentum and stroke phase carry over. */
   respawn(s: number, lane: number, wait = 0) {
     this.s = s;
+    this.baseLane = lane;
     this.lane = lane;
     this.age = -wait;
     this.cycle++;
@@ -130,9 +156,12 @@ export class Calf {
   lag: number;
   lagRate = 0;
   lane: number;
+  bend = 0;
   /** Last stroke rate, rad/s. */
   rate = 0;
   effort = 0;
+  private shift = 0;
+  private gain = 1;
 
   constructor(
     readonly spec: CalfSpec,
@@ -157,11 +186,22 @@ export class Calf {
     return sum;
   }
 
+  /** Beside the mother's base lane, so each whale's mood moves only itself. */
   private laneAt(time: number, mother: Swimmer) {
     const { offset, amplitude, period, phase } = this.spec.lane;
     return (
-      mother.lane + offset + amplitude * Math.sin((TAU * time) / period + phase)
+      mother.baseLane +
+      offset +
+      amplitude * Math.sin((TAU * time) / period + phase) +
+      this.shift
     );
+  }
+
+  /** Applies a mood's response before the next step; the calf surges through its spring, not an impulse. */
+  respond(response: Response) {
+    this.shift = response.laneShift;
+    this.bend = response.bend;
+    this.gain = response.rateGain;
   }
 
   step(h: number, time: number, mother: Swimmer): StrokeEvent | null {
@@ -175,7 +215,10 @@ export class Calf {
     this.lag += this.lagRate * h;
     this.effort = clamp((this.lag - target) / effort.scale, -0.5, 1);
     this.rate =
-      mother.rate * (mother.length / length) * (1 + effort.gain * this.effort);
+      mother.pace *
+      (mother.length / length) *
+      (1 + effort.gain * this.effort) *
+      this.gain;
     const before = this.phase;
     this.phase += this.rate * h;
     this.s = mother.s - this.lag;

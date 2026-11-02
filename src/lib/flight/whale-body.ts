@@ -40,6 +40,8 @@ export type WhalePose = {
   phase: number;
   /** Body length L in px. */
   length: number;
+  /** Rostrum offset in px, positive ventral; it fades to 0 at the fluke root. */
+  bend: number;
 };
 
 export function dorsalRadius(x: number) {
@@ -138,8 +140,12 @@ function place(pose: WhalePose, stream: Stream, time: number, i: number): Node {
   const x = (SPINE_LENGTH * i) / (SPINE_NODES - 1);
   node.arc = pose.s - x * pose.length;
   stream.centerline(node.arc, time, route);
-  const offset = pose.lane + heave(x, pose.phase) * pose.length;
-  const slope = heaveSlope(x, pose.phase);
+  const along = 1 - x / SPINE_LENGTH;
+  const offset =
+    pose.lane + heave(x, pose.phase) * pose.length + pose.bend * along * along;
+  const slope =
+    heaveSlope(x, pose.phase) -
+    (2 * pose.bend * along) / (SPINE_LENGTH * pose.length);
   const bx = route.nx + slope * route.tx,
     by = route.ny + slope * route.ty,
     size = Math.sqrt(bx * bx + by * by);

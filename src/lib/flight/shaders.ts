@@ -1,6 +1,16 @@
 import { BRUSH_RADIUS } from "./flow";
-import { BODY_SLOTS, ROUTE_SAMPLES, WAKE_SLOTS } from "./streams";
+import { INK } from "./ink";
+import {
+  BODY_SLOTS,
+  PLUCK,
+  ROUTE_SAMPLES,
+  WAKE_SLOTS,
+  WHALE_WAKES,
+} from "./streams";
+import { rigGlsl } from "./subjects";
 import { PAINT_ZOOM } from "./viewport";
+
+const vec3 = (values: readonly number[]) => `vec3(${values.join(", ")})`;
 
 export const FULLSCREEN_VERTEX = `
 attribute vec2 position;
@@ -10,7 +20,11 @@ void main() {
   gl_Position = vec4(position, 0., 1.);
 }`;
 
-/** Prints currents and whales as a delta on the baked dither, so cells without ink stay identical. */
+/**
+ * Prints currents and whales as a delta on the baked dither, so cells without
+ * ink stay identical. Rigged painted subjects are re-printed from the
+ * continuous paint at a displaced position onto the same fixed dither cells.
+ */
 export const COMPOSITE_FRAGMENT = `
 precision highp float;
 uniform sampler2D artwork;
@@ -18,12 +32,17 @@ uniform sampler2D originalArt;
 uniform sampler2D cells;
 uniform sampler2D light;
 uniform sampler2D whales;
+uniform sampler2D paint;
 uniform float time;
 uniform float enabled;
 uniform vec4 brushes[8];
+uniform vec4 rig[3];
 varying vec2 uv;
 const vec2 CELLS = vec2(600., 437.);
-const vec3 INK = vec3(.875, .953, .941);
+const vec2 ART = vec2(1200., 874.);
+const vec3 INK = ${vec3(INK.face)};
+const vec3 SHADE = ${vec3(INK.shade)};
+const vec3 LUMA = vec3(.2126, .7152, .0722);
 float m2(vec2 p) { return 2. * p.x + 3. * p.y - 4. * p.x * p.y; }
 float threshold(vec2 cell) {
   return (4. * m2(mod(cell, 2.)) + m2(mod(floor(cell * .5), 2.)) + .5) / 16.;
@@ -31,24 +50,40 @@ float threshold(vec2 cell) {
 vec3 lattice(vec3 color, float t) {
   return clamp(floor(clamp((color - .5) * 1.1 + .5, 0., 1.) * 3. + t), 0., 3.) / 3.;
 }
+${rigGlsl()}
 vec3 filtered(vec2 point) {
   vec3 art = texture2D(artwork, point).rgb;
   vec2 cell = floor(point * CELLS), center = (cell + .5) / CELLS;
   vec4 beads = texture2D(light, center), body = texture2D(whales, center);
-  if (beads.r + beads.g + body.a < .002) return art;
+  vec4 baked = texture2D(cells, center);
+  // Alpha carries the rig: 32 * subject + matte weight (0..31).
+  float code = floor(baked.a * 255. + .5), id = floor(code / 32.);
+  float w = (code - 32. * id) / 31., live = w * rig[2].z;
+  if (beads.r + beads.g + body.a < .002 && live <= 0.) return art;
   float t = threshold(cell);
-  vec3 base = texture2D(cells, center).rgb, printed = base;
-  vec3 original = texture2D(originalArt, point).rgb, continuous = original;
+  vec2 du = live > 0. ? w * rigOffset(id, (cell + .5) * 2.) / ART : vec2(0.);
+  vec3 tone = texture2D(paint, center - du).rgb;
+  vec3 base = baked.rgb, printed = live > 0. ? lattice(tone, t) : base;
+  vec3 original = texture2D(originalArt, point).rgb;
+  vec3 continuous = live > 0. ? texture2D(originalArt, point - du).rgb : original;
+  if (live > 0.)
+    art = mix(art, texture2D(artwork, (floor(point * ART) + .5) / ART).rgb, live);
   float cover = step(t, body.a);
   if (cover > 0.) {
     vec3 whale = body.rgb / body.a;
     printed = lattice(whale, t);
-    continuous = mix(original, whale, body.a);
+    continuous = mix(continuous, whale, body.a);
+    tone = whale;
   }
   float steps = min(2., floor(beads.r * 8. + .5) * (1. - cover)
     + floor(beads.g * 8. + .5) * mix(1., step(.5, t), cover));
-  printed = min(printed + steps / 3., 1.);
-  continuous = mix(continuous, INK, steps * .2);
+  // Ink lightens dark paint and sinks into bright paint, dithered across the band.
+  float sinks = step(
+    threshold(cell + vec2(${INK.rank[0]}., ${INK.rank[1]}.)),
+    smoothstep(${INK.band[0]}, ${INK.band[1]}, dot(tone, LUMA)));
+  vec3 sink = vec3(steps, max(steps - 1., 0.), max(steps - 1., 0.)) / 3.;
+  printed = clamp(printed + mix(vec3(steps / 3.), -sink, sinks), 0., 1.);
+  continuous = mix(continuous, mix(INK, SHADE, sinks), steps * .2);
   return art + .85 * (printed - base) + .15 * (continuous - original);
 }
 void main() {
@@ -110,17 +145,22 @@ void main() {
   float f = min(s / range.z, ${ROUTE_SAMPLES - 2}.999), i = floor(f);
   int index = int(i);
   vec4 r = mix(route[index], route[index + 1], f - i);
-  float pulse = 0.;
+  float pulse = 0., kink = 0.;
   for (int k = 0; k < ${WAKE_SLOTS}; k++) {
     float d = s - wakes[k].x;
-    pulse += wakes[k].y * smoothstep(0., .6, wakes[k].z) * exp(-d * d / 968.);
+    float g = wakes[k].y * smoothstep(0., .6, wakes[k].z) * exp(-d * d / 968.);
+    pulse += g;
+    // Plucks fill the slots after the whale wakes and kink the ribbon further.
+    if (k >= ${WHALE_WAKES}) kink += g;
   }
+  pulse = clamp(pulse, -1., 1.);
   float theta = s * shape.z - clock.y + range.w
     + .5 * sin(s / 170. + clock.w) + .9 * pulse;
   float c = cos(theta), n = sin(theta);
   float hw = shape.x * (.55 + .45 * sin(3.14159265 * s / shape.y));
   float across = hw * (bead.x * c - .22 * bead.y * n)
-    + 1.2 * sin(s / 41. + fiber.x) + 4. * pulse;
+    + 1.2 * sin(s / 41. + fiber.x) + 4. * pulse
+    + ${PLUCK.kink}. * clamp(kink, -1., 1.);
   float z = bead.x * n + .22 * bead.y * c;
   float give = mix(1., .5, smoothstep(-.2, .2, z));
   for (int k = 0; k < ${BODY_SLOTS}; k++) {
@@ -132,9 +172,11 @@ void main() {
   across += swell * sin(s * shape.w - clock.z);
   vec2 p = r.xy + normalize(r.zw) * across;
   float fold = pow(1. - abs(c), 6.);
+  // Drawn ribbons can be shorter than their bead span; fade at the route's end.
+  float end = min(range.y, shape.y - range.x);
   float presence = mix(look.z, look.w, fold) * fiber.y
     * smoothstep(0., look.x, local)
-    * (1. - smoothstep(range.y - look.y, range.y, local));
+    * (1. - smoothstep(end - look.y, end, local));
   light = (z < 0. ? vec2(1., 0.) : vec2(0., 1.))
     * (1. + max(step(.5, fold), step(.3 + .4 * fract(bead.w * 37.), abs(pulse)))) / 8.;
   gl_PointSize = 1.;
@@ -143,33 +185,42 @@ void main() {
     : vec4(2., 2., 2., 1.);
 }`;
 
+/** Mask layers (near, wing, puffs) that sit in front of this pass hide it. */
+const OCCLUSION = `
+uniform sampler2D mask;
+uniform vec3 behind;
+float open(vec2 coord) {
+  vec3 m = texture2D(mask, coord).rgb * behind;
+  return 1. - max(m.r, max(m.g, m.b));
+}`;
+
 export const BEAD_FRAGMENT = `
 precision mediump float;
-uniform sampler2D mask;
+${OCCLUSION}
 varying vec2 light;
 void main() {
-  float open = 1. - texture2D(mask, gl_FragCoord.xy / vec2(600., 437.)).r;
-  gl_FragColor = vec4(light * open, 0., 0.);
+  gl_FragColor = vec4(light * open(gl_FragCoord.xy / vec2(600., 437.)), 0., 0.);
 }`;
 
 export const WHALE_VERTEX = `
 attribute vec4 vertex;
 uniform vec2 gate;
+uniform vec2 exit;
 varying vec2 info;
 void main() {
-  info = vec2(vertex.z, smoothstep(gate.x, gate.y, vertex.w));
+  info = vec2(vertex.z, smoothstep(gate.x, gate.y, vertex.w)
+    * (1. - smoothstep(exit.x, exit.y, vertex.w)));
   gl_Position = vec4(vertex.xy / vec2(600., 437.) - 1., 0., 1.);
 }`;
 
 export const WHALE_FRAGMENT = `
 precision mediump float;
-uniform sampler2D mask;
+${OCCLUSION}
 uniform vec3 tone;
 uniform vec2 look;
 varying vec2 info;
 void main() {
-  float open = 1. - texture2D(mask, gl_FragCoord.xy / vec2(1200., 874.)).r;
-  float alpha = look.x * info.y * open;
+  float alpha = look.x * info.y * open(gl_FragCoord.xy / vec2(1200., 874.));
   vec3 color = tone * mix(.84, 1.14, info.x)
     + look.y * smoothstep(.8, 1., info.x);
   gl_FragColor = vec4(color * alpha, alpha);

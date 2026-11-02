@@ -76,14 +76,22 @@ and masks match the poster.
 
 `src/lib/flight` prints everything onto the painting's two-pixel dither:
 
-- Two air currents: twisted ribbons of bead fibers, after React Bits'
+- Three air currents: twisted ribbons of bead fibers, after React Bits'
   [Ghost Fibers](https://reactbits.dev/backgrounds/ghost-fibers), drawn as GPU
   points into one texel per dither cell. Fibers bunch into bright folds where a
-  ribbon turns edge-on.
-- A whale pod (a mother, her calf, and a distant traveller) rigged on spines
-  that follow the currents. Tail strokes send a wave down each body; whales
-  glide faster once the current carries them, part its fibers, and leave folds
-  in their wake.
+  ribbon turns edge-on. Their ink lightens dark paint and sinks into bright
+  sky, and layered masks let them pass behind clouds and the bird's wing.
+- A whale pod (a mother and calf, a pale drift whale, and a distant traveller)
+  rigged on spines that follow the currents. Tail strokes send a wave down each
+  body; whales glide once the current carries them, part its fibers, and leave
+  folds in their wake. The drift whale is cued so a whale is always swimming.
+- The painting's own whales and bird flocks move: their pixels are re-printed
+  from the continuous paint at a displaced position onto the same fixed dither
+  cells, so flukes beat without the dots swimming.
+- The cursor is an instrument. Sweeping across a current plucks it, resting on
+  one parts it, whales turn toward a slow cursor and startle at a fast one,
+  painted whales stroke harder nearby, and dragging in open sky draws a ribbon
+  that drifts off as a gust. Taps work on touch without blocking scrolling.
 - Wind displacement, cursor combing, and drifting specks.
 
 The animation runs at up to 60 fps and stops on the résumé, when the tab is
@@ -92,7 +100,10 @@ while a lost GPU context recovers, a 2D path draws the print, flat whale
 silhouettes, and specks. Loading or canvas failure preserves the pre-rendered
 background. React cleanup releases listeners, observers, frame callbacks, and
 GPU resources. Tests cover routes and their clearance around the UI, whale
-kinematics and rigging, pod timing, frame pacing, and poster freshness.
+kinematics, moods and rigging, painted-subject mattes, input gestures, pod
+timing and coverage, frame pacing, and poster freshness. In development,
+`flight.captureScript(events, shots)` replays scripted pointer events on the
+fixed clock and returns frames, for judging interactions frame by frame.
 
 ### Poster
 

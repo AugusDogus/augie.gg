@@ -1,11 +1,14 @@
 import { FAR, Haze, NEAR, OCCLUDERS, RIM } from "./art-maps";
+import { INK } from "./ink";
+import { Instrument, STILL } from "./instrument";
 import { POD, PREROLL, Pod } from "./pod";
 import { FlightRenderer } from "./renderer";
 import * as shaders from "./shaders";
 import { Specks } from "./specks";
 import { STREAM_IDS, STREAMS } from "./streams";
+import { SUBJECTS, Subjects } from "./subjects";
 import { canvas2d } from "./texture";
-import { ART_HEIGHT, ART_WIDTH } from "./viewport";
+import { ART_HEIGHT, ART_WIDTH, PAINT_ZOOM } from "./viewport";
 import { WHALE_INDICES } from "./whale-body";
 
 const round = (values: ArrayLike<number>) =>
@@ -17,12 +20,13 @@ const round = (values: ArrayLike<number>) =>
  * print bake (texture.ts) or the speck painter need a manual recapture.
  */
 export function posterKey() {
-  const pod = new Pod(Haze.flat(0.5, 0.5, 0.5));
+  const pod = new Pod(Haze.flat(0.5, 0.5, 0.5), new Subjects());
   const sky = pod.write();
   const input = JSON.stringify({
     shaders,
-    model: { STREAMS, POD, PREROLL, OCCLUDERS, NEAR, FAR, RIM },
+    model: { STREAMS, POD, PREROLL, OCCLUDERS, NEAR, FAR, RIM, SUBJECTS, INK },
     vertices: round(sky.vertices),
+    rig: round(sky.rig),
     whales: sky.whales.map((whale) =>
       round([...whale.tone, ...whale.look, ...whale.gate]),
     ),
@@ -52,7 +56,7 @@ export async function captureFrame(image: HTMLImageElement, seconds = 0) {
       );
     const idle = { x: 0.5, y: 0.5, active: false };
     for (let i = 0; i < Math.round(seconds * 60); i++)
-      renderer.step(1 / 60, idle);
+      renderer.step(1 / 60, STILL, idle);
     const { canvas, context } = canvas2d(ART_WIDTH, ART_HEIGHT);
     renderer.paint(context);
     const url = canvas.toDataURL("image/png");
@@ -63,11 +67,73 @@ export async function captureFrame(image: HTMLImageElement, seconds = 0) {
   }
 }
 
+/** A scripted pointer event at `at` seconds, in painting px. */
+export type ScriptEvent = {
+  at: number;
+  kind: "move" | "down" | "up";
+  x: number;
+  y: number;
+};
+
+/**
+ * Development only: replays pointer events through the real Instrument on the
+ * fixed clock and returns art-space frames at the `shots` times, so
+ * interactions can be judged frame by frame.
+ */
+export async function captureScript(
+  image: HTMLImageElement,
+  events: readonly ScriptEvent[],
+  shots: readonly number[],
+) {
+  const renderer = FlightRenderer.create(image);
+  const instrument = new Instrument();
+  const frames: string[] = [];
+  try {
+    if (!renderer.accelerated) throw new Error("Scripted capture needs WebGL.");
+    const { canvas, context } = canvas2d(ART_WIDTH, ART_HEIGHT);
+    const toArt = (x: number, y: number) => ({
+      x: ((x - ART_WIDTH / 2) / PAINT_ZOOM + ART_WIDTH / 2) / ART_WIDTH,
+      y: ((y - ART_HEIGHT / 2) / PAINT_ZOOM + ART_HEIGHT / 2) / ART_HEIGHT,
+    });
+    const end = Math.max(...shots);
+    let next = 0;
+    for (let tick = 1; tick / 60 <= end + 1e-9; tick++) {
+      const time = tick / 60;
+      for (const event of events) {
+        // Events at or before 0 replay on the first tick.
+        if (event.at > time || (tick > 1 && event.at <= (tick - 1) / 60))
+          continue;
+        const art = toArt(event.x, event.y);
+        const ms = event.at * 1000;
+        if (event.kind === "move")
+          instrument.move(art.x, art.y, "mouse", false, ms);
+        else if (event.kind === "down")
+          instrument.down(art.x, art.y, "mouse", false, event.x, event.y, ms);
+        else instrument.up(art.x, art.y, "mouse", event.x, event.y, ms);
+      }
+      renderer.step(1 / 60, instrument.frame(1 / 60), instrument.pointer);
+      while ((shots[next] ?? Infinity) <= time + 1e-9) {
+        renderer.paint(context);
+        frames.push(canvas.toDataURL("image/png"));
+        next++;
+      }
+    }
+    canvas.width = 0;
+    return frames;
+  } finally {
+    renderer.dispose();
+  }
+}
+
 declare global {
   interface Window {
     flight?: {
       capturePoster(): Promise<string>;
       captureFrame(seconds: number): Promise<string>;
+      captureScript(
+        events: readonly ScriptEvent[],
+        shots: readonly number[],
+      ): Promise<string[]>;
       posterKey(): string;
     };
   }
@@ -89,6 +155,7 @@ export function installFlightDebug(image: HTMLImageElement) {
       return url;
     },
     captureFrame: (seconds) => captureFrame(image, seconds),
+    captureScript: (events, shots) => captureScript(image, events, shots),
     posterKey,
   };
 }

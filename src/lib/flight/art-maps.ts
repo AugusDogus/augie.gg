@@ -4,17 +4,46 @@ import { ART_WIDTH } from "./viewport";
 
 /** ImageData-compatible RGBA bytes. */
 export type Raster = { data: Uint8ClampedArray; width: number; height: number };
-/** Painted near subjects, keyed by luminance inside a painting-space box. */
+/** Painted subjects in front of the air, keyed by luminance inside a painting-space box. */
 export type Occluder = {
   name: string;
+  /** Mask channel, in LAYERS order. */
+  layer: "near" | "wing" | "puffs";
   box: readonly [x0: number, y0: number, x1: number, y1: number];
   lighter: number;
   soft: number;
 };
+const LAYERS = ["near", "wing", "puffs"] as const;
 
 export const OCCLUDERS: readonly Occluder[] = [
-  { name: "cumulus", box: [180, 640, 560, 874], lighter: 135, soft: 12 },
-  { name: "bird", box: [690, 450, 1136, 726], lighter: 130, soft: 10 },
+  {
+    name: "cumulus",
+    layer: "near",
+    box: [180, 640, 560, 874],
+    lighter: 135,
+    soft: 12,
+  },
+  {
+    name: "bird",
+    layer: "near",
+    box: [690, 450, 1136, 726],
+    lighter: 130,
+    soft: 10,
+  },
+  {
+    name: "wing",
+    layer: "wing",
+    box: [760, 450, 930, 640],
+    lighter: 205,
+    soft: 12,
+  },
+  {
+    name: "puffs",
+    layer: "puffs",
+    box: [330, 470, 560, 560],
+    lighter: 190,
+    soft: 12,
+  },
 ];
 /** Whale tints for near and far air, and the sunlit dorsal rim. Tuned visually. */
 export const NEAR: readonly [number, number, number] = [0.32, 0.68, 0.82];
@@ -23,24 +52,28 @@ export const RIM = 0.1;
 /** Sample cells averaged into one haze cell. */
 const HAZE_BLOCK = 8;
 
-function checked(raster: Raster) {
+export function checked(raster: Raster) {
   if (raster.data.length !== raster.width * raster.height * 4)
     throw new RangeError(
       `Expected ${raster.width}x${raster.height} RGBA bytes, got ${raster.data.length}`,
     );
   return raster;
 }
-const luminance = (data: Uint8ClampedArray, pixel: number) =>
+export const luminance = (data: Uint8ClampedArray, pixel: number) =>
   0.2126 * valueAt(data, pixel * 4) +
   0.7152 * valueAt(data, pixel * 4 + 1) +
   0.0722 * valueAt(data, pixel * 4 + 2);
 
-/** 0..255 per sample cell, row 0 at the painting top; 255 where paint covers new elements. */
+/**
+ * 600x437x3 bytes, row 0 at the painting top; 255 where paint covers new elements.
+ * R = near (cumulus + bird), G = raised wing, B = puffs.
+ */
 export function occluderMask(sample: Raster): Uint8Array {
   const { data, width, height } = checked(sample);
   const cell = ART_WIDTH / width;
-  const mask = new Uint8Array(width * height);
-  for (const { box, lighter, soft } of OCCLUDERS) {
+  const mask = new Uint8Array(width * height * 3);
+  for (const { layer, box, lighter, soft } of OCCLUDERS) {
+    const channel = LAYERS.indexOf(layer);
     const [x0, y0, x1, y1] = box;
     const left = Math.max(0, Math.ceil(x0 / cell - 0.5)),
       right = Math.min(width, Math.ceil(x1 / cell - 0.5)),
@@ -53,7 +86,8 @@ export function occluderMask(sample: Raster): Uint8Array {
           255 *
             smoothstep(lighter - soft, lighter + soft, luminance(data, pixel)),
         );
-        mask[pixel] = Math.max(valueAt(mask, pixel), key);
+        const index = pixel * 3 + channel;
+        mask[index] = Math.max(valueAt(mask, index), key);
       }
   }
   return mask;

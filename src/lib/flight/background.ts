@@ -1,4 +1,5 @@
 import { FramePolicy } from "./frame-policy";
+import { Instrument, type PointerKind } from "./instrument";
 import { FlightRenderer } from "./renderer";
 import { ART_HEIGHT, ART_WIDTH, fitArt, pointerToArt } from "./viewport";
 
@@ -17,7 +18,7 @@ export function createBackground(
   });
   const coarse = matchMedia("(pointer: coarse)").matches;
   const policy = new FramePolicy(coarse || !renderer.accelerated ? 30 : 60);
-  const pointer = { x: 0.5, y: 0.5, active: false };
+  const instrument = new Instrument();
   // Gradients resolve against the transform at fill time, so one per edge suffices.
   const feathers = {
     wide: context.createLinearGradient(0, 0, 200, 0),
@@ -54,7 +55,14 @@ export function createBackground(
   }
   function frame(now: number) {
     if (policy.ready(now)) {
-      renderer.step(policy.dt, pointer);
+      // Speeds use the real gap. Across a stall the simulation's clamped dt would
+      // inflate them, so the pod sees no swipe over it.
+      const sense = instrument.frame(policy.gap);
+      renderer.step(
+        policy.dt,
+        policy.gap > policy.dt ? { ...sense, previous: sense.hand } : sense,
+        instrument.pointer,
+      );
       draw();
     }
     frameId = requestAnimationFrame(frame);
@@ -62,29 +70,57 @@ export function createBackground(
   function sync() {
     cancelAnimationFrame(frameId);
     policy.reset();
-    pointer.active = false;
+    instrument.clear();
+    renderer.pod.calm();
     if (playing && !document.hidden) frameId = requestAnimationFrame(frame);
   }
-  function move(event: PointerEvent) {
-    const rect = canvas.getBoundingClientRect();
-    if (!fitArt(rect.width, rect.height)) return;
+  /** Pointer in display-art units; off the art or over the UI counts as blocked. */
+  function locate(event: PointerEvent) {
+    const art = pointerToArt(
+      canvas.getBoundingClientRect(),
+      event.clientX,
+      event.clientY,
+    );
     const blocked =
-      event.target instanceof Element &&
-      !!event.target.closest("button,a,input,.material");
-    const art = pointerToArt(rect, event.clientX, event.clientY);
-    pointer.x = art.x;
-    pointer.y = art.y;
-    pointer.active =
-      event.pointerType !== "touch" &&
-      !blocked &&
-      art.x >= 0 &&
-      art.x <= 1 &&
-      art.y >= 0 &&
-      art.y <= 1;
+      (event.target instanceof Element &&
+        !!event.target.closest("button,a,input,.material")) ||
+      art.x < 0 ||
+      art.x > 1 ||
+      art.y < 0 ||
+      art.y > 1;
+    const kind: PointerKind =
+      event.pointerType === "touch" || event.pointerType === "pen"
+        ? event.pointerType
+        : "mouse";
+    return { ...art, blocked, kind };
   }
-  const clearPointer = () => {
-    pointer.active = false;
-  };
+  function move(event: PointerEvent) {
+    const { x, y, blocked, kind } = locate(event);
+    // No buttons held means any press lost its pointerup (e.g. to a context menu).
+    if (kind !== "touch" && event.buttons === 0) instrument.cancel();
+    instrument.move(x, y, kind, blocked, event.timeStamp);
+  }
+  function down(event: PointerEvent) {
+    if (event.button !== 0) return;
+    const { x, y, blocked, kind } = locate(event);
+    instrument.down(
+      x,
+      y,
+      kind,
+      blocked,
+      event.clientX,
+      event.clientY,
+      event.timeStamp,
+    );
+  }
+  function up(event: PointerEvent) {
+    const { x, y, blocked, kind } = locate(event);
+    instrument.up(x, y, kind, event.clientX, event.clientY, event.timeStamp);
+    // Releasing over the card or a link must not leave a hover behind it.
+    instrument.move(x, y, kind, blocked, event.timeStamp);
+  }
+  const cancel = () => instrument.cancel();
+  const leave = () => instrument.leave();
   // Draw before subscribing, so a failed first render cannot leak listeners.
   try {
     layout();
@@ -95,10 +131,17 @@ export function createBackground(
   }
   const observer = new ResizeObserver(layout);
   observer.observe(canvas);
-  document.addEventListener("pointermove", move);
-  document.addEventListener("pointerleave", clearPointer);
-  document.addEventListener("scroll", clearPointer, { passive: true });
+  // Passive and never prevented, so touch scrolling and text selection still win.
+  const passive = { passive: true };
+  document.addEventListener("pointermove", move, passive);
+  document.addEventListener("pointerdown", down, passive);
+  document.addEventListener("pointerup", up, passive);
+  document.addEventListener("pointercancel", cancel, passive);
+  document.addEventListener("contextmenu", cancel, passive);
+  document.addEventListener("pointerleave", leave, passive);
+  document.addEventListener("scroll", cancel, passive);
   document.addEventListener("visibilitychange", sync);
+  window.addEventListener("blur", leave);
   return {
     setPlaying(value: boolean) {
       playing = value;
@@ -109,9 +152,14 @@ export function createBackground(
       cancelAnimationFrame(frameId);
       observer.disconnect();
       document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerleave", clearPointer);
-      document.removeEventListener("scroll", clearPointer);
+      document.removeEventListener("pointerdown", down);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", cancel);
+      document.removeEventListener("contextmenu", cancel);
+      document.removeEventListener("pointerleave", leave);
+      document.removeEventListener("scroll", cancel);
       document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("blur", leave);
       renderer.dispose();
       canvas.width = 0;
     },

@@ -29,11 +29,12 @@ const FAR_FIN = 90,
 
 const under = new Stream("under");
 const high = new Stream("high");
-const pose = (phase: number, s = 742): WhalePose => ({
+const pose = (phase: number, s = 742, bend = 0): WhalePose => ({
   s,
   lane: -10,
   phase,
   length: 170,
+  bend,
 });
 function draw(whale: WhalePose, stream = under, time = 0) {
   const out = new Float32Array(WHALE_VERTICES * VERTEX_FLOATS);
@@ -296,6 +297,33 @@ describe("whale rig", () => {
       expect(ventralVelocity).toBeLessThan(still);
       expect(dorsalVelocity).toBeGreaterThan(still);
     }
+  });
+
+  test("bend turns the head by `bend` along the normal and leaves the fluke root in place", () => {
+    const route = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
+    for (const bend of [-12, -4.5, 2, 8])
+      for (const phase of [0, 1.7, 4]) {
+        const whale = pose(phase, 742, bend);
+        const bent = draw(whale),
+          straight = draw(pose(phase));
+        under.centerline(whale.s, 0, route);
+        const nose = bent(spine(0)),
+          rest = straight(spine(0));
+        expect(
+          (nose.x - rest.x) * route.nx + (nose.y - rest.y) * route.ny,
+        ).toBeCloseTo(bend, 4);
+        expect(
+          (nose.x - rest.x) * route.tx + (nose.y - rest.y) * route.ty,
+        ).toBeCloseTo(0, 4);
+        expect(
+          distance(
+            bent(spine(SPINE_NODES - 1)),
+            straight(spine(SPINE_NODES - 1)),
+          ),
+        ).toBeLessThan(0.5);
+        for (const fluke of [FLUKE_ROOT, UPPER_TIP, LOWER_TIP])
+          expect(distance(bent(fluke), straight(fluke))).toBeLessThan(0.5);
+      }
   });
 
   test("the belly stays below the back along both routes", () => {

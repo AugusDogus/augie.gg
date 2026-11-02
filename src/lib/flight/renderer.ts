@@ -1,8 +1,10 @@
 import { Haze, occluderMask } from "./art-maps";
 import { Flow, type Pointer } from "./flow";
 import { FlowSurface } from "./flow-surface";
+import type { Sense } from "./instrument";
 import { Pod, type SkyFrame } from "./pod";
 import { Specks, drawSpecks } from "./specks";
+import { Subjects, rigCells, rigMap } from "./subjects";
 import { canvas2d, renderTexture, type PrintedArt } from "./texture";
 import { ART_HEIGHT, ART_WIDTH, PAINT_ZOOM, toPainting } from "./viewport";
 import { VERTEX_FLOATS, WHALE_OUTLINES, WHALE_VERTICES } from "./whale-body";
@@ -32,11 +34,12 @@ export class FlightRenderer {
   static create(image: HTMLImageElement, onRestore = () => {}) {
     const print = renderTexture(image);
     const mask = occluderMask(print.sample);
-    const pod = new Pod(Haze.fromSample(print.sample));
+    const pod = new Pod(Haze.fromSample(print.sample), new Subjects());
     const surface = FlowSurface.create(
       {
         print,
         image,
+        cells: rigCells(print.cells, rigMap(print.sample)),
         mask,
         streams: pod.streams,
         vertices: pod.write().vertices,
@@ -50,11 +53,12 @@ export class FlightRenderer {
     return this.surface !== null;
   }
 
-  step(dt: number, pointer: Pointer) {
+  /** `pointer` drives the comb and specks; `sense` drives the pod, currents, and painted subjects. */
+  step(dt: number, sense: Sense, pointer: Pointer) {
     this.elapsed += dt;
     this.flow.step(dt, pointer);
     this.specks.step(dt, this.elapsed, pointer);
-    this.pod.step(dt);
+    this.pod.step(dt, sense);
   }
 
   paint(context: CanvasRenderingContext2D) {
@@ -71,7 +75,7 @@ export class FlightRenderer {
     context.restore();
   }
 
-  /** Printed art and flat whale silhouettes, without currents, wind, or brush. */
+  /** Printed art and flat near-layer whale silhouettes, without currents, wind, or brush. */
   private paintFallback(context: CanvasRenderingContext2D, sky: SkyFrame) {
     const { x, y, width, height } = CROP;
     context.drawImage(
@@ -99,6 +103,9 @@ export class FlightRenderer {
       (ART_HEIGHT / 2) * (1 - inverse),
     );
     for (const whale of sky.whales) {
+      // Only whales behind the near layer alone; the overlay below has no other layers.
+      const [near = 0, wing = 0, puffs = 0] = whale.behind;
+      if (near !== 1 || wing !== 0 || puffs !== 0) continue;
       // Without per-vertex alpha, fade the whole whale as its nose clears the gate.
       let nose = -Infinity;
       for (let i = 0; i < WHALE_VERTICES; i++)
@@ -144,9 +151,9 @@ export class FlightRenderer {
     if (this.overlay) return this.overlay;
     const { canvas: matte, context: matteContext } = canvas2d(600, 437);
     const alpha = matteContext.createImageData(600, 437);
-    this.mask.forEach((value, index) => {
-      alpha.data[index * 4 + 3] = value;
-    });
+    // The near layer is the red plane of the RGB mask.
+    for (let i = 0; i < 600 * 437; i++)
+      alpha.data[i * 4 + 3] = this.mask[i * 3] ?? 0;
     matteContext.putImageData(alpha, 0, 0);
     const { canvas, context } = canvas2d(ART_WIDTH, ART_HEIGHT);
     context.drawImage(matte, 0, 0, ART_WIDTH, ART_HEIGHT);
