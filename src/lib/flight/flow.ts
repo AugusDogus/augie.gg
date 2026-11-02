@@ -5,11 +5,14 @@ const WIDTH = 1200;
 const HEIGHT = 874;
 export const BRUSH_RADIUS = 55;
 export const MAX_PUSH = 16;
+// The 8-brush trail was tuned for 30 Hz pointer samples.
+const SAMPLE = 1 / 30;
 
 /** A directional brush with a fading trail. It never generates radial waves. */
 export class Flow {
   brushes: Brush[] = [];
   previous: Pick<Pointer, "x" | "y"> | null = null;
+  sinceSample = 0;
 
   step(dt: number, pointer: Pointer) {
     if (dt <= 0) return;
@@ -25,12 +28,14 @@ export class Flow {
       this.previous = null;
       return;
     }
+    this.sinceSample += dt;
     if (this.previous) {
+      if (this.sinceSample < SAMPLE - 1e-9) return;
       const dx = (pointer.x - this.previous.x) * WIDTH;
       const dy = (pointer.y - this.previous.y) * HEIGHT;
       const distance = Math.hypot(dx, dy);
       if (distance > 0.5) {
-        const push = Math.min(MAX_PUSH, (distance / dt) * 0.025);
+        const push = Math.min(MAX_PUSH, (distance / this.sinceSample) * 0.025);
         this.brushes.push({
           x: pointer.x,
           y: pointer.y,
@@ -41,6 +46,7 @@ export class Flow {
       }
     }
     this.previous = { x: pointer.x, y: pointer.y };
+    this.sinceSample = 0;
   }
 
   snapshot() {

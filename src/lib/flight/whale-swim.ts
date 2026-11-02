@@ -1,99 +1,193 @@
+import type { RouteFrame } from "./route";
+import { type Stream, type StreamId, smoothstep } from "./streams";
+import { ROOT_LAG } from "./whale-body";
+
+const TAU = Math.PI * 2;
+/** Airspeed relaxation time constant, s. */
+const DRAG = 0.9;
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
-const DEPTH_PROJECTION = 0.45;
 
-/** Long crossings with shallow vertical passages and dorsoventral tail strokes. */
-export type WhaleSpec = {
-  x: number;
-  y: number;
-  heading: number;
-  scale: number;
-  phase: number;
-  depth: number;
-};
-export class WhaleSwim {
-  heading: number;
-  scale: number;
-  phase: number;
-  seed: number;
-  depth: number;
+export type SwimmerSpec = {
+  stream: StreamId;
+  /** Body length L, px. */
   length: number;
-  cruiseSpeed: number;
-  speed: number;
-  distance: number;
-  baseY: number;
-  pitch: number;
-  head: { x: number; y: number };
-  constructor({ x, y, heading, scale, phase, depth }: WhaleSpec) {
-    this.heading = heading;
-    this.scale = scale;
-    this.phase = phase;
-    this.seed = phase;
-    this.depth = depth;
-    this.length = scale * 2.2;
-    this.cruiseSpeed = (35 + this.length * 0.035) * 0.7;
-    this.speed = this.cruiseSpeed;
-    this.distance = 0;
-    this.baseY = y;
-    this.pitch = Math.atan((55 / 700) * Math.cos(this.seed));
-    this.head = { x, y };
+  /** Lane offset from the centerline, px; positive is ventral. */
+  lane: number;
+  /** Still-air cruise speed, px/s. */
+  cruise: number;
+  /** Airspeed given up when fully carried by the current. */
+  relax: number;
+  /** Still-air stroke period, s. */
+  period: number;
+  /** Wake strength per stroke. */
+  wake: number;
+  /** Nose x at t = 0. */
+  startX: number;
+  /** Stroke phase at the start of the pre-roll. */
+  phase: number;
+  /** Seconds of age over which opacity rises; 0 shows the whale at once. */
+  fadeIn: number;
+  /** Nose x over which opacity falls to 0, or null to stay opaque. */
+  dissolve: readonly [number, number] | null;
+};
+export type StrokeEvent = { s: number; side: 1 | -1 };
+
+/** Half-stroke count: it steps where φ − κ_r − π/2 crosses a multiple of π. */
+const turn = (phase: number) =>
+  Math.floor((phase - ROOT_LAG - Math.PI / 2) / Math.PI);
+/** A stroke ends at each heave extreme of the fluke root. */
+function stroke(before: number, after: number, s: number): StrokeEvent | null {
+  if (turn(before) === turn(after)) return null;
+  return { s, side: Math.sin(after - ROOT_LAG) >= 0 ? 1 : -1 };
+}
+
+const nose: RouteFrame = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
+
+/** A whale riding a current: momentum between tail strokes, a stroke rate that follows airspeed. */
+export class Swimmer {
+  air: number;
+  lane: number;
+  opacity = 1;
+  cycle = 0;
+
+  constructor(
+    readonly spec: SwimmerSpec,
+    /** Nose arc. */
+    public s: number,
+    public phase: number,
+    /** Seconds since the whale entered; negative while it waits hidden. */
+    public age: number,
+    air: number,
+  ) {
+    this.air = air;
+    this.lane = spec.lane;
   }
 
-  get frameOffsetX() {
-    // Wrap only the rendered position. Physics stays continuous, so the
-    // spring particles never chase a target across the entire artwork.
-    // Only the trailing side needs a body-length allowance. One second of
-    // padding at each edge leaves about two seconds between appearances.
-    const padding = this.cruiseSpeed;
-    const leftMargin = padding + (Math.cos(this.heading) < 0 ? this.length : 0);
-    const span = 1200 + this.length + padding * 2;
-    return Math.floor((this.head.x + leftMargin) / span) * span;
+  get length() {
+    return this.spec.length;
   }
 
-  step(dt: number) {
-    // Both half-strokes produce thrust, strongest through mid-stroke.
-    // Drag smooths the pulses into a modest surge followed by a glide.
-    const thrust = Math.cos(this.phase) ** 2;
-    const targetSpeed = this.cruiseSpeed * (0.88 + thrust * 0.24);
-    this.speed += (targetSpeed - this.speed) * (1 - Math.exp(-dt / 0.9));
-    this.phase += dt * (0.8 + this.speed / 80);
-    const travel = this.speed * dt;
-    this.distance += travel;
-    this.head.x += Math.cos(this.heading) * travel;
-
-    // The route bends over hundreds of pixels, not once per tail beat.
-    // Its tangent sets the body pitch, tying ascent/descent to forward travel.
-    const passage = this.seed + this.distance / 700;
-    this.head.y = this.baseY + 55 * (Math.sin(passage) - Math.sin(this.seed));
-    this.pitch = Math.atan((55 / 700) * Math.cos(passage));
+  /** Stroke rate in rad/s, proportional to airspeed: carried whales glide. */
+  get rate() {
+    const { cruise, period } = this.spec;
+    return (TAU / period) * clamp(this.air / cruise, 0.6, 1.25);
   }
 
-  project(nx: number, ny: number, nz = 0, part = "body") {
-    // The torso follows the passage. Stroke flexion grows down the tail
-    // stock, without adding an independent whole-body bob.
-    const rear = clamp((-nx - 0.35) / 0.55, 0, 1);
-    let along = nx - 1;
-    let vertical = ny + Math.sin(this.phase) * 0.23 * rear * rear;
-    if (part === "fluke") {
-      // Both lobes lie in the same horizontal plane. Pitch the whole fluke
-      // about its root as it heaves vertically, rather than wagging it laterally.
-      const pitch = Math.cos(this.phase) * 0.3;
-      const chord = nx + 0.9;
-      along = -1.9 + chord * Math.cos(pitch);
-      vertical = 0.04 + Math.sin(this.phase) * 0.23 + chord * Math.sin(pitch);
-    }
-    const pitchedAlong =
-      along * Math.cos(this.pitch) - vertical * Math.sin(this.pitch);
-    const pitchedY =
-      along * Math.sin(this.pitch) + vertical * Math.cos(this.pitch);
-    const cosine = Math.cos(this.heading),
-      sine = Math.sin(this.heading);
-    return {
-      x: this.head.x + (pitchedAlong * cosine - nz * sine) * this.scale,
-      y:
-        this.head.y +
-        (pitchedY + (pitchedAlong * sine + nz * cosine) * DEPTH_PROJECTION) *
-          this.scale,
-    };
+  step(h: number, stream: Stream): StrokeEvent | null {
+    const { cruise, relax, length, fadeIn, dissolve } = this.spec;
+    const carried = stream.coupling(this.s);
+    // Both half-strokes push, strongest mid-stroke; drag smooths it into surge and glide.
+    const target =
+      cruise *
+      (1 - relax * carried) *
+      (0.88 + 0.24 * Math.cos(this.phase) ** 2);
+    this.air += (target - this.air) * (1 - Math.exp(-h / DRAG));
+    const before = this.phase;
+    this.phase += this.rate * h;
+    this.s += (this.air + carried * stream.spec.flow) * h;
+    this.age += h;
+    const x = stream.route.frame(this.s, nose).x;
+    this.opacity =
+      (fadeIn > 0 ? smoothstep(0, fadeIn, this.age) : 1) *
+      (dissolve ? 1 - smoothstep(dissolve[0], dissolve[1], x) : 1);
+    return stroke(before, this.phase, this.s - length);
+  }
+
+  /** Re-enter at arc s after `wait` hidden seconds; momentum and stroke phase carry over. */
+  respawn(s: number, lane: number, wait = 0) {
+    this.s = s;
+    this.lane = lane;
+    this.age = -wait;
+    this.cycle++;
+  }
+}
+
+export type CalfSpec = {
+  length: number;
+  wake: number;
+  phase: number;
+  /** Drafting slot a* behind the mother's nose: base + Σ amplitude·sin(2πt/period + phase), px. */
+  slot: {
+    base: number;
+    terms: readonly (readonly [
+      amplitude: number,
+      period: number,
+      phase: number,
+    ])[];
+  };
+  /** Lane relative to the mother's: offset + amplitude·sin(2πt/period + phase), px. */
+  lane: { offset: number; amplitude: number; period: number; phase: number };
+  /** Damped spring on the lag: natural period, s, and damping ratio. */
+  spring: { period: number; damping: number };
+  /** Lag error (px) for full effort, and the stroke-rate gain at full effort. */
+  effort: { scale: number; gain: number };
+};
+
+/** A calf drafting behind its mother on a damped spring; it strokes harder when it drops back. */
+export class Calf {
+  s: number;
+  lag: number;
+  lagRate = 0;
+  lane: number;
+  /** Last stroke rate, rad/s. */
+  rate = 0;
+  effort = 0;
+
+  constructor(
+    readonly spec: CalfSpec,
+    mother: Swimmer,
+    time: number,
+    public phase: number,
+  ) {
+    this.lag = this.slot(time);
+    this.s = mother.s - this.lag;
+    this.lane = this.laneAt(time, mother);
+  }
+
+  get length() {
+    return this.spec.length;
+  }
+
+  slot(time: number) {
+    const { base, terms } = this.spec.slot;
+    let sum = base;
+    for (const term of terms)
+      sum += term[0] * Math.sin((TAU * time) / term[1] + term[2]);
+    return sum;
+  }
+
+  private laneAt(time: number, mother: Swimmer) {
+    const { offset, amplitude, period, phase } = this.spec.lane;
+    return (
+      mother.lane + offset + amplitude * Math.sin((TAU * time) / period + phase)
+    );
+  }
+
+  step(h: number, time: number, mother: Swimmer): StrokeEvent | null {
+    const { spring, effort, length } = this.spec;
+    const omega = TAU / spring.period;
+    const target = this.slot(time);
+    this.lagRate +=
+      (omega * omega * (target - this.lag) -
+        2 * spring.damping * omega * this.lagRate) *
+      h;
+    this.lag += this.lagRate * h;
+    this.effort = clamp((this.lag - target) / effort.scale, -0.5, 1);
+    this.rate =
+      mother.rate * (mother.length / length) * (1 + effort.gain * this.effort);
+    const before = this.phase;
+    this.phase += this.rate * h;
+    this.s = mother.s - this.lag;
+    this.lane = this.laneAt(time, mother);
+    return stroke(before, this.phase, this.s - length);
+  }
+
+  /** Re-enter with the mother, settled in the slot. */
+  respawn(time: number, mother: Swimmer) {
+    this.lag = this.slot(time);
+    this.lagRate = 0;
+    this.s = mother.s - this.lag;
+    this.lane = this.laneAt(time, mother);
   }
 }

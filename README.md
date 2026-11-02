@@ -71,15 +71,39 @@ Fonts and their licenses live in `src/assets/fonts`.
 `src/styles/flight-poster.css` embeds the initial filtered frame (AVIF) and a
 small backdrop (WebP) in the render-blocking stylesheet. This makes the first
 paint complete without waiting for image requests or animation JavaScript.
-The poster was captured from `FlowSurface.render` at time zero with the initial
-whale and speck snapshots, before viewport scaling and feathering. If the
-artwork or treatment changes, recapture that frame. The live canvas replaces
-it only after its first draw; its sizing, shading, and masks match the poster.
+The live canvas replaces it only after its first draw; its sizing, shading,
+and masks match the poster.
 
-`src/lib/flight` contains the two-pixel dither, GPU filter displacement,
-particle whales, and sparse cursor trails. The animation stops on the résumé,
-when the tab is hidden, when paused, or when reduced motion is requested.
-WebGL failure falls back to the 2D artwork; loading or canvas failure preserves
-the pre-rendered background. React cleanup releases listeners, observers, frame callbacks,
-and GPU resources. Physics tests cover tail strokes, continuous crossings,
-offscreen re-entry, fixed-step springs, cursor falloff, and particle lifetime.
+`src/lib/flight` prints everything onto the painting's two-pixel dither:
+
+- Two air currents: twisted ribbons of bead fibers, after React Bits'
+  [Ghost Fibers](https://reactbits.dev/backgrounds/ghost-fibers), drawn as GPU
+  points into one texel per dither cell. Fibers bunch into bright folds where a
+  ribbon turns edge-on.
+- A whale pod (a mother, her calf, and a distant traveller) rigged on spines
+  that follow the currents. Tail strokes send a wave down each body; whales
+  glide faster once the current carries them, part its fibers, and leave folds
+  in their wake.
+- Wind displacement, cursor combing, and drifting specks.
+
+The animation runs at up to 60 fps and stops on the résumé, when the tab is
+hidden, when paused, or when reduced motion is requested. Without WebGL, or
+while a lost GPU context recovers, a 2D path draws the print, flat whale
+silhouettes, and specks. Loading or canvas failure preserves the pre-rendered
+background. React cleanup releases listeners, observers, frame callbacks, and
+GPU resources. Tests cover routes and their clearance around the UI, whale
+kinematics and rigging, pod timing, frame pacing, and poster freshness.
+
+### Poster
+
+`bun test` fails when the model, shader, or speck inputs of the t=0 frame
+change, because the inline poster would no longer match the first live frame.
+Changes to the print bake in `texture.ts` or to the speck painter need the same
+recapture, by hand:
+
+1. Run `bun dev`, open `/`, and run `await flight.capturePoster()` in the
+   browser console. It downloads `flight-poster.png`, the 1200×874 frame before
+   viewport scaling and feathering.
+2. Run `bun scripts/flight-poster.ts ~/Downloads/flight-poster.png`. It needs
+   `avifenc` (libavif) and rewrites the AVIF and `poster-key` in
+   `flight-poster.css`.

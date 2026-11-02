@@ -57,6 +57,10 @@ export function FlightBackground() {
         renderer.current = background;
         background.setPlaying(activeRef.current);
         setReady(true);
+        if (process.env.NODE_ENV === "development")
+          void import("~/lib/flight/poster").then((poster) =>
+            poster.installFlightDebug(image),
+          );
       } catch (error) {
         console.warn(
           "The animated artwork could not load. The pre-rendered background remains available.",

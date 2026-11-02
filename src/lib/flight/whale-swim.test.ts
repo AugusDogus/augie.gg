@@ -1,164 +1,128 @@
 import { expect, test } from "bun:test";
-import { WhaleSwim } from "./whale-swim";
+import { POD } from "./pod";
+import { Stream } from "./streams";
+import { SPINE_LENGTH, heave } from "./whale-body";
+import { Swimmer } from "./whale-swim";
 
-const create = () =>
-  new WhaleSwim({
-    x: 460,
-    y: 640,
-    scale: 150,
-    heading: 0,
-    phase: 0,
-    depth: 0.85,
-  });
+const under = new Stream("under");
+const high = new Stream("high");
+const H = 1 / 60;
+const steadyAir = (s: number) =>
+  POD.hero.cruise * (1 - POD.hero.relax * under.coupling(s));
+const hero = (s: number, phase = 0) =>
+  new Swimmer(POD.hero, s, phase, 0, steadyAir(s));
+
+/** Mean ground speed and stroke period while the nose crosses [from, to). */
+function measure(whale: Swimmer, stream: Stream, from: number, to: number) {
+  while (whale.s < from) whale.step(H, stream);
+  const s = whale.s,
+    phase = whale.phase;
+  let time = 0;
+  while (whale.s < to) {
+    whale.step(H, stream);
+    time += H;
+  }
+  return {
+    speed: (whale.s - s) / time,
+    period: (2 * Math.PI * time) / (whale.phase - phase),
+  };
+}
 
 test("tail strokes supply thrust while the whale carries momentum between strokes", () => {
-  const pushing = create();
-  const gliding = create();
-  gliding.phase = Math.PI / 2;
-  pushing.step(1 / 60);
-  gliding.step(1 / 60);
-  expect(pushing.speed).toBeGreaterThan(gliding.speed);
-  expect(gliding.speed).toBeGreaterThan(gliding.cruiseSpeed * 0.9);
-  expect(pushing.speed).toBeLessThan(34);
-});
-
-test("whales travel forward without turning back at the frame edges", () => {
-  for (const heading of [0, Math.PI]) {
-    const whale = create();
-    whale.heading = heading;
-    const direction = Math.cos(heading);
-    let previous = { ...whale.head };
-    for (let i = 0; i < 60 * 180; i++) {
-      whale.step(1 / 60);
-      const dx = whale.head.x - previous.x;
-      if (dx * direction <= 0 || Math.hypot(dx, whale.head.y - previous.y) > 1)
-        throw new Error("Whale reversed or jumped during its crossing");
-      previous = { ...whale.head };
-    }
-    expect(whale.heading).toBe(heading);
+  for (const s of [200, 700]) {
+    const pushing = hero(s, 0),
+      gliding = hero(s, Math.PI / 2);
+    pushing.step(H, under);
+    gliding.step(H, under);
+    expect(pushing.air).toBeGreaterThan(gliding.air);
+    expect(gliding.air).toBeGreaterThan(0.9 * steadyAir(s));
   }
 });
 
-test("the swimming wave moves the flukes much more than the head", () => {
-  const whale = create();
-  const head = whale.project(0.95, 0),
-    tail = whale.project(-1.1, 0);
-  whale.phase += Math.PI / 2;
-  const headMovement = Math.hypot(
-    whale.project(0.95, 0).x - head.x,
-    whale.project(0.95, 0).y - head.y,
-  );
-  const tailMovement = Math.hypot(
-    whale.project(-1.1, 0).x - tail.x,
-    whale.project(-1.1, 0).y - tail.y,
-  );
-  expect(tailMovement).toBeGreaterThan(headMovement * 2);
-});
-
-test("the torso does not bob independently of its direction of travel", () => {
-  const whale = create();
-  const before = [0.95, 0.3, -0.15].map((x) => whale.project(x, 0));
-  whale.phase += Math.PI / 2;
-  expect([0.95, 0.3, -0.15].map((x) => whale.project(x, 0))).toEqual(before);
-});
-
-test("body pitch follows the shallow climb or dive in either travel direction", () => {
-  for (const heading of [0, Math.PI]) {
-    const whale = create();
-    whale.heading = heading;
-    const before = { ...whale.head };
-    whale.step(1 / 60);
-    const nose = whale.project(1, 0);
-    const torso = whale.project(0, 0);
-    const bodySlope = (nose.y - torso.y) / (nose.x - torso.x);
-    const travelSlope = (whale.head.y - before.y) / (whale.head.x - before.x);
-    expect(bodySlope).toBeCloseTo(travelSlope, 3);
-    expect(Math.abs(bodySlope)).toBeGreaterThan(0.02);
-  }
-});
-
-test("a full tail stroke takes about five seconds", () => {
-  const whale = create();
-  for (let i = 0; i < 300; i++) whale.step(1 / 60);
-  expect(whale.phase).toBeGreaterThan(5.5);
-  expect(whale.phase).toBeLessThan(6.6);
-});
-
-test("horizontal fluke lobes rise and fall together instead of swinging sideways", () => {
-  const whale = create();
-  const left = whale.project(-1.1, 0.04, -0.3, "fluke");
-  const right = whale.project(-1.1, 0.04, 0.3, "fluke");
-  whale.phase += Math.PI / 2;
-  const nextLeft = whale.project(-1.1, 0.04, -0.3, "fluke");
-  const nextRight = whale.project(-1.1, 0.04, 0.3, "fluke");
-  expect(nextLeft.y - left.y).toBeGreaterThan(15);
-  expect(nextLeft.y - left.y).toBeCloseTo(nextRight.y - right.y, 6);
-  expect(Math.hypot(right.x - left.x, right.y - left.y)).toBeGreaterThan(20);
-});
-
-test("a turn foreshortens the body without flipping its belly above its back", () => {
-  const whale = create();
-  whale.heading = Math.PI;
-  expect(whale.project(0.3, 0.2).y).toBeGreaterThan(whale.project(0.3, -0.2).y);
-  whale.heading = Math.PI / 2;
-  const nose = whale.project(1, 0),
-    tail = whale.project(-1, 0);
-  expect(Math.abs(nose.x - tail.x)).toBeLessThan(1);
-});
-
-test("render wrapping happens only when the whole whale is outside the artwork", () => {
-  for (const heading of [0, Math.PI]) {
-    const whale = create();
-    whale.heading = heading;
-    let offset = whale.frameOffsetX;
-    let previous = [whale.project(1, 0).x, whale.project(-1.2, 0).x];
-    let wraps = 0;
-    for (let i = 0; i < 60 * 600; i++) {
-      whale.step(1 / 60);
-      const points = [whale.project(1, 0).x, whale.project(-1.2, 0).x];
-      if (whale.frameOffsetX !== offset) {
-        const before = previous.map((x) => x - offset);
-        const after = points.map((x) => x - whale.frameOffsetX);
-        expect(
-          before.every((x) => x < 0) || before.every((x) => x > 1200),
-        ).toBe(true);
-        expect(after.every((x) => x < 0) || after.every((x) => x > 1200)).toBe(
-          true,
-        );
-        wraps++;
-      }
-      offset = whale.frameOffsetX;
-      previous = points;
+test("whales travel forward along the route without jumps", () => {
+  for (const [whale, stream] of [
+    [hero(-100), under],
+    [new Swimmer(POD.far, -100, 0, 0, 3.9), high],
+  ] as const) {
+    const nose = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
+    stream.centerline(whale.s, 0, nose);
+    let previous = { x: nose.x, y: nose.y, s: whale.s };
+    for (let i = 0; i < 60 * 120; i++) {
+      whale.step(H, stream);
+      stream.centerline(whale.s, (i + 1) * H, nose);
       if (
-        !Number.isFinite(whale.head.y) ||
-        whale.head.y < 60 ||
-        whale.head.y > 780
+        whale.s <= previous.s ||
+        nose.x <= previous.x ||
+        Math.hypot(nose.x - previous.x, nose.y - previous.y) >= 1
       )
-        throw new Error("Whale left its vertical passage");
+        throw new Error(`Whale reversed or jumped at step ${i}`);
+      previous = { x: nose.x, y: nose.y, s: whale.s };
     }
-    expect(wraps).toBeGreaterThan(5);
   }
 });
 
-test("whales return within three seconds of fully leaving the frame", () => {
-  for (const heading of [0, Math.PI]) {
-    const whale = create();
-    whale.heading = heading;
-    let hiddenFrames = 0;
-    let returns = 0;
-    for (let i = 0; i < 60 * 180; i++) {
-      whale.step(1 / 60);
-      const nose = whale.project(1, 0).x - whale.frameOffsetX;
-      const tail = whale.project(-1.2, 0).x - whale.frameOffsetX;
-      const visible = Math.max(nose, tail) >= 0 && Math.min(nose, tail) <= 1200;
-      if (!visible) hiddenFrames++;
-      else if (hiddenFrames > 0) {
-        expect(hiddenFrames / 60).toBeGreaterThan(1);
-        expect(hiddenFrames / 60).toBeLessThan(3);
-        hiddenFrames = 0;
-        returns++;
-      }
-    }
-    expect(returns).toBeGreaterThan(2);
+test("the stroke rate follows airspeed, so a carried whale glides", () => {
+  const whale = hero(600);
+  for (let i = 0; i < 600; i++) {
+    whale.step(H, under);
+    const ratio = whale.air / POD.hero.cruise;
+    if (ratio < 0.6 || ratio > 1.25) continue;
+    const expected = ((2 * Math.PI) / POD.hero.period) * ratio;
+    expect(Math.abs(whale.rate / expected - 1)).toBeLessThan(0.02);
   }
+  const carried = measure(hero(500), under, 600, 1000);
+  expect(carried.period).toBeGreaterThanOrEqual(4.7);
+  expect(carried.period).toBeLessThanOrEqual(5.8);
+  const far = measure(new Swimmer(POD.far, 300, 0, 0, 3.9), high, 400, 800);
+  expect(far.period).toBeGreaterThan(carried.period);
+});
+
+test("the current boosts ground speed and slows the stroke after the boost ramp", () => {
+  const whale = hero(-200);
+  const cloud = measure(whale, under, 0, 280);
+  const current = measure(whale, under, 457 + 150, 1000);
+  expect(current.speed).toBeGreaterThanOrEqual(1.8 * cloud.speed);
+  expect(current.period).toBeGreaterThanOrEqual(1.3 * cloud.period);
+  expect(cloud.speed).toBeCloseTo(POD.hero.cruise, 0);
+});
+
+test("stroke events alternate sides at each heave extreme of the fluke root, at the flukes", () => {
+  const whale = hero(600);
+  const events: { s: number; side: number; at: number; heave: number }[] = [];
+  for (let i = 0; i < 60 * 20; i++) {
+    const event = whale.step(H, under);
+    if (event)
+      events.push({
+        ...event,
+        at: whale.s,
+        heave: heave(SPINE_LENGTH, whale.phase),
+      });
+  }
+  expect(events.length).toBeGreaterThanOrEqual(6);
+  events.forEach((event, i) => {
+    expect(event.s).toBeCloseTo(event.at - POD.hero.length, 9);
+    // The side is the extreme the root just reached: +1 ventral, −1 dorsal.
+    expect(Math.abs(event.heave)).toBeGreaterThan(0.07);
+    expect(event.side).toBe(Math.sign(event.heave));
+    const next = events[i + 1];
+    if (next) expect(next.side).toBe(-event.side);
+  });
+});
+
+test("a far whale fades in by age and dissolves by position", () => {
+  const far = new Swimmer(POD.far, 330, 0, 0, 3.9);
+  far.respawn(330, POD.far.lane, 1);
+  far.step(H, high);
+  expect(far.opacity).toBe(0);
+  while (far.age < 1) far.step(H, high);
+  expect(far.opacity).toBeGreaterThan(0.45);
+  while (far.age < 2) far.step(H, high);
+  expect(far.opacity).toBeCloseTo(1, 6);
+  const nose = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
+  while (high.route.frame(far.s, nose).x < 790) {
+    const before = far.opacity;
+    far.step(H, high);
+    expect(far.opacity).toBeLessThanOrEqual(before);
+  }
+  expect(far.opacity).toBe(0);
 });

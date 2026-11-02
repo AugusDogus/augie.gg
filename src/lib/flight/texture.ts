@@ -1,14 +1,20 @@
 /** Approved two-pixel ordered dither, blended with the original artwork. */
-const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 export const clamp = (value: number, min = 0, max = 255) =>
   Math.min(max, Math.max(min, value));
-export function ditherChannel(value: number, x: number, y: number) {
-  const cell = bayer[(y % 4) * 4 + (x % 4)];
-  if (cell === undefined)
+const rank2 = (x: number, y: number) => 2 * x + 3 * y - 4 * x * y;
+/** The 4x4 Bayer rank of a cell, in the closed form the shaders mirror. */
+export function bayerIndex(x: number, y: number) {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0)
     throw new RangeError(
       "Dither coordinates must be nonnegative integer cells",
     );
-  const threshold = (cell + 0.5) / 16 - 0.5;
+  return (
+    4 * rank2(x % 2, y % 2) +
+    rank2(Math.floor(x / 2) % 2, Math.floor(y / 2) % 2)
+  );
+}
+export function ditherChannel(value: number, x: number, y: number) {
+  const threshold = (bayerIndex(x, y) + 0.5) / 16 - 0.5;
   return clamp(Math.round(value / 85 + threshold) * 85);
 }
 export function contrastChannel(channel: number, contrast: number) {
@@ -25,7 +31,25 @@ export function canvas2d(width: number, height: number, readOften = false) {
   return { canvas, context };
 }
 
-export function renderTexture(image: HTMLImageElement) {
+/** The seeded LCG behind the print grain, shared so other layers stay reproducible. */
+export function random(seed: number) {
+  let state = seed;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+export type PrintedArt = {
+  /** The 1200x874 print. */
+  canvas: HTMLCanvasElement;
+  /** The 600x437 dithered lattice drawn into the print. */
+  cells: ImageData;
+  /** The 600x437 downsample before contrast and dither. */
+  sample: ImageData;
+};
+
+export function renderTexture(image: HTMLImageElement): PrintedArt {
   const width = 1200,
     height = 874,
     sampleWidth = 600,
@@ -37,6 +61,7 @@ export function renderTexture(image: HTMLImageElement) {
     true,
   );
   sampleContext.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+  const original = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
   const imageData = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
   const pixels = imageData.data;
   for (let y = 0; y < sampleHeight; y++) {
@@ -59,19 +84,15 @@ export function renderTexture(image: HTMLImageElement) {
   context.imageSmoothingEnabled = true;
   context.globalAlpha = 0.15;
   context.drawImage(image, 0, 0, width, height);
-  let seed = 1607;
-  const random = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
+  const grain = random(1607);
   for (let i = 0; i < 80000; i++) {
-    const x = random() * width,
-      y = random() * height;
+    const x = grain() * width,
+      y = grain() * height;
     context.fillStyle = i % 2 ? "#ffffff" : "#041f29";
-    context.globalAlpha = 0.07 + random() * 0.12;
+    context.globalAlpha = 0.07 + grain() * 0.12;
     context.fillRect(x, y, 1, 1);
   }
   context.globalAlpha = 1;
   sample.width = 0;
-  return canvas;
+  return { canvas, cells: imageData, sample: original };
 }

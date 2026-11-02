@@ -1,9 +1,6 @@
-import { canvas2d, renderTexture } from "./texture";
-import { Flow } from "./flow";
-import { FlowSurface } from "./flow-surface";
-import { Specks, drawSpecks } from "./specks";
-import { Whales } from "./whales";
-import { renderWhaleFilter } from "./whale-filter";
+import { FramePolicy } from "./frame-policy";
+import { FlightRenderer } from "./renderer";
+import { ART_HEIGHT, ART_WIDTH, fitArt, pointerToArt } from "./viewport";
 
 /** The React owner decodes the image before allocating a disposable renderer. */
 export function createBackground(
@@ -14,45 +11,36 @@ export function createBackground(
   if (!canvasContext)
     throw new Error("The artwork renderer could not create a 2D canvas");
   const context = canvasContext;
-  const texture = renderTexture(image);
-  const layer = canvas2d(1200, 874);
-  const flow = new Flow(),
-    specks = new Specks(),
-    whales = new Whales();
-  const surface = FlowSurface.create();
+  // While paused, nothing else repaints the GL frame after a context restore.
+  const renderer = FlightRenderer.create(image, () => {
+    if (!playing) draw();
+  });
+  const coarse = matchMedia("(pointer: coarse)").matches;
+  const policy = new FramePolicy(coarse || !renderer.accelerated ? 30 : 60);
   const pointer = { x: 0.5, y: 0.5, active: false };
+  // Gradients resolve against the transform at fill time, so one per edge suffices.
+  const feathers = {
+    wide: context.createLinearGradient(0, 0, 200, 0),
+    tall: context.createLinearGradient(0, 700, 0, ART_HEIGHT),
+  };
+  feathers.wide.addColorStop(0, "black");
+  feathers.wide.addColorStop(1, "transparent");
+  feathers.tall.addColorStop(0, "transparent");
+  feathers.tall.addColorStop(1, "black");
   let playing = false,
-    elapsed = 0,
-    last = 0,
     frameId = 0;
 
   function draw() {
-    const scale = Math.min(canvas.width / 1200, canvas.height / 874);
-    if (scale <= 0) return;
-    const ox = canvas.width - 1200 * scale;
+    const fit = fitArt(canvas.width, canvas.height);
+    if (!fit) return;
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.setTransform(scale, 0, 0, scale, ox, 0);
-    renderWhaleFilter(layer.context, whales.snapshot());
-    const scene = surface?.render(
-      texture,
-      image,
-      elapsed,
-      flow.snapshot(),
-      layer.canvas,
-    );
-    context.drawImage(scene || texture, 0, 0, 1200, 874);
-    if (!scene) context.drawImage(layer.canvas, 0, 0);
-    drawSpecks(context, specks.snapshot());
-    const wide = canvas.width / canvas.height > 1200 / 874;
-    const feather = wide
-      ? context.createLinearGradient(0, 0, 200, 0)
-      : context.createLinearGradient(0, 700, 0, 874);
-    feather.addColorStop(0, wide ? "transparent" : "black");
-    feather.addColorStop(1, wide ? "black" : "transparent");
-    context.globalCompositeOperation = "destination-in";
-    context.fillStyle = feather;
-    context.fillRect(0, 0, 1200, 874);
+    context.setTransform(fit.scale, 0, 0, fit.scale, fit.x, 0);
+    renderer.paint(context);
+    context.globalCompositeOperation = "destination-out";
+    context.fillStyle = fit.wide ? feathers.wide : feathers.tall;
+    if (fit.wide) context.fillRect(0, 0, 200, ART_HEIGHT);
+    else context.fillRect(0, 700, ART_WIDTH, ART_HEIGHT - 700);
     context.globalCompositeOperation = "source-over";
   }
   function layout() {
@@ -63,41 +51,34 @@ export function createBackground(
     draw();
   }
   function frame(now: number) {
-    if (now - last >= 1000 / 30) {
-      const dt = last ? Math.min((now - last) / 1000, 0.06) : 0;
-      last = now;
-      elapsed += dt;
-      flow.step(dt, pointer);
-      specks.step(dt, elapsed, pointer);
-      whales.step(dt);
+    if (policy.ready(now)) {
+      renderer.step(policy.dt, pointer);
       draw();
     }
     frameId = requestAnimationFrame(frame);
   }
   function sync() {
     cancelAnimationFrame(frameId);
-    last = 0;
+    policy.reset();
     pointer.active = false;
     if (playing && !document.hidden) frameId = requestAnimationFrame(frame);
   }
   function move(event: PointerEvent) {
     const rect = canvas.getBoundingClientRect();
-    const scale = Math.min(rect.width / 1200, rect.height / 874);
-    if (!scale) return;
+    if (!fitArt(rect.width, rect.height)) return;
     const blocked =
       event.target instanceof Element &&
       !!event.target.closest("button,a,input,.material");
-    pointer.x =
-      (event.clientX - rect.left - (rect.width - 1200 * scale)) /
-      (1200 * scale);
-    pointer.y = (event.clientY - rect.top) / (874 * scale);
+    const art = pointerToArt(rect, event.clientX, event.clientY);
+    pointer.x = art.x;
+    pointer.y = art.y;
     pointer.active =
       event.pointerType !== "touch" &&
       !blocked &&
-      pointer.x >= 0 &&
-      pointer.x <= 1 &&
-      pointer.y >= 0 &&
-      pointer.y <= 1;
+      art.x >= 0 &&
+      art.x <= 1 &&
+      art.y >= 0 &&
+      art.y <= 1;
   }
   const clearPointer = () => {
     pointer.active = false;
@@ -106,9 +87,7 @@ export function createBackground(
   try {
     layout();
   } catch (error) {
-    surface?.dispose();
-    texture.width = 0;
-    layer.canvas.width = 0;
+    renderer.dispose();
     canvas.width = 0;
     throw error;
   }
@@ -131,9 +110,7 @@ export function createBackground(
       document.removeEventListener("pointerleave", clearPointer);
       document.removeEventListener("scroll", clearPointer);
       document.removeEventListener("visibilitychange", sync);
-      surface?.dispose();
-      texture.width = 0;
-      layer.canvas.width = 0;
+      renderer.dispose();
       canvas.width = 0;
     },
   };

@@ -48,11 +48,13 @@ export class Specks {
       return;
     }
     if (this.pointer) {
-      const dx = (pointer.x - this.pointer.x) * 1200;
-      const dy = (pointer.y - this.pointer.y) * 874;
+      // Trails were tuned per 30 Hz step; scale so faster frame rates match.
+      const scale = dt > 0 ? 1 / (30 * dt) : 1;
+      const dx = (pointer.x - this.pointer.x) * 1200 * scale;
+      const dy = (pointer.y - this.pointer.y) * 874 * scale;
       const distance = Math.hypot(dx, dy);
       if (distance > 3) {
-        this.emission += distance * 0.055;
+        this.emission += (distance / scale) * 0.055;
         while (this.emission >= 1) {
           this.emission -= 1;
           // Deterministic randomness keeps exports and tests reproducible.
@@ -92,16 +94,20 @@ export function drawSpecks(
   points: readonly Speck[],
 ) {
   context.save();
-  for (const point of points) {
-    const size = (0.9 + point.depth ** 2 * 3) * (point.trail ? 0.8 : 1);
-    context.globalAlpha =
-      (0.28 + point.depth * 0.5) * (point.trail ? point.life : 1);
-    context.fillStyle = point.id % 5 ? "#e0fff1" : "#90dce9";
-    if (point.id % 4 === 0) {
-      context.fillRect(point.x - size, point.y, size * 2, 0.85);
-      context.fillRect(point.x, point.y - size, 0.85, size * 2);
-    } else {
-      context.fillRect(point.x, point.y, size, size * 0.75);
+  // One pass per colour avoids parsing a fill style for every speck.
+  for (const cyan of [false, true]) {
+    context.fillStyle = cyan ? "#90dce9" : "#e0fff1";
+    for (const point of points) {
+      if ((point.id % 5 === 0) !== cyan) continue;
+      const size = (0.9 + point.depth ** 2 * 3) * (point.trail ? 0.8 : 1);
+      context.globalAlpha =
+        (0.28 + point.depth * 0.5) * (point.trail ? point.life : 1);
+      if (point.id % 4 === 0) {
+        context.fillRect(point.x - size, point.y, size * 2, 0.85);
+        context.fillRect(point.x, point.y - size, 0.85, size * 2);
+      } else {
+        context.fillRect(point.x, point.y, size, size * 0.75);
+      }
     }
   }
   context.restore();
