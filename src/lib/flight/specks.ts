@@ -42,7 +42,11 @@ export class Specks {
       );
       if (point.trail) point.life -= dt * 1.8;
     }
-    this.points = this.points.filter((point) => !point.trail || point.life > 0);
+    // Spent trails drop out in place, without a new array every frame.
+    let kept = 0;
+    for (const point of this.points)
+      if (!point.trail || point.life > 0) this.points[kept++] = point;
+    this.points.length = kept;
     if (!pointer?.active) {
       this.pointer = null;
       return;
