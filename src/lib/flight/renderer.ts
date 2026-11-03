@@ -1,6 +1,6 @@
 import { Haze, occluderMask } from "./art-maps";
 import { Flow, type Pointer } from "./flow";
-import { FlowSurface } from "./flow-surface";
+import { FlowSurface, SurfaceStart } from "./flow-surface";
 import type { Sense } from "./instrument";
 import { Pod, type SkyFrame } from "./pod";
 import { Specks, drawSpecks } from "./specks";
@@ -35,23 +35,37 @@ export class FlightRenderer {
     private surface: FlowSurface | null,
   ) {}
 
-  /** `onRestore` runs after a lost GPU context is rebuilt, so a paused frame can be redrawn. */
-  static create(art: Artwork, onRestore = () => {}) {
-    const print = renderTexture(art);
-    const mask = occluderMask(print.sample);
-    const pod = new Pod(Haze.fromSample(print.sample), new Subjects());
-    const surface = FlowSurface.create(
-      {
-        print,
-        image: art.bitmap,
-        cells: rigCells(print.cells, rigMap(print.sample)),
-        mask,
-        streams: pod.streams,
-        vertices: pod.write().vertices,
-      },
-      onRestore,
-    );
-    return new FlightRenderer(print, mask, pod, surface);
+  /**
+   * `onRestore` runs after a lost GPU context is rebuilt, so a paused frame can
+   * be redrawn. `start` (begun first if not passed) compiles the shaders while
+   * the print bakes.
+   */
+  static create(
+    art: Artwork,
+    onRestore = () => {},
+    start = SurfaceStart.begin(),
+  ) {
+    try {
+      const print = renderTexture(art);
+      const mask = occluderMask(print.sample);
+      const pod = new Pod(Haze.fromSample(print.sample), new Subjects());
+      const surface = FlowSurface.create(
+        {
+          print,
+          image: art.bitmap,
+          cells: rigCells(print.cells, rigMap(print.sample)),
+          mask,
+          streams: pod.streams,
+          vertices: pod.write().vertices,
+        },
+        onRestore,
+        start,
+      );
+      return new FlightRenderer(print, mask, pod, surface);
+    } finally {
+      // A no-op once the surface took it; otherwise a failed bake would strand the context.
+      start?.dispose();
+    }
   }
 
   get accelerated() {

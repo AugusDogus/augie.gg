@@ -1,4 +1,4 @@
-import type { GlScope, RenderTarget } from "./gl";
+import type { GlScope, PendingProgram, RenderTarget } from "./gl";
 import type { SkyFrame } from "./pod";
 import {
   BEAD_FRAGMENT,
@@ -32,12 +32,16 @@ type BeadPass = {
   at: Locations;
 };
 
-function beadProgram(scope: GlScope, label: string) {
+/** The current, wisp, and whale programs, issued together by SkyLayer.compile. */
+export type SkyPrograms = {
+  beads: readonly { id: StreamId; program: PendingProgram }[];
+  wisp: PendingProgram;
+  whale: PendingProgram;
+};
+
+function beadProgram(scope: GlScope, pending: PendingProgram) {
   const gl = scope.gl;
-  const program = scope.program(BEAD_VERTEX, BEAD_FRAGMENT, label, {
-    bead: 0,
-    fiber: 1,
-  });
+  const program = scope.linked(pending);
   gl.useProgram(program);
   gl.uniform1i(gl.getUniformLocation(program, "mask"), MASK_UNIT);
   const at = (name: string) => gl.getUniformLocation(program, name);
@@ -88,8 +92,21 @@ export class SkyLayer {
     },
   ) {}
 
+  static compile(scope: GlScope): SkyPrograms {
+    const bead = (label: string) =>
+      scope.compile(BEAD_VERTEX, BEAD_FRAGMENT, label, { bead: 0, fiber: 1 });
+    return {
+      beads: STREAM_IDS.map((id) => ({ id, program: bead(`${id} current`) })),
+      wisp: bead("wisp"),
+      whale: scope.compile(WHALE_VERTEX, WHALE_FRAGMENT, "whale", {
+        vertex: 0,
+      }),
+    };
+  }
+
   static create(
     scope: GlScope,
+    programs: SkyPrograms,
     streams: Readonly<Record<StreamId, Stream>>,
     mask: Uint8Array,
     vertices: Float32Array,
@@ -111,9 +128,9 @@ export class SkyLayer {
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
     const light = scope.target(600, 437, LIGHT_UNIT, gl.NEAREST, "current");
     const whales = scope.target(1200, 874, WHALE_UNIT, gl.LINEAR, "whale");
-    const beads = STREAM_IDS.map((id): BeadPass => {
+    const beads = programs.beads.map(({ id, program: pending }): BeadPass => {
       const { uniforms } = streams[id];
-      const { program, at, locations } = beadProgram(scope, `${id} current`);
+      const { program, at, locations } = beadProgram(scope, pending);
       gl.uniform4fv(locations.route, uniforms.route);
       gl.uniform4fv(locations.range, uniforms.range);
       gl.uniform4fv(locations.shape, uniforms.shape);
@@ -133,14 +150,12 @@ export class SkyLayer {
         at: locations,
       };
     });
-    const wisp = beadProgram(scope, "wisp");
+    const wisp = beadProgram(scope, programs.wisp);
     const empty = new Float32Array(BODY_SLOTS * 4);
     for (let k = 0; k < BODY_SLOTS; k++) empty[k * 4 + 2] = 1;
     gl.uniform4fv(wisp.locations.bodies, empty);
     gl.uniform1f(wisp.at("swell"), 0);
-    const program = scope.program(WHALE_VERTEX, WHALE_FRAGMENT, "whale", {
-      vertex: 0,
-    });
+    const program = scope.linked(programs.whale);
     gl.useProgram(program);
     const at = (name: string) => gl.getUniformLocation(program, name);
     gl.uniform1i(at("mask"), MASK_UNIT);

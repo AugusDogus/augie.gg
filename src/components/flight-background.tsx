@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { createBackground } from "~/lib/flight/background";
+import { SurfaceStart } from "~/lib/flight/flow-surface";
 import { loadArtwork } from "~/lib/flight/texture";
 
 // The persistent root background and the home dock share one motion preference.
@@ -53,11 +54,14 @@ export function FlightBackground() {
   }, [active]);
   useEffect(() => {
     let disposed = false;
+    const artwork = loadArtwork("/flight4cover_redux_spread.jpg");
+    // The shaders compile while the artwork decodes.
+    const start = SurfaceStart.begin();
     async function initialize() {
       try {
-        const image = await loadArtwork("/flight4cover_redux_spread.jpg");
+        const image = await artwork;
         if (disposed || !canvas.current) return;
-        const background = createBackground(canvas.current, image);
+        const background = createBackground(canvas.current, image, start);
         renderer.current = background;
         background.setPlaying(activeRef.current);
         setReady(true);
@@ -70,11 +74,15 @@ export function FlightBackground() {
           "The animated artwork could not load. The pre-rendered background remains available.",
           error,
         );
+      } finally {
+        // A no-op once the renderer took it.
+        start?.dispose();
       }
     }
     void initialize();
     return () => {
       disposed = true;
+      start?.dispose();
       renderer.current?.dispose();
       renderer.current = null;
     };

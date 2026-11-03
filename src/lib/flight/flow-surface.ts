@@ -1,8 +1,13 @@
 import type { FlowState } from "./flow";
-import { GlScope } from "./gl";
+import { GlScope, type PendingProgram } from "./gl";
 import type { SkyFrame } from "./pod";
 import { COMPOSITE_FRAGMENT, FULLSCREEN_VERTEX } from "./shaders";
-import { LIGHT_UNIT, SkyLayer, WHALE_UNIT } from "./sky-layer";
+import {
+  LIGHT_UNIT,
+  SkyLayer,
+  WHALE_UNIT,
+  type SkyPrograms,
+} from "./sky-layer";
 import type { Stream, StreamId } from "./streams";
 import type { PrintedArt } from "./texture";
 import { ART_HEIGHT, ART_WIDTH } from "./viewport";
@@ -27,27 +32,39 @@ type Composite = {
   rig: WebGLUniformLocation | null;
 };
 
+type Programs = { sky: SkyPrograms; composite: PendingProgram };
+
+function compile(scope: GlScope): Programs {
+  const sky = SkyLayer.compile(scope);
+  const composite = scope.compile(
+    FULLSCREEN_VERTEX,
+    COMPOSITE_FRAGMENT,
+    "atmosphere",
+    { position: 0 },
+  );
+  return { sky, composite };
+}
+
+const UNAVAILABLE =
+  "Interactive artwork is unavailable. Using the 2D background.";
+
 /**
- * Owns all GPU resources. Creation failures leave the 2D renderer available,
- * and a lost context renders nothing until it is restored.
+ * A WebGL context whose programs are already compiling, so the driver works
+ * while the artwork loads and prints. FlowSurface.create takes it over; until
+ * then dispose() releases it.
  */
-export class FlowSurface {
-  private scope: GlScope;
-  private composite: Composite | null = null;
-  private brushData = new Float32Array(32);
+export class SurfaceStart {
+  private taken = false;
 
   private constructor(
     readonly canvas: HTMLCanvasElement,
-    private gl: WebGLRenderingContext,
-    private sources: SurfaceSources,
-    private onRestore: () => void,
-  ) {
-    this.scope = new GlScope(gl);
-    canvas.addEventListener("webglcontextlost", this.lose);
-    canvas.addEventListener("webglcontextrestored", this.restore);
-  }
+    readonly gl: WebGLRenderingContext,
+    readonly scope: GlScope,
+    readonly programs: Programs,
+  ) {}
 
-  static create(sources: SurfaceSources, onRestore: () => void) {
+  /** Null without WebGL, or when its programs cannot even be issued. */
+  static begin() {
     const canvas = document.createElement("canvas");
     canvas.width = ART_WIDTH;
     canvas.height = ART_HEIGHT;
@@ -60,30 +77,87 @@ export class FlowSurface {
       failIfMajorPerformanceCaveat: true,
     });
     if (!gl) return null;
-    const surface = new FlowSurface(canvas, gl, sources, onRestore);
+    const scope = new GlScope(gl);
     try {
-      surface.composite = surface.initialize();
+      const start = new SurfaceStart(canvas, gl, scope, compile(scope));
+      // Send the compiles now rather than with the next draw.
+      gl.flush();
+      return start;
+    } catch (error) {
+      console.warn(UNAVAILABLE, error);
+      scope.dispose();
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      canvas.width = 0;
+      return null;
+    }
+  }
+
+  /** The context for exactly one surface; null once taken or disposed. */
+  take() {
+    if (this.taken) return null;
+    this.taken = true;
+    return this;
+  }
+
+  /** Releases the context unless a surface took it. */
+  dispose() {
+    if (!this.take()) return;
+    this.scope.dispose();
+    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    this.canvas.width = 0;
+  }
+}
+
+/**
+ * Owns all GPU resources. Creation failures leave the 2D renderer available,
+ * and a lost context renders nothing until it is restored.
+ */
+export class FlowSurface {
+  private composite: Composite | null = null;
+  private brushData = new Float32Array(32);
+
+  private constructor(
+    readonly canvas: HTMLCanvasElement,
+    private gl: WebGLRenderingContext,
+    private scope: GlScope,
+    private sources: SurfaceSources,
+    private onRestore: () => void,
+  ) {
+    canvas.addEventListener("webglcontextlost", this.lose);
+    canvas.addEventListener("webglcontextrestored", this.restore);
+  }
+
+  /** Takes over `start`, or returns null for the 2D renderer. */
+  static create(
+    sources: SurfaceSources,
+    onRestore: () => void,
+    start: SurfaceStart | null,
+  ) {
+    const owned = start?.take();
+    if (!owned) return null;
+    const { canvas, gl, scope, programs } = owned;
+    const surface = new FlowSurface(canvas, gl, scope, sources, onRestore);
+    try {
+      surface.composite = surface.initialize(programs);
       return surface;
     } catch (error) {
-      console.warn(
-        "Interactive artwork is unavailable. Using the 2D background.",
-        error,
-      );
+      console.warn(UNAVAILABLE, error);
       surface.dispose();
       return null;
     }
   }
 
-  private initialize(): Composite {
+  private initialize(programs: Programs): Composite {
     const gl = this.gl;
     const { print, image, cells, mask, streams, vertices } = this.sources;
-    const sky = SkyLayer.create(this.scope, streams, mask, vertices);
-    const program = this.scope.program(
-      FULLSCREEN_VERTEX,
-      COMPOSITE_FRAGMENT,
-      "atmosphere",
-      { position: 0 },
+    const sky = SkyLayer.create(
+      this.scope,
+      programs.sky,
+      streams,
+      mask,
+      vertices,
     );
+    const program = this.scope.linked(programs.composite);
     const quad = this.scope.buffer(
       gl.ARRAY_BUFFER,
       new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
@@ -151,7 +225,7 @@ export class FlowSurface {
   private restore = () => {
     this.scope = new GlScope(this.gl);
     try {
-      this.composite = this.initialize();
+      this.composite = this.initialize(compile(this.scope));
       this.onRestore();
     } catch (error) {
       console.warn(

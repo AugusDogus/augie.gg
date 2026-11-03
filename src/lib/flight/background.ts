@@ -1,19 +1,31 @@
+import type { SurfaceStart } from "./flow-surface";
 import { FramePolicy } from "./frame-policy";
 import { Instrument, type PointerKind } from "./instrument";
 import { FlightRenderer } from "./renderer";
 import type { Artwork } from "./texture";
 import { ART_HEIGHT, ART_WIDTH, fitArt, pointerToArt } from "./viewport";
 
-/** The React owner decodes the image before allocating a disposable renderer. */
-export function createBackground(canvas: HTMLCanvasElement, image: Artwork) {
+/**
+ * The React owner decodes the image before allocating a disposable renderer,
+ * and may begin the GPU `start` before that, so shaders compile meanwhile.
+ */
+export function createBackground(
+  canvas: HTMLCanvasElement,
+  image: Artwork,
+  start?: SurfaceStart | null,
+) {
   const canvasContext = canvas.getContext("2d");
   if (!canvasContext)
     throw new Error("The artwork renderer could not create a 2D canvas");
   const context = canvasContext;
   // While paused, nothing else repaints the GL frame after a context restore.
-  const renderer = FlightRenderer.create(image, () => {
-    if (!playing) draw();
-  });
+  const renderer = FlightRenderer.create(
+    image,
+    () => {
+      if (!playing) draw();
+    },
+    start,
+  );
   const coarse = matchMedia("(pointer: coarse)").matches;
   const policy = new FramePolicy(coarse || !renderer.accelerated ? 30 : 60);
   const instrument = new Instrument();

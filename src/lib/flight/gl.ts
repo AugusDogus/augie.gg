@@ -5,6 +5,13 @@ export type RenderTarget = {
   height: number;
 };
 
+/** A program whose compile and link are issued but not yet checked. */
+export type PendingProgram = {
+  program: WebGLProgram;
+  shaders: readonly WebGLShader[];
+  label: string;
+};
+
 /** Records every GL object it allocates, so one dispose() releases them all. */
 export class GlScope {
   private programs: WebGLProgram[] = [];
@@ -15,16 +22,23 @@ export class GlScope {
 
   constructor(readonly gl: WebGLRenderingContext) {}
 
-  program(
+  /**
+   * Issues the compile and link without waiting for them. Status queries
+   * block until the driver finishes, so issue every program before linked()
+   * checks any: the driver can then compile them together, and alongside
+   * other work.
+   */
+  compile(
     vertex: string,
     fragment: string,
     label: string,
     attributes: Readonly<Record<string, number>>,
-  ) {
+  ): PendingProgram {
     const gl = this.gl;
     const program = gl.createProgram();
     if (!program) throw new Error(`Could not allocate the ${label} program`);
     this.programs.push(program);
+    const shaders: WebGLShader[] = [];
     for (const [kind, source] of [
       [gl.VERTEX_SHADER, vertex],
       [gl.FRAGMENT_SHADER, fragment],
@@ -32,17 +46,25 @@ export class GlScope {
       const shader = gl.createShader(kind);
       if (!shader) throw new Error(`Could not allocate the ${label} shader`);
       this.shaders.push(shader);
+      shaders.push(shader);
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-        throw new Error(
-          `The ${label} shader failed to compile: ${gl.getShaderInfoLog(shader)}`,
-        );
       gl.attachShader(program, shader);
     }
     for (const [name, location] of Object.entries(attributes))
       gl.bindAttribLocation(program, location, name);
     gl.linkProgram(program);
+    return { program, shaders, label };
+  }
+
+  /** Waits for a compile() and returns its program, or throws with the driver's log. */
+  linked({ program, shaders, label }: PendingProgram) {
+    const gl = this.gl;
+    for (const shader of shaders)
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+        throw new Error(
+          `The ${label} shader failed to compile: ${gl.getShaderInfoLog(shader)}`,
+        );
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       throw new Error(
         `The ${label} program failed to link: ${gl.getProgramInfoLog(program)}`,
