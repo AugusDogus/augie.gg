@@ -1,10 +1,23 @@
 "use client";
 
 import { CaretDownIcon, LockSimpleIcon } from "@phosphor-icons/react";
-import { type KeyboardEvent, type Ref, useId, useRef, useState } from "react";
+import Image from "next/image";
+import {
+  type FocusEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type Ref,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { STATUS_LABEL, StatusIcon, statusOf } from "~/components/status-icon";
 import { Blurb } from "~/components/work/blurb";
 import { Catalog } from "~/components/work/catalog";
+import { useStageLayout } from "~/components/work/layout";
+import { Preview } from "~/components/work/preview";
+import { SCREEN_FRAME } from "~/components/work/project-media";
+import { Showcase } from "~/components/work/showcase";
 import { rovingTarget } from "~/components/work/roving";
 import type { Project } from "~/content/projects";
 import { closeProject, openProject, usePeek } from "~/lib/peek";
@@ -14,6 +27,7 @@ import {
   groupByYear,
   yearOf,
 } from "~/lib/projects";
+import { cn } from "~/lib/utils";
 
 const featuredTitles = featuredProjects.map((project) => project.title);
 const allTitles = [
@@ -31,7 +45,10 @@ type RowProps = {
   open: boolean;
   tabbable: boolean;
   rowRef: Ref<HTMLButtonElement>;
-  onFocus: () => void;
+  onFocus: (event: FocusEvent<HTMLButtonElement>) => void;
+  onBlur: () => void;
+  onPointerEnter: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerLeave: (event: PointerEvent<HTMLButtonElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
 };
 
@@ -40,13 +57,40 @@ function toggle(title: string, open: boolean) {
   else openProject(title);
 }
 
+/** The lead capture, cropped small, where rows can't preview on hover. */
+function Thumb({ project }: { project: Project }) {
+  const showcase = Showcase.of(project.media);
+  if (showcase === null)
+    return (
+      <span className="text-fg-3 grid aspect-[16/10] w-full place-items-center rounded-[6px] bg-white/[.03] shadow-[inset_0_0_0_1px_#ffffff0f]">
+        {project.private && (
+          <LockSimpleIcon aria-hidden="true" className="size-3.5" />
+        )}
+      </span>
+    );
+  const media = Showcase.cover(showcase);
+  return (
+    <span
+      className={cn(SCREEN_FRAME, "block aspect-[16/10] w-full rounded-[6px]")}
+    >
+      <Image
+        src={media.kind === "video" ? media.poster : media.src}
+        alt=""
+        width={media.width}
+        height={media.height}
+        sizes="72px"
+        className="absolute inset-0 size-full object-cover object-top"
+      />
+    </span>
+  );
+}
+
 function FeaturedRow({
   project,
   open,
   tabbable,
   rowRef,
-  onFocus,
-  onKeyDown,
+  ...handlers
 }: RowProps) {
   const status = statusOf(project.labels);
   const blurbId = useId();
@@ -62,23 +106,28 @@ function FeaturedRow({
         status ? `${project.title}, ${STATUS_LABEL[status]}` : project.title
       }
       aria-describedby={blurbId}
-      onFocus={onFocus}
-      onKeyDown={onKeyDown}
       onClick={() => toggle(project.title, open)}
-      className={`${ROW} grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-2.5 text-sm`}
+      {...handlers}
+      className={`${ROW} flex items-start gap-3 py-2.5 text-sm max-[350px]:gap-2.5`}
     >
-      <span className="flex size-3.5">
-        {status && <StatusIcon status={status} />}
+      {/* Narrower on small phones, so titles fit whole. */}
+      <span className="stage:hidden mt-0.5 w-[72px] shrink-0 max-[400px]:w-14 max-[350px]:w-12">
+        <Thumb project={project} />
       </span>
-      <span className="text-fg truncate font-medium">{project.title}</span>
-      <span
-        id={blurbId}
-        className="text-fg-2 col-[2/4] row-start-2 text-pretty"
-      >
-        {Blurb.plain(project.blurb)}
-      </span>
-      <span className="text-fg-3 col-start-3 row-start-1 text-[13px] tabular-nums">
-        {yearOf(project)}
+      <span className="stage:gap-x-3 grid min-w-0 flex-1 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-0.5 max-[350px]:gap-x-1.5">
+        <span className="flex size-3.5">
+          {status && <StatusIcon status={status} />}
+        </span>
+        <span className="text-fg truncate font-medium">{project.title}</span>
+        <span className="text-fg-3 col-start-3 row-start-1 text-[13px] tabular-nums">
+          {yearOf(project)}
+        </span>
+        <span
+          id={blurbId}
+          className="text-fg-2 stage:col-[2/4] col-[1/4] row-start-2 text-pretty"
+        >
+          {Blurb.plain(project.blurb)}
+        </span>
       </span>
     </button>
   );
@@ -89,8 +138,7 @@ function ArchiveRow({
   open,
   tabbable,
   rowRef,
-  onFocus,
-  onKeyDown,
+  ...handlers
 }: RowProps) {
   const blurbId = useId();
   return (
@@ -105,9 +153,8 @@ function ArchiveRow({
         project.private ? `${project.title}, private repository` : project.title
       }
       aria-describedby={blurbId}
-      onFocus={onFocus}
-      onKeyDown={onKeyDown}
       onClick={() => toggle(project.title, open)}
+      {...handlers}
       className={`${ROW} grid min-h-9 grid-cols-[14px_auto_minmax(0,1fr)_2rem] items-center gap-x-3 text-[13.5px] max-[600px]:grid-cols-[14px_minmax(0,1fr)_2rem] max-[600px]:gap-y-0.5 max-[600px]:py-2 pointer-coarse:min-h-10`}
     >
       <span className="text-fg col-start-2 flex min-w-0 items-center gap-1.5 font-medium whitespace-nowrap">
@@ -129,13 +176,21 @@ function ArchiveRow({
   );
 }
 
-/** Selected work as a keyboard-first list; every row opens the project peek. */
+/**
+ * Selected work as a keyboard-first list. Every row opens the project view:
+ * on wide screens with a mouse, hovering or focusing a row previews it on the
+ * stage and clicking pins it; elsewhere rows carry a thumbnail and open the
+ * bottom sheet.
+ */
 export function WorkList() {
   const peek = usePeek();
+  const stage = useStageLayout();
   const [expanded, setExpanded] = useState(false);
   const [stuck, setStuck] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const rows = useRef(new Map<string, HTMLButtonElement>());
+  /** The row keyboard focus previewed, so a pointer click's focus never hides the stage on blur. */
+  const focusPreview = useRef<string | null>(null);
   const panel = useRef<HTMLElement>(null);
   const order = expanded ? allTitles : featuredTitles;
   const tabStop =
@@ -153,14 +208,32 @@ export function WorkList() {
           rows.current.delete(title);
         };
       },
-      onFocus: () => setFocused(title),
+      onFocus: (event) => {
+        setFocused(title);
+        if (!stage || !event.currentTarget.matches(":focus-visible")) return;
+        focusPreview.current = title;
+        Preview.enter(title, null);
+      },
+      onBlur: () => {
+        if (focusPreview.current !== title) return;
+        focusPreview.current = null;
+        Preview.leave(null);
+      },
+      onPointerEnter: (event) => {
+        if (stage && event.pointerType !== "touch")
+          Preview.enter(title, { x: event.clientX, y: event.clientY });
+      },
+      onPointerLeave: (event) => {
+        if (stage && event.pointerType !== "touch")
+          Preview.leave({ x: event.clientX, y: event.clientY });
+      },
       onKeyDown: (event) => {
         if (event.metaKey || event.ctrlKey || event.altKey) return;
         const target = rovingTarget(order, title, event.key);
         if (target === null) return;
         event.preventDefault();
         rows.current.get(target)?.focus();
-        // With the peek open, it follows the focused row, like a mail client.
+        // With a project open, it follows the focused row, like a mail client.
         if (peek !== null) openProject(target);
       },
     };

@@ -13,14 +13,17 @@
  * - `notable: n` names a merged upstream contribution at position n of the
  *   OSS line.
  * - Non-featured projects appear in Everything else, grouped by year.
- * - `media` lists real captures of the project, lead first, served from
+ * - `media` lists real captures of the project, served from
  *   `public/work/<slug>/`. Only use captures checked for personal data. Give
  *   each its pixel `width` and `height` (the frame reserves that shape before
- *   it loads), factual `alt` text, and a `frame`: `desktop` for a browser or
- *   desktop app, `phone`, or `console` for TV output (a 4:3 bezel that keeps
- *   pixels sharp; export the 640-wide picture scaled 2x nearest neighbor).
- *   A video is a short silent loop: `src` is the WebM, `mp4` the fallback,
- *   and `poster` its first frame, shown whenever it can't play.
+ *   it loads), factual `alt` text, and a `frame`: `desktop` for anything
+ *   shown as a screen (a browser, a desktop app, TV output) or `phone`. The
+ *   project view shows the first desktop capture with the first phone capture
+ *   set in front of it; the rest are not shown. Images and videos share one
+ *   frame. Mark pixel art and console output `pixelated: true` (export it scaled
+ *   2x nearest neighbor) so it stays sharp. A video is a short silent loop:
+ *   `src` is an H.264 MP4 and `poster` its first frame, shown whenever it
+ *   can't play.
  */
 
 export type Label =
@@ -34,8 +37,8 @@ export type Label =
   /** Upstream PR still in review. */
   | "pending";
 
-/** What a capture is shown in: a glass window, a phone, or a 4:3 TV bezel. */
-export type MediaFrame = "desktop" | "phone" | "console";
+/** What a capture is shown in: a screen, or a phone. */
+export type MediaFrame = "desktop" | "phone";
 
 export type Media =
   | {
@@ -45,12 +48,13 @@ export type Media =
       width: number;
       height: number;
       frame: MediaFrame;
+      /** Pixel art, such as console output: scaled nearest neighbor, never smoothed. */
+      pixelated?: true;
     }
   | {
       kind: "video";
-      /** WebM. */
+      /** H.264 MP4: every browser plays it. */
       src: string;
-      mp4: string;
       poster: string;
       alt: string;
       width: number;
@@ -143,6 +147,17 @@ export const projects: Project[] = [
     featured: 5,
     highlight:
       "Built on GPUI, the GPU-accelerated UI framework behind the Zed editor",
+    media: [
+      {
+        kind: "video",
+        src: "/work/teams-rs/app.mp4",
+        poster: "/work/teams-rs/app-poster.webp",
+        alt: "teams-rs with made-up demo data: reacting and typing in a chat, the Ctrl+K palette jumping between chats, a calendar week with an event flyout, and a six-person call.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "pomodoro",
@@ -383,8 +398,7 @@ export const projects: Project[] = [
     media: [
       {
         kind: "video",
-        src: "/work/opentab/send-tab.webm",
-        mp4: "/work/opentab/send-tab.mp4",
+        src: "/work/opentab/send-tab.mp4",
         poster: "/work/opentab/send-tab-poster.webp",
         alt: "A tab sent from an Android phone to a desktop browser: Chrome’s Share menu, the opentab share target, the app’s device list, then helium.computer opening in a new desktop tab.",
         width: 1156,
@@ -495,8 +509,7 @@ export const projects: Project[] = [
     media: [
       {
         kind: "video",
-        src: "/work/junkyardindex/search.webm",
-        mp4: "/work/junkyardindex/search.mp4",
+        src: "/work/junkyardindex/search.mp4",
         poster: "/work/junkyardindex/search-poster.webp",
         alt: "Junkyard Index search in dark mode: the field is cleared, “Honda Civic” is typed, and 5,120 matching vehicles appear with yard photos.",
         width: 1280,
@@ -547,20 +560,22 @@ export const projects: Project[] = [
       "Native GameCube and Wii clients in C: H.264 over HLS, TLS 1.2, synced with web viewers",
     media: [
       {
-        kind: "image",
-        src: "/work/multiplex/watch-together.webp",
-        alt: "The Multiplex GameCube client in Dolphin: details for Fresh (2022) with the More actions menu open and Host Watch Together focused.",
+        kind: "video",
+        src: "/work/multiplex/web.mp4",
+        poster: "/work/multiplex/web-poster.webp",
+        alt: "The Multiplex web app in dark mode: poster shelves for Watch Together, Continue Watching and Recently Added scroll by, then a Watch Together room for Godzilla Minus One opens.",
         width: 1280,
-        height: 1056,
-        frame: "console",
+        height: 800,
+        frame: "desktop",
       },
       {
-        kind: "image",
-        src: "/work/multiplex/details.webp",
-        alt: "The Multiplex GameCube client in Dolphin: details for Fresh (2022) with its tagline, rating, runtime, Resume button, synopsis, director, and a poster with a watch-progress bar.",
-        width: 1280,
-        height: 1056,
-        frame: "console",
+        kind: "video",
+        src: "/work/multiplex/phone.mp4",
+        poster: "/work/multiplex/phone-poster.webp",
+        alt: "Multiplex on a phone: swiping through the home shelves, then opening the Godzilla Minus One Watch Together room from the bottom tab layout.",
+        width: 590,
+        height: 1280,
+        frame: "phone",
       },
     ],
   },

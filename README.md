@@ -67,9 +67,23 @@ name; Geist Mono only draws keyboard hints.
 
 - ⌘K (or Ctrl K, or /) opens a command menu over actions, selected work, open
   source contributions, and every other project.
-- Selected work rows open a peek panel with the project's evidence and links,
-  a side sheet on wide screens and a draggable bottom sheet on narrow ones.
-  `?p=<title>` links straight to a project.
+- Every project opens in one project view (`ProjectView` in
+  `src/components/work/project-view.tsx`): its captures on top, then status,
+  title, start date, blurb, evidence, and a link out. Rows, the command menu,
+  the archive, and `?p=<title>` links all open it.
+- On wide screens with a mouse the view lives on a stage beside the list,
+  over the painting. Hovering or focusing a row previews the project there;
+  clicking it or pressing Enter pins it, which selects the row, adds previous,
+  next, and close buttons, writes `?p=`, and lets ← → step and Esc close.
+  While a project is pinned, hovering other rows leaves the stage alone. The
+  pointer can cross from a row onto the stage, even diagonally over other
+  rows, without losing the preview.
+- On phones, tablets, and narrow windows rows carry a thumbnail instead, and
+  the same view opens in a draggable bottom sheet.
+- Captures share one frame whether they are images or videos, with a phone
+  capture set in front of the lead screen as picture-in-picture. Videos play
+  only while on screen, and show their poster with reduced motion or
+  Save-Data.
 - The activity panel prints the last year of GitHub contributions with streaks
   and the busiest day, readable by hover, touch, or arrow keys.
 - The dock pauses the painting (or press P), credits it, and shows the time in

@@ -53,11 +53,11 @@ export const PeekFocus = {
    * On close: back to the opener, unless focus is already on the page. A row
    * opener gives way to the row of the project last shown, since stepping moves
    * on; so does a lost one, as in Safari, where clicked buttons never take focus.
-   * The side peek kept its row in view while stepping, so a page the reader has
+   * The stage kept its row in view while stepping, so a page the reader has
    * since scrolled stays put. The modal sheet stepped without moving the list,
    * so a keyboard close brings the ringed row back; a tap leaves the page alone.
    */
-  restore(opener: Element | null, title: string, layout: "side" | "sheet") {
+  restore(opener: Element | null, title: string, layout: "stage" | "sheet") {
     if (onPage(document.activeElement)) return;
     const fromRow =
       opener instanceof Element && opener.closest("[data-project]") !== null;
@@ -75,7 +75,7 @@ export const PeekFocus = {
       row.scrollIntoView({ block: "nearest" });
   },
   /**
-   * Tab past either end of the side peek: on as if it sat right after the open
+   * Tab past either end of the stage: on as if it sat right after the open
    * project's row, back to the row or to the page past it (else the opener),
    * instead of looping, since the page stays live beside it.
    */
@@ -103,12 +103,12 @@ export const PeekFocus = {
           ? row
           : (tabStopAfter(row, panel) ?? row);
     if (target === null) return;
-    // Ahead of the dialog's own focus loop, which runs even when it is non-modal.
+    // Ahead of the browser, which would tab on from the stage at the end of the page.
     event.preventDefault();
     event.stopPropagation();
     target.focus();
   },
-  /** Tab from the open project's row: into the side peek, mirroring leave(). */
+  /** Tab from the open project's row: onto the stage, mirroring leave(). */
   enter(
     event: globalThis.KeyboardEvent,
     panel: HTMLElement | null,
@@ -128,7 +128,7 @@ export const PeekFocus = {
     event.preventDefault();
     first.focus();
   },
-  /** After the side peek steps: the new project's row comes into view, taking focus from the old row. */
+  /** After the stage steps: the new project's row comes into view, taking focus from the old row. */
   follow(from: string, to: string) {
     const row = rowOf(to);
     if (row === null) return;

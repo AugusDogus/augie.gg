@@ -1,10 +1,25 @@
 "use client";
 
 import Image from "next/image";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { usePlaying } from "~/components/flight-background";
 import type { Media } from "~/content/projects";
 import { cn } from "~/lib/utils";
+import { Showcase } from "./showcase";
+
+/**
+ * Every screen capture's frame, image or video alike: a hairline border, an
+ * inner hairline over the pixels, a soft drop shadow, and a dark ground while
+ * it loads. Callers set the radius, so thumbnails can sit tighter.
+ */
+export const SCREEN_FRAME =
+  "relative overflow-hidden bg-[#05090b] shadow-[0_0_0_1px_#ffffff1f,0_1px_2px_#00000066,0_16px_40px_-16px_#000000b3] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_0_0_0_1px_#0000004d]";
 
 /** Save-Data, where the browser reports it. */
 function savesData(): boolean {
@@ -18,36 +33,35 @@ function savesData(): boolean {
   );
 }
 
+/**
+ * Pixel art stays nearest neighbor once each of its columns gets a device
+ * pixel; any smaller and nearest neighbor drops whole columns, so it resamples
+ * instead. The widths assume a 640-column picture exported at 2x, as console
+ * output is.
+ */
+const PIXELATED =
+  "@min-[640px]:[image-rendering:pixelated] [@media(min-resolution:2dppx)]:@min-[320px]:[image-rendering:pixelated] [@media(min-resolution:3dppx)]:@min-[214px]:[image-rendering:pixelated]";
+
 /** A capture's pixels at its own aspect ratio, so nothing shifts while it loads. */
 function Screen({
   media,
   sizes,
   decorative,
-  className,
 }: {
   media: Media;
   sizes: string;
   decorative: boolean;
-  className?: string;
 }) {
   const alt = decorative ? "" : media.alt;
-  const pixelated = media.frame === "console";
+  const pixelated = media.kind === "image" && media.pixelated === true;
   const image = cn(
     "absolute inset-0 size-full object-contain",
-    // Console output stays nearest neighbor once each of its 640 columns gets
-    // a device pixel (the picture spans 0.847 of the set's width); any smaller
-    // and nearest neighbor drops whole columns, so it resamples instead.
-    pixelated &&
-      "@min-[756px]:[image-rendering:pixelated] [@media(min-resolution:2dppx)]:@min-[378px]:[image-rendering:pixelated] [@media(min-resolution:3dppx)]:@min-[252px]:[image-rendering:pixelated]",
+    pixelated && PIXELATED,
   );
   return (
     <div
-      className={cn("relative overflow-hidden bg-[#05090b]", className)}
-      style={
-        media.frame === "console"
-          ? undefined
-          : { aspectRatio: `${media.width} / ${media.height}` }
-      }
+      className="@container relative"
+      style={{ aspectRatio: `${media.width} / ${media.height}` }}
     >
       {media.kind === "image" ? (
         <Image
@@ -143,23 +157,9 @@ function Video({
             "opacity-0 transition-opacity duration-300 ease-out data-[started=true]:opacity-100",
           )}
         >
-          <source src={media.mp4} type="video/mp4" />
-          <source src={media.src} type="video/webm" />
+          <source src={media.src} type="video/mp4" />
         </video>
       )}
-    </div>
-  );
-}
-
-/** Thin glass around a browser or desktop capture; no fake window controls. */
-function DesktopFrame({ children }: { children: ReactNode }) {
-  return (
-    <div className="@container">
-      <div className="rounded-(--r) border border-white/[.12] bg-[linear-gradient(180deg,#ffffff1c,#ffffff0a)] p-(--p) shadow-[inset_0_1px_0_#ffffff1a,0_1px_2px_#00000040,0_24px_64px_-16px_#000000a6] [--p:clamp(2px,0.7cqw,6px)] [--r:clamp(6px,1.7cqw,14px)]">
-        <div className="overflow-hidden rounded-[calc(var(--r)-var(--p)-1px)] shadow-[0_0_0_1px_#00000066]">
-          {children}
-        </div>
-      </div>
     </div>
   );
 }
@@ -177,33 +177,26 @@ function PhoneFrame({ children }: { children: ReactNode }) {
   );
 }
 
-/** A 4:3 set: dark bezel and a black screen, the frame letterboxed in, never stretched. */
-function ConsoleFrame({ children }: { children: ReactNode }) {
-  return (
-    <div className="@container">
-      <div className="rounded-[2.6cqw] bg-[linear-gradient(180deg,#20292e,#11181c)] p-[3.4cqw] shadow-[inset_0_1px_0_#ffffff1f,inset_0_0_0_1px_#ffffff0d,0_1px_2px_#00000040,0_24px_64px_-16px_#000000b3]">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-[1.4cqw] bg-black shadow-[0_0_0_1px_#000000b3]">
-          {children}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_3cqw_#000000cc]"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Width over height of a capture with its frame, for fitting one into a box before it renders. */
-export function framedAspect(media: Media): number {
-  const height = media.height / media.width;
+/**
+ * One capture in the frame its `frame` names. `sizes` is the rendered width,
+ * for picking an image size. `decorative` drops the alt text where something
+ * else names the project.
+ */
+function ProjectMedia({
+  media,
+  sizes,
+  decorative = false,
+}: {
+  media: Media;
+  sizes: string;
+  decorative?: boolean;
+}) {
+  const screen = <Screen media={media} sizes={sizes} decorative={decorative} />;
   switch (media.frame) {
     case "desktop":
-      return 1 / (height + 0.016);
+      return <div className={cn(SCREEN_FRAME, "rounded-[8px]")}>{screen}</div>;
     case "phone":
-      return 1 / (height * 0.936 + 0.064);
-    case "console":
-      return 1 / (0.932 * 0.75 + 0.068);
+      return <PhoneFrame>{screen}</PhoneFrame>;
     default: {
       const unreachable: never = media.frame;
       return unreachable;
@@ -212,52 +205,61 @@ export function framedAspect(media: Media): number {
 }
 
 /**
- * One capture in the frame its `frame` names: a browser or desktop window,
- * a phone, or a TV. `sizes` is the rendered width, for picking an image size.
- * `decorative` drops the alt text where something else names the project,
- * such as inside a project's own button.
+ * A project's captures as one picture: the lead screen, with its phone capture
+ * overlapping the lower right when there is one. Every length is in container
+ * units, so the composition scales as a whole.
  */
-export function ProjectMedia({
-  media,
+export function MediaShowcase({
+  showcase,
   sizes,
-  decorative = false,
   className,
+  style,
 }: {
-  media: Media;
+  showcase: Showcase;
+  /** The composition's rendered width. */
   sizes: string;
-  decorative?: boolean;
   className?: string;
+  style?: CSSProperties;
 }) {
-  return <div className={className}>{framed(media, sizes, decorative)}</div>;
-}
-
-function framed(media: Media, sizes: string, decorative: boolean) {
-  switch (media.frame) {
+  switch (showcase.kind) {
     case "desktop":
       return (
-        <DesktopFrame>
-          <Screen media={media} sizes={sizes} decorative={decorative} />
-        </DesktopFrame>
+        <div className={cn("@container relative", className)} style={style}>
+          <div
+            style={
+              showcase.phone === null
+                ? undefined
+                : { paddingBottom: `${Showcase.OVERHANG * 100}cqw` }
+            }
+          >
+            <ProjectMedia media={showcase.lead} sizes={sizes} />
+          </div>
+          {showcase.phone !== null && (
+            <div className="absolute right-[5cqw] bottom-0 w-[20cqw] drop-shadow-[0_18px_30px_#000000a6]">
+              <ProjectMedia
+                media={showcase.phone}
+                sizes="(max-width: 640px) 25vw, 180px"
+              />
+            </div>
+          )}
+        </div>
       );
     case "phone":
       return (
-        <PhoneFrame>
-          <Screen media={media} sizes={sizes} decorative={decorative} />
-        </PhoneFrame>
-      );
-    case "console":
-      return (
-        <ConsoleFrame>
-          <Screen
-            media={media}
-            sizes={sizes}
-            decorative={decorative}
-            className="absolute inset-0 bg-black"
-          />
-        </ConsoleFrame>
+        <div className={cn("@container", className)} style={style}>
+          <div
+            className="mx-auto"
+            style={{ width: `${Showcase.LONE_PHONE * 100}cqw` }}
+          >
+            <ProjectMedia
+              media={showcase.phone}
+              sizes="(max-width: 640px) 40vw, 320px"
+            />
+          </div>
+        </div>
       );
     default: {
-      const unreachable: never = media.frame;
+      const unreachable: never = showcase;
       return unreachable;
     }
   }

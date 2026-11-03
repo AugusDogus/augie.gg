@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { projects } from "~/content/projects";
 import { DEFAULT_APP_TITLE } from "~/lib/site";
 
-/** The project open in the peek sheet, by title; shared by the work list, the command menu, and the hero. */
+/** The open project, by title, pinned on the stage or shown in the sheet; shared by the work list and the command menu. */
 let current: string | null = null;
 const listeners = new Set<() => void>();
 const PARAM = "p";

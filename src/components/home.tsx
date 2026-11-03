@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { FileTextIcon } from "@phosphor-icons/react/ssr";
 import { Activity } from "~/components/activity";
@@ -10,9 +9,10 @@ import { ProjectPeek } from "~/components/project-peek";
 import { Settled } from "~/components/settled";
 import { Button } from "~/components/ui/button";
 import { OpenSource } from "~/components/work/open-source";
+import { WorkList } from "~/components/work-list";
 
-/** The home page around a Selected work presentation, so prototypes can swap only that slot. */
-export function Home({ work }: { work: ReactNode }) {
+/** The home page: the hero, Selected work, open source, and activity over the painting. */
+export function Home() {
   return (
     <>
       <header className="relative z-20 flex items-center justify-end gap-1.5 px-(--gutter) pt-5">
@@ -44,7 +44,7 @@ export function Home({ work }: { work: ReactNode }) {
           </div>
         </section>
         <div className="rise-each mt-[clamp(48px,8vh,96px)] flex max-w-[600px] flex-col gap-4 [--i:3]">
-          {work}
+          <WorkList />
           <OpenSource />
           <Activity />
         </div>

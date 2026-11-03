@@ -4,6 +4,9 @@
 @import "./email-copy.css";
 @import "./resume.css";
 @import "./flight-poster.css";
+/* Wide side layouts with a hovering pointer, where projects open on the stage
+   (useStageLayout in src/components/work/layout.ts). */
+@custom-variant stage (@media (width > 1000px) and (aspect-ratio > 5 / 4) and (hover: hover) and (pointer: fine));
 @theme inline {
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
