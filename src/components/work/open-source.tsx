@@ -58,7 +58,8 @@ export function OpenSource() {
         <h2 id="open-source" className="text-fg-2 text-[13px] font-medium">
           Open source{" "}
           <span className="text-fg-3 font-normal">
-            (albeit minor contributions)
+            (albeit <em className="[font-synthesis:style]">minor</em>{" "}
+            contributions)
           </span>
         </h2>
       </div>
