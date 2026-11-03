@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { Specks } from "./specks";
+import { Specks, forEachSpeckMark } from "./specks";
 
 function at<T>(values: ArrayLike<T>, index: number): T {
   const value = values[index];
@@ -56,4 +56,29 @@ test("trails emit 0.03 specks per px of pointer travel", () => {
   // 10 px stays under one emission, so only 0.03 per px leaves 0.3 behind.
   specks.step(1 / 30, 1 + 1 / 30, { x: 0.2 + 10 / 1200, y: 0.5, active: true });
   expect(specks.emission).toBeCloseTo(0.3, 9);
+});
+
+test("speck marks paint every white speck before any cyan one, crosses as two bars", () => {
+  const marks: { rect: number[]; alpha: number; cyan: boolean }[] = [];
+  const specks = new Specks();
+  forEachSpeckMark(specks.points, (x, y, width, height, alpha, cyan) =>
+    marks.push({ rect: [x, y, width, height], alpha, cyan }),
+  );
+  // 300 specks: every fifth cyan, every fourth a cross.
+  expect(marks.filter((mark) => !mark.cyan)).toHaveLength(240 + 60);
+  expect(marks.filter((mark) => mark.cyan)).toHaveLength(60 + 15);
+  const firstCyan = marks.findIndex((mark) => mark.cyan);
+  expect(marks.slice(firstCyan).every((mark) => mark.cyan)).toBe(true);
+  // Speck 0 is a cyan cross of depth 0.15: a horizontal bar, then a vertical one.
+  const size = 0.9 + 0.15 ** 2 * 3;
+  const cross = marks.slice(firstCyan, firstCyan + 2);
+  expect(cross.map((mark) => mark.rect)).toEqual([
+    [-size, 0, size * 2, 0.85],
+    [0, -size, 0.85, size * 2],
+  ]);
+  expect(at(cross, 0).alpha).toBeCloseTo(0.28 + 0.15 * 0.5, 9);
+  // Speck 1 is the first white one, a plain mark.
+  const point = at(specks.points, 1);
+  const plain = 0.9 + point.depth ** 2 * 3;
+  expect(at(marks, 0).rect).toEqual([point.x, point.y, plain, plain * 0.75]);
 });

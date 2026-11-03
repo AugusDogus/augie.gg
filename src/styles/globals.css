@@ -92,13 +92,25 @@
     );
   }
 }
-#sky {
-  position: relative;
+#sky,
+#sky-gl {
   display: block;
-  width: 100%;
-  height: 100%;
   filter: brightness(0.76) saturate(0.8);
   visibility: hidden;
+}
+#sky {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+/* While the art animates, WebGL draws it straight onto this canvas, laid
+   over #sky's box, and #sky hides: no frame is copied between canvases. */
+#sky-gl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% - var(--removed-body-scroll-bar-size, 0px));
+  height: 100%;
 }
 /* A cinematic scrim: deep on the content side, clear over the painting. */
 .artwork::after {
@@ -176,7 +188,7 @@
     filter: blur(32px) brightness(0.5) saturate(0.78);
   }
 }
-.artwork[data-ready="true"] #sky {
+.artwork[data-ready="true"] :is(#sky, #sky-gl) {
   visibility: visible;
 }
 .artwork[data-ready="true"] .artwork-poster {

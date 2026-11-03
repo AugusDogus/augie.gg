@@ -1,6 +1,7 @@
 import type { FlowState } from "./flow";
 import { GlScope, type PendingProgram } from "./gl";
 import type { SkyFrame } from "./pod";
+import { Presenter, type PresentPrograms } from "./present";
 import { COMPOSITE_FRAGMENT, FULLSCREEN_VERTEX } from "./shaders";
 import {
   LIGHT_UNIT,
@@ -8,6 +9,7 @@ import {
   WHALE_UNIT,
   type SkyPrograms,
 } from "./sky-layer";
+import type { Speck } from "./specks";
 import type { Stream, StreamId } from "./streams";
 import type { PrintedArt } from "./texture";
 import { ART_HEIGHT, ART_WIDTH } from "./viewport";
@@ -30,9 +32,17 @@ type Composite = {
   time: WebGLUniformLocation | null;
   brushes: WebGLUniformLocation | null;
   rig: WebGLUniformLocation | null;
+  presenter: Presenter | null;
 };
 
-type Programs = { sky: SkyPrograms; composite: PendingProgram };
+type Programs = {
+  sky: SkyPrograms;
+  composite: PendingProgram;
+  present: PresentPrograms;
+};
+
+/** What the page does once a lost GPU context blanks the canvas, and once it is rebuilt. */
+export type ContextEvents = { lost(): void; restored(): void };
 
 function compile(scope: GlScope): Programs {
   const sky = SkyLayer.compile(scope);
@@ -42,7 +52,7 @@ function compile(scope: GlScope): Programs {
     "atmosphere",
     { position: 0 },
   );
-  return { sky, composite };
+  return { sky, composite, present: Presenter.compile(scope) };
 }
 
 const UNAVAILABLE =
@@ -68,12 +78,13 @@ export class SurfaceStart {
     const canvas = document.createElement("canvas");
     canvas.width = ART_WIDTH;
     canvas.height = ART_HEIGHT;
+    // While the art animates, the page shows this canvas, feathered through
+    // its alpha. Without a preserved buffer each frame swaps in uncopied.
     const gl = canvas.getContext("webgl", {
-      alpha: false,
       antialias: false,
       depth: false,
       stencil: false,
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
       failIfMajorPerformanceCaveat: true,
     });
     if (!gl) return null;
@@ -110,7 +121,8 @@ export class SurfaceStart {
 
 /**
  * Owns all GPU resources. Creation failures leave the 2D renderer available,
- * and a lost context renders nothing until it is restored.
+ * and a lost context renders nothing until it is restored. The canvas holds
+ * either the art-space frame, for drawImage, or the page's frame.
  */
 export class FlowSurface {
   private composite: Composite | null = null;
@@ -121,7 +133,7 @@ export class FlowSurface {
     private gl: WebGLRenderingContext,
     private scope: GlScope,
     private sources: SurfaceSources,
-    private onRestore: () => void,
+    private events: ContextEvents,
   ) {
     canvas.addEventListener("webglcontextlost", this.lose);
     canvas.addEventListener("webglcontextrestored", this.restore);
@@ -134,7 +146,7 @@ export class FlowSurface {
    */
   static create(
     sources: SurfaceSources,
-    onRestore: () => void,
+    events: ContextEvents,
     start: SurfaceStart | null,
   ) {
     let owned = (start ?? SurfaceStart.begin())?.take();
@@ -144,7 +156,7 @@ export class FlowSurface {
     }
     if (!owned) return null;
     const { canvas, gl, scope, programs } = owned;
-    const surface = new FlowSurface(canvas, gl, scope, sources, onRestore);
+    const surface = new FlowSurface(canvas, gl, scope, sources, events);
     try {
       surface.composite = surface.initialize(programs);
       return surface;
@@ -222,19 +234,21 @@ export class FlowSurface {
       time: gl.getUniformLocation(program, "time"),
       brushes: gl.getUniformLocation(program, "brushes[0]"),
       rig: gl.getUniformLocation(program, "rig[0]"),
+      presenter: Presenter.create(this.scope, programs.present, quad),
     };
   }
 
   private lose = (event: Event) => {
     event.preventDefault();
     this.composite = null;
+    this.events.lost();
   };
 
   private restore = () => {
     this.scope = new GlScope(this.gl);
     try {
       this.composite = this.initialize(compile(this.scope));
-      this.onRestore();
+      this.events.restored();
     } catch (error) {
       console.warn(
         "The artwork renderer could not recover its GPU context. Using the 2D background.",
@@ -243,11 +257,59 @@ export class FlowSurface {
     }
   };
 
+  /** The art-space frame on the canvas at 1200x874, for drawImage; null while the context is lost. */
   render(time: number, brushes: FlowState["brushes"], sky: SkyFrame) {
-    const gl = this.gl;
     const composite = this.composite;
-    if (!composite || gl.isContextLost()) return null;
+    if (!composite || this.gl.isContextLost()) return null;
+    this.resize(ART_WIDTH, ART_HEIGHT);
+    this.paintScene(composite, null, time, brushes, sky);
+    return this.canvas;
+  }
+
+  /**
+   * The page's frame on the canvas at `width`x`height` px: the scene fitted
+   * and feathered as the 2D path draws #sky, with `specks` over it. False
+   * while the context is lost, or without a presenter.
+   */
+  present(
+    time: number,
+    brushes: FlowState["brushes"],
+    sky: SkyFrame,
+    specks: readonly Speck[],
+    width: number,
+    height: number,
+  ) {
+    const composite = this.composite;
+    const presenter = composite?.presenter;
+    if (!composite || !presenter || this.gl.isContextLost()) return false;
+    this.resize(width, height);
+    this.paintScene(composite, presenter.scene.framebuffer, time, brushes, sky);
+    // The browser may allocate a smaller buffer than asked for.
+    presenter.draw(
+      this.gl.drawingBufferWidth,
+      this.gl.drawingBufferHeight,
+      specks,
+    );
+    return true;
+  }
+
+  /** Assigning a size reallocates the buffer even when it is unchanged. */
+  private resize(width: number, height: number) {
+    if (this.canvas.width !== width) this.canvas.width = width;
+    if (this.canvas.height !== height) this.canvas.height = height;
+  }
+
+  /** Renders the art-space scene into `target`, or the drawing buffer when null. */
+  private paintScene(
+    composite: Composite,
+    target: WebGLFramebuffer | null,
+    time: number,
+    brushes: FlowState["brushes"],
+    sky: SkyFrame,
+  ) {
+    const gl = this.gl;
     composite.sky.render(sky);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target);
     gl.viewport(0, 0, ART_WIDTH, ART_HEIGHT);
     gl.useProgram(composite.program);
     gl.bindBuffer(gl.ARRAY_BUFFER, composite.quad);
@@ -260,7 +322,7 @@ export class FlowSurface {
     gl.uniform4fv(composite.rig, sky.rig);
     gl.uniform1f(composite.time, time);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    return this.canvas;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
   dispose() {

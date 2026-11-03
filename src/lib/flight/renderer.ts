@@ -1,6 +1,6 @@
 import { Haze, occluderMask } from "./art-maps";
 import { Flow, type Pointer } from "./flow";
-import { FlowSurface, SurfaceStart } from "./flow-surface";
+import { FlowSurface, SurfaceStart, type ContextEvents } from "./flow-surface";
 import type { Sense } from "./instrument";
 import { Pod, type SkyFrame } from "./pod";
 import { Specks, drawSpecks } from "./specks";
@@ -36,13 +36,13 @@ export class FlightRenderer {
   ) {}
 
   /**
-   * `onRestore` runs after a lost GPU context is rebuilt, so a paused frame can
-   * be redrawn. `start` (begun first if not passed) compiles the shaders while
-   * the print bakes.
+   * `events` run once a lost GPU context blanks the canvas and once it is
+   * rebuilt, so the page can redraw. `start` (begun first if not passed)
+   * compiles the shaders while the print bakes.
    */
   static create(
     art: Artwork,
-    onRestore = () => {},
+    events: ContextEvents = { lost() {}, restored() {} },
     start = SurfaceStart.begin(),
   ) {
     try {
@@ -58,7 +58,7 @@ export class FlightRenderer {
           streams: pod.streams,
           vertices: pod.write().vertices,
         },
-        onRestore,
+        events,
         start,
       );
       return new FlightRenderer(print, mask, pod, surface);
@@ -72,6 +72,11 @@ export class FlightRenderer {
     return this.surface !== null;
   }
 
+  /** The WebGL canvas present() draws onto, for the page to show. */
+  get canvas() {
+    return this.surface?.canvas ?? null;
+  }
+
   /** `pointer` drives the comb and specks; `sense` drives the pod, currents, and painted subjects. */
   step(dt: number, sense: Sense, pointer: Pointer) {
     this.elapsed += dt;
@@ -80,6 +85,25 @@ export class FlightRenderer {
     this.pod.step(dt, sense);
   }
 
+  /**
+   * Draws the frame onto `canvas` at `width`x`height` px, fitted and
+   * feathered as the page's #sky shows it. False when it cannot (no live GPU
+   * context); paint() still draws then.
+   */
+  present(width: number, height: number) {
+    return (
+      this.surface?.present(
+        this.elapsed,
+        this.flow.brushes,
+        this.pod.write(),
+        this.specks.points,
+        width,
+        height,
+      ) ?? false
+    );
+  }
+
+  /** The art-space frame, with specks, into a 2D context at art scale. */
   paint(context: CanvasRenderingContext2D) {
     const sky = this.pod.write();
     const scene = this.surface?.render(this.elapsed, this.flow.brushes, sky);

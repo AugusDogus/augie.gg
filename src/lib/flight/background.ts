@@ -3,7 +3,13 @@ import { FramePolicy } from "./frame-policy";
 import { Instrument, type PointerKind } from "./instrument";
 import { FlightRenderer } from "./renderer";
 import type { Artwork } from "./texture";
-import { ART_HEIGHT, ART_WIDTH, fitArt, pointerToArt } from "./viewport";
+import {
+  ART_HEIGHT,
+  ART_WIDTH,
+  FEATHER,
+  fitArt,
+  pointerToArt,
+} from "./viewport";
 
 /**
  * The React owner decodes the image before allocating a disposable renderer,
@@ -18,55 +24,93 @@ export function createBackground(
   if (!canvasContext)
     throw new Error("The artwork renderer could not create a 2D canvas");
   const context = canvasContext;
-  // While paused, nothing else repaints the GL frame after a context restore.
   const renderer = FlightRenderer.create(
     image,
-    () => {
-      if (!playing) draw();
+    {
+      // The lost context blanked the shown WebGL canvas; show the 2D frame now.
+      lost: () => {
+        if (presenting) draw();
+      },
+      // While paused, nothing else repaints the GL frame after a context restore.
+      restored: () => {
+        if (!playing) draw();
+      },
     },
     start,
   );
+  // Animating frames draw straight onto this canvas, laid over #sky.
+  const surface = renderer.canvas;
   const coarse = matchMedia("(pointer: coarse)").matches;
   const policy = new FramePolicy(coarse || !renderer.accelerated ? 30 : 60);
   const instrument = new Instrument();
   // Gradients resolve against the transform at fill time, so one per edge suffices.
   const feathers = {
-    wide: context.createLinearGradient(0, 0, 200, 0),
-    tall: context.createLinearGradient(0, 700, 0, ART_HEIGHT),
+    wide: context.createLinearGradient(0, 0, FEATHER.wide, 0),
+    tall: context.createLinearGradient(0, FEATHER.tall, 0, ART_HEIGHT),
   };
   feathers.wide.addColorStop(0, "black");
   feathers.wide.addColorStop(1, "transparent");
   feathers.tall.addColorStop(0, "transparent");
   feathers.tall.addColorStop(1, "black");
   let playing = false,
-    frameId = 0;
+    presenting = false,
+    frameId = 0,
+    // The canvas box in device px, at most 1.5 per CSS px.
+    width = 0,
+    height = 0;
 
+  /**
+   * Animating frames go straight to the WebGL canvas. Still frames, and any
+   * without a live GPU context, go through #sky, which keeps showing its frame
+   * when a context is lost.
+   */
   function draw() {
-    const fit = fitArt(canvas.width, canvas.height);
+    const live = playing && renderer.present(width, height);
+    if (surface && live !== presenting) {
+      presenting = live;
+      surface.style.visibility = live ? "" : "hidden";
+      canvas.style.visibility = live ? "hidden" : "";
+      // Hidden, #sky need not hold a frame; paint() sizes it again.
+      if (live) canvas.width = 0;
+    }
+    if (!live) paint();
+  }
+  function paint() {
+    if (width !== canvas.width || height !== canvas.height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    const fit = fitArt(width, height);
     if (!fit) return;
     context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(0, 0, width, height);
     context.setTransform(fit.scale, 0, 0, fit.scale, fit.x, 0);
     renderer.paint(context);
     context.globalCompositeOperation = "destination-out";
     context.fillStyle = fit.wide ? feathers.wide : feathers.tall;
     // Start past the art edge: at a fractional offset its partly covered column
     // would otherwise keep some alpha and show as a seam.
-    if (fit.wide) context.fillRect(-4, 0, 204, ART_HEIGHT);
-    else context.fillRect(0, 700, ART_WIDTH, ART_HEIGHT - 696);
+    if (fit.wide) context.fillRect(-4, 0, FEATHER.wide + 4, ART_HEIGHT);
+    else
+      context.fillRect(
+        0,
+        FEATHER.tall,
+        ART_WIDTH,
+        ART_HEIGHT - FEATHER.tall + 4,
+      );
     context.globalCompositeOperation = "source-over";
   }
-  /** Sizes the canvas to its box and redraws; `force` redraws at an unchanged size too. */
+  /** Sizes the frame to the canvas box and redraws; `force` redraws at an unchanged size too. */
   function layout(force: boolean) {
     const rect = canvas.getBoundingClientRect();
     const ratio = Math.min(devicePixelRatio || 1, 1.5);
-    const width = Math.round(rect.width * ratio),
-      height = Math.round(rect.height * ratio);
-    // Assigning a size reallocates and clears the canvas even when it is
+    const w = Math.round(rect.width * ratio),
+      h = Math.round(rect.height * ratio);
+    // Assigning a size reallocates and clears a canvas even when it is
     // unchanged, as on the observer's first callback, so keep that frame.
-    if (!force && width === canvas.width && height === canvas.height) return;
-    canvas.width = width;
-    canvas.height = height;
+    if (!force && w === width && h === height) return;
+    width = w;
+    height = h;
     draw();
   }
   function frame(now: number) {
@@ -84,6 +128,8 @@ export function createBackground(
     frameId = requestAnimationFrame(frame);
   }
   function sync() {
+    // A paused frame moves to #sky, before calm() changes what it would show.
+    if (!playing && presenting) draw();
     cancelAnimationFrame(frameId);
     policy.reset();
     instrument.clear();
@@ -145,6 +191,11 @@ export function createBackground(
     canvas.width = 0;
     throw error;
   }
+  if (surface) {
+    surface.id = "sky-gl";
+    surface.style.visibility = "hidden";
+    canvas.after(surface);
+  }
   const observer = new ResizeObserver(() => layout(false));
   observer.observe(canvas);
   // Passive and never prevented, so touch scrolling and text selection still win.
@@ -176,6 +227,8 @@ export function createBackground(
       document.removeEventListener("scroll", cancel);
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener("blur", leave);
+      surface?.remove();
+      canvas.style.visibility = "";
       renderer.dispose();
       canvas.width = 0;
     },

@@ -6,8 +6,12 @@ type SpeckBase = {
   depth: number;
   life: number;
 };
-type Speck = SpeckBase &
+export type Speck = SpeckBase &
   ({ trail: false } | { trail: true; vx: number; vy: number });
+/** Drifting specks plus trail specks never exceed this many. */
+export const MAX_SPECKS = 380;
+/** Every fifth speck is cyan; the rest are white. */
+export const SPECK_COLORS = { white: "#e0fff1", cyan: "#90dce9" } as const;
 const wrap = (value: number, size: number) => ((value % size) + size) % size;
 
 /** Dust-like marks with independent depth and inertia, without animal silhouettes. */
@@ -72,7 +76,7 @@ export class Specks {
   }
 
   spawn(pointer: Pointer, dx: number, dy: number, time: number) {
-    if (this.points.length >= 380) return;
+    if (this.points.length >= MAX_SPECKS) return;
     const id = this.nextId++;
     const depth = 0.35 + ((id * 0.6180339) % 1) * 0.65;
     const random = (Math.sin(id * 39.17 + time * 9.1) * 43758.5453) % 1;
@@ -93,26 +97,50 @@ export class Specks {
   }
 }
 
+/**
+ * Every speck's marks as art-px rects with their alpha, in paint order: all
+ * white specks, then all cyan ones. A cross is two marks, horizontal first.
+ */
+export function forEachSpeckMark(
+  points: readonly Speck[],
+  mark: (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    alpha: number,
+    cyan: boolean,
+  ) => void,
+) {
+  // One pass per colour avoids switching fill styles between specks.
+  for (const cyan of [false, true]) {
+    for (const point of points) {
+      if ((point.id % 5 === 0) !== cyan) continue;
+      const size = (0.9 + point.depth ** 2 * 3) * (point.trail ? 0.8 : 1);
+      const alpha = (0.28 + point.depth * 0.5) * (point.trail ? point.life : 1);
+      if (point.id % 4 === 0) {
+        mark(point.x - size, point.y, size * 2, 0.85, alpha, cyan);
+        mark(point.x, point.y - size, 0.85, size * 2, alpha, cyan);
+      } else {
+        mark(point.x, point.y, size, size * 0.75, alpha, cyan);
+      }
+    }
+  }
+}
+
 export function drawSpecks(
   context: CanvasRenderingContext2D,
   points: readonly Speck[],
 ) {
   context.save();
-  // One pass per colour avoids parsing a fill style for every speck.
-  for (const cyan of [false, true]) {
-    context.fillStyle = cyan ? "#90dce9" : "#e0fff1";
-    for (const point of points) {
-      if ((point.id % 5 === 0) !== cyan) continue;
-      const size = (0.9 + point.depth ** 2 * 3) * (point.trail ? 0.8 : 1);
-      context.globalAlpha =
-        (0.28 + point.depth * 0.5) * (point.trail ? point.life : 1);
-      if (point.id % 4 === 0) {
-        context.fillRect(point.x - size, point.y, size * 2, 0.85);
-        context.fillRect(point.x, point.y - size, 0.85, size * 2);
-      } else {
-        context.fillRect(point.x, point.y, size, size * 0.75);
-      }
+  let filled: boolean | null = null;
+  forEachSpeckMark(points, (x, y, width, height, alpha, cyan) => {
+    if (cyan !== filled) {
+      context.fillStyle = cyan ? SPECK_COLORS.cyan : SPECK_COLORS.white;
+      filled = cyan;
     }
-  }
+    context.globalAlpha = alpha;
+    context.fillRect(x, y, width, height);
+  });
   context.restore();
 }

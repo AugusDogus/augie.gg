@@ -3,6 +3,7 @@ import {
   ART_HEIGHT,
   ART_WIDTH,
   PAINT_ZOOM,
+  featherEdge,
   fitArt,
   pointerToArt,
   toPainting,
@@ -60,4 +61,32 @@ test("painting coordinates apply the composite zoom about the centre", () => {
     expect((600 + (p.x - 600) / PAINT_ZOOM) / ART_WIDTH).toBeCloseTo(x, 9);
     expect((437 + (p.y - 437) / PAINT_ZOOM) / ART_HEIGHT).toBeCloseTo(y, 9);
   }
+});
+
+test("the feather fades the art in from the left when wide, out at the bottom when tall", () => {
+  const alpha = (width: number, height: number, x: number, y: number) => {
+    const fit = fitArt(width, height);
+    if (!fit) throw new Error("Expected a fit");
+    const [ex, ey, e0] = featherEdge(fit);
+    return Math.min(1, Math.max(0, ex * x + ey * y + e0));
+  };
+  // Wide: the 2D path erases a black-to-transparent gradient over x 0..200.
+  for (const [x, expected] of [
+    [-4, 0],
+    [0, 0],
+    [50, 0.25],
+    [200, 1],
+    [900, 1],
+  ] as const)
+    for (const y of [0, 437, 874])
+      expect(alpha(1512, 982, x, y)).toBeCloseTo(expected, 9);
+  // Tall: transparent-to-black over y 700..874.
+  for (const [y, expected] of [
+    [0, 1],
+    [700, 1],
+    [787, 0.5],
+    [874, 0],
+    [878, 0],
+  ] as const)
+    expect(alpha(390, 844, 600, y)).toBeCloseTo(expected, 9);
 });
