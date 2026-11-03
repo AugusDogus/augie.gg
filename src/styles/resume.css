@@ -1,20 +1,5 @@
 .resume-content .contact-link {
-  font-size: inherit;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-.resume-content .contact-link:hover {
   color: var(--ink);
-}
-.resume-content .copy-note {
-  left: 0;
-  right: auto;
-  max-width: min(240px, 60vw);
-  transform-origin: bottom left;
-}
-.resume-content .copy-note::after {
-  right: auto;
-  left: 20px;
 }
 .resume-page {
   width: min(780px, 100%);
@@ -33,34 +18,36 @@
 .resume-content h1 {
   font-size: 32px;
   font-weight: 500;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   margin-bottom: 20px;
 }
 .resume-content h2 {
   font-size: 22px;
   font-weight: 500;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
   margin: 28px 0 18px;
 }
 .resume-content h3 {
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
   margin: 24px 0 8px;
 }
 .resume-content p,
 .resume-content li {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #4d5e65;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--muted);
 }
 .resume-content em {
-  font-size: 12px;
+  font-size: 13px;
   font-style: normal;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
 .resume-content strong {
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--ink);
 }
 .resume-content ul {
   margin: 14px 0 0;
@@ -94,7 +81,6 @@
   }
   .resume-sheet {
     padding: 26px 22px;
-    border-radius: 15px;
   }
   .resume-content h1 {
     font-size: 29px;
@@ -107,11 +93,11 @@
   }
   .resume-content p,
   .resume-content li {
-    font-size: 13px;
+    font-size: 14px;
   }
-  .resume-nav .raised-button {
-    padding: 0 11px;
-    font-size: 11px;
+  .resume-nav [data-slot="button"] {
+    padding: 0 12px;
+    font-size: 14px;
   }
 }
 @page {

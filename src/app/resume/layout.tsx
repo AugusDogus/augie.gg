@@ -15,13 +15,13 @@ export default function ResumeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main id="main" tabIndex={-1} className="resume-page">
+    <main id="main" tabIndex={-1} className="resume-page on-sky">
       <nav
         className="resume-nav mb-5 flex justify-between gap-4"
         aria-label="Résumé navigation"
       >
         <Button asChild>
-          <Link href="/">Back to work</Link>
+          <Link href="/">Back to augie.gg</Link>
         </Button>
         <PrintResume />
       </nav>

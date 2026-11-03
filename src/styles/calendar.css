@@ -1,0 +1,26 @@
+.cal .i0 {
+  fill: var(--cal-0);
+}
+.cal .i1 {
+  fill: var(--cal-1);
+}
+.cal .i2 {
+  fill: var(--cal-2);
+}
+.cal .i3 {
+  fill: var(--cal-3);
+}
+@media (forced-colors: active) {
+  .cal svg {
+    forced-color-adjust: none;
+  }
+  .cal .i0 {
+    fill: GrayText;
+  }
+  .cal :is(.i1, .i2, .i3) {
+    fill: CanvasText;
+  }
+  .cal .mark {
+    border-color: Highlight;
+  }
+}

@@ -86,29 +86,28 @@ export function FlightBackground() {
 export function ArtworkCaption() {
   const { playing, reduced } = usePlaying();
   return (
-    <div className="art-caption fixed right-(--gutter) bottom-5 flex items-center gap-5 text-[10px] text-[#e2ebe7] [text-shadow:0_1px_6px_#193440cc] max-[1000px]:static max-[1000px]:mt-5 max-[1000px]:justify-end max-[600px]:mt-3.5 max-[600px]:justify-between max-[600px]:gap-2.5">
-      <Button
-        variant="link"
-        className="py-2.5 text-inherit [text-shadow:inherit] hover:text-white"
-        disabled={reduced}
-        onClick={() => {
-          paused = !paused;
-          listeners.forEach((listener) => listener());
-        }}
-      >
-        {reduced
-          ? "Animation paused"
-          : playing
-            ? "Pause animation"
-            : "Play animation"}
-      </Button>
+    <div className="art-caption on-sky">
+      {reduced ? (
+        <span>Animation off (reduced motion)</span>
+      ) : (
+        <Button
+          variant="link"
+          className="text-inherit hover:text-white hover:no-underline"
+          onClick={() => {
+            paused = !paused;
+            listeners.forEach((listener) => listener());
+          }}
+        >
+          {playing ? "Pause animation" : "Play animation"}
+        </Button>
+      )}
       <a
         className="hover:text-white"
         href="https://www.gallerynucleus.com/detail/2126/"
         target="_blank"
         rel="noopener noreferrer"
       >
-        Flight by Kazu Kibuishi
+        “Flight” by Kazu Kibuishi
       </a>
     </div>
   );

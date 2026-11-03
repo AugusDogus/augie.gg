@@ -33,3 +33,10 @@ export function groupByYear(
   }
   return groups;
 }
+
+/** Merged upstream contributions beyond the ones named in the OSS line. */
+export const otherContributions: number =
+  projects.filter((project) => project.labels?.includes("oss")).length -
+  notableContributions.length;
+
+export const earliestYear: number = Math.min(...projects.map(yearOf));
