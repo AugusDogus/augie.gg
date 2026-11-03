@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   title: { default: DEFAULT_APP_TITLE, template: `%s | ${DEFAULT_APP_TITLE}` },
   description:
-    "Augie Luebbers is a product engineer building fast, polished software for the web, phones, and the occasional game console.",
+    "Product engineer in Pensacola, FL. I notice something annoying, fix it, and move on. Sometimes the fix is a Plex client for the GameCube.",
   twitter: { card: "summary_large_image" },
 };
 

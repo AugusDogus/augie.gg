@@ -57,7 +57,9 @@ export function OpenSource() {
       <div className="flex h-10 items-center pl-3">
         <h2 id="open-source" className="text-fg-2 text-[13px] font-medium">
           Open source{" "}
-          <span className="text-fg-3 font-normal">(albeit minor)</span>
+          <span className="text-fg-3 font-normal">
+            (albeit minor contributions)
+          </span>
         </h2>
       </div>
       <ul className="flex flex-wrap items-center gap-1.5 px-3 pb-3">

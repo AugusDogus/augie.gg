@@ -108,7 +108,7 @@ export const projects: Project[] = [
     private: true,
     featured: 5,
     highlight:
-      "Built on GPUI, the GPU-accelerated UI framework behind the Zed editor.",
+      "Built on GPUI, the GPU-accelerated UI framework behind the Zed editor",
   },
   {
     title: "pomodoro",
@@ -344,7 +344,7 @@ export const projects: Project[] = [
     labels: ["active"],
     featured: 4,
     highlight:
-      "iOS, Android, and a browser extension share one tRPC API. Tabs arrive live over server-sent events.",
+      "iOS, Android, and browser extension on one tRPC API; tabs arrive live over SSE",
   },
   {
     title: "hyperimport",
@@ -392,7 +392,7 @@ export const projects: Project[] = [
     labels: ["active"],
     featured: 3,
     highlight:
-      "End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native.",
+      "End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native",
   },
   {
     title: "create-electrobun-react",
@@ -426,7 +426,7 @@ export const projects: Project[] = [
     labels: ["active"],
     featured: 2,
     highlight:
-      "Inventory refreshed daily, with saved searches and new-vehicle alerts by email or Discord.",
+      "220k+ vehicles across 200+ yards and seven inventory networks, with paid plans",
   },
   {
     title: "metrics",
@@ -451,7 +451,7 @@ export const projects: Project[] = [
     labels: ["wip"],
     featured: 1,
     highlight:
-      "Native GameCube and Wii clients in C stream H.264 over HLS, with TLS 1.2 and playback synced to web viewers.",
+      "Native GameCube and Wii clients in C: H.264 over HLS, TLS 1.2, synced with web viewers",
   },
   {
     title: "awesome-windows",

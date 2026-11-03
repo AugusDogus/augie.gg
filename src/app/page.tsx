@@ -4,7 +4,6 @@ import { Activity } from "~/components/activity";
 import { CommandMenu, CommandMenuTrigger } from "~/components/command-menu";
 import { CopyEmailButton } from "~/components/copy-email";
 import { Dock } from "~/components/dock";
-import { NowPill } from "~/components/now-pill";
 import { ProjectPeek } from "~/components/project-peek";
 import { Settled } from "~/components/settled";
 import { Button } from "~/components/ui/button";
@@ -37,21 +36,16 @@ export default function HomePage() {
         tabIndex={-1}
         className="relative z-10 px-(--gutter) pb-28 max-[1179px]:pb-10"
       >
-        <section className="max-w-[600px] pt-[clamp(48px,9vh,112px)]">
-          <div className="rise [--i:0]">
-            <NowPill
-              title="teams-rs"
-              label="A native Microsoft Teams client for Linux"
-            />
-          </div>
-          <h1 className="display rise mt-6 text-[clamp(44px,5.2vw,76px)] [--i:1]">
+        <section className="max-w-[600px] pt-[clamp(72px,14vh,168px)]">
+          <h1 className="display rise text-[clamp(44px,5.2vw,76px)] [--i:0]">
             Augie Luebbers
           </h1>
-          <p className="text-fg-2 rise mt-5 max-w-[30em] text-[17px]/[1.55] [--i:2]">
-            Product engineer. I build fast, polished software for the web,
-            phones, and the occasional game console.
+          <p className="text-fg-2 rise mt-5 max-w-[31em] text-[17px]/[1.55] text-pretty [--i:1]">
+            Product engineer in Pensacola, FL. I notice something annoying, fix
+            it, and move on. Sometimes the fix is a Plex client for the
+            GameCube.
           </p>
-          <div className="rise mt-8 flex flex-wrap gap-2.5 [--i:3]">
+          <div className="rise mt-8 flex flex-wrap gap-2.5 [--i:2]">
             <CopyEmailButton />
             <Button variant="secondary" asChild>
               <Link href="/resume">
@@ -61,7 +55,7 @@ export default function HomePage() {
             </Button>
           </div>
         </section>
-        <div className="rise-each mt-[clamp(48px,8vh,96px)] flex max-w-[600px] flex-col gap-4 [--i:4]">
+        <div className="rise-each mt-[clamp(48px,8vh,96px)] flex max-w-[600px] flex-col gap-4 [--i:3]">
           <WorkList />
           <OpenSource />
           <Activity />
