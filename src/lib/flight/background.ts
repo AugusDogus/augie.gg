@@ -56,11 +56,17 @@ export function createBackground(
     else context.fillRect(0, 700, ART_WIDTH, ART_HEIGHT - 696);
     context.globalCompositeOperation = "source-over";
   }
-  function layout() {
+  /** Sizes the canvas to its box and redraws; `force` redraws at an unchanged size too. */
+  function layout(force: boolean) {
     const rect = canvas.getBoundingClientRect();
     const ratio = Math.min(devicePixelRatio || 1, 1.5);
-    canvas.width = Math.round(rect.width * ratio);
-    canvas.height = Math.round(rect.height * ratio);
+    const width = Math.round(rect.width * ratio),
+      height = Math.round(rect.height * ratio);
+    // Assigning a size reallocates and clears the canvas even when it is
+    // unchanged, as on the observer's first callback, so keep that frame.
+    if (!force && width === canvas.width && height === canvas.height) return;
+    canvas.width = width;
+    canvas.height = height;
     draw();
   }
   function frame(now: number) {
@@ -133,13 +139,13 @@ export function createBackground(
   const leave = () => instrument.leave();
   // Draw before subscribing, so a failed first render cannot leak listeners.
   try {
-    layout();
+    layout(true);
   } catch (error) {
     renderer.dispose();
     canvas.width = 0;
     throw error;
   }
-  const observer = new ResizeObserver(layout);
+  const observer = new ResizeObserver(() => layout(false));
   observer.observe(canvas);
   // Passive and never prevented, so touch scrolling and text selection still win.
   const passive = { passive: true };
