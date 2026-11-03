@@ -31,6 +31,12 @@ const MIN_MEDIA = 140;
 const MIN_CARD = 380;
 /** Widest card without captures: a measure for reading, not a picture. */
 const TEXT_CARD = 520;
+/**
+ * Cards stay mounted after they leave, so coming back to one is instant and
+ * its video resumes in place; past this many, the oldest unmounts and frees
+ * its media.
+ */
+const KEPT = 8;
 
 type Geometry = { left: number; width: number; gap: number; height: number };
 
@@ -169,7 +175,8 @@ export function Stage() {
   const [seen, setSeen] = useState<readonly Project[]>([]);
   const [geometry, setGeometry] = useState(measure);
   const [offscreen, setOffscreen] = useState(false);
-  if (active !== null && !seen.includes(active)) setSeen([...seen, active]);
+  if (active !== null && !seen.includes(active))
+    setSeen([...seen, active].slice(-KEPT));
 
   useEffect(() => {
     const update = () => setGeometry(measure());
