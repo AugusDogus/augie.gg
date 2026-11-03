@@ -1,13 +1,11 @@
 import { FramePolicy } from "./frame-policy";
 import { Instrument, type PointerKind } from "./instrument";
 import { FlightRenderer } from "./renderer";
+import type { Artwork } from "./texture";
 import { ART_HEIGHT, ART_WIDTH, fitArt, pointerToArt } from "./viewport";
 
 /** The React owner decodes the image before allocating a disposable renderer. */
-export function createBackground(
-  canvas: HTMLCanvasElement,
-  image: HTMLImageElement,
-) {
+export function createBackground(canvas: HTMLCanvasElement, image: Artwork) {
   const canvasContext = canvas.getContext("2d");
   if (!canvasContext)
     throw new Error("The artwork renderer could not create a 2D canvas");

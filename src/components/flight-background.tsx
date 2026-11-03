@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { createBackground } from "~/lib/flight/background";
+import { loadArtwork } from "~/lib/flight/texture";
 
 // The persistent root background and the home dock share one motion preference.
 let paused = false;
@@ -52,11 +53,9 @@ export function FlightBackground() {
   }, [active]);
   useEffect(() => {
     let disposed = false;
-    const image = new Image();
-    image.src = "/flight4cover_redux_spread.jpg";
     async function initialize() {
       try {
-        await image.decode();
+        const image = await loadArtwork("/flight4cover_redux_spread.jpg");
         if (disposed || !canvas.current) return;
         const background = createBackground(canvas.current, image);
         renderer.current = background;

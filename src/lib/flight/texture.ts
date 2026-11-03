@@ -69,6 +69,22 @@ export function random(seed: number) {
   };
 }
 
+/**
+ * The decoded painting. `bitmap` holds CPU pixels for the sample and the GPU
+ * upload, so neither decodes the JPEG again on the main thread. The print's
+ * full-size blend still draws `image`: an accelerated canvas decodes an <img>
+ * its own way, a level off the bitmap in places, and the approved print and
+ * its poster come from that path.
+ */
+export type Artwork = { image: HTMLImageElement; bitmap: ImageBitmap };
+
+export async function loadArtwork(src: string): Promise<Artwork> {
+  const image = new Image();
+  image.src = src;
+  await image.decode();
+  return { image, bitmap: await createImageBitmap(image) };
+}
+
 export type PrintedArt = {
   /** The 1200x874 print. */
   canvas: HTMLCanvasElement;
@@ -78,7 +94,7 @@ export type PrintedArt = {
   sample: ImageData;
 };
 
-export function renderTexture(image: HTMLImageElement): PrintedArt {
+export function renderTexture({ image, bitmap }: Artwork): PrintedArt {
   const width = 1200,
     height = 874,
     sampleWidth = 600,
@@ -89,7 +105,7 @@ export function renderTexture(image: HTMLImageElement): PrintedArt {
     sampleHeight,
     true,
   );
-  sampleContext.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+  sampleContext.drawImage(bitmap, 0, 0, sampleWidth, sampleHeight);
   const original = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
   const imageData = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
   const pixels = imageData.data;

@@ -5,7 +5,12 @@ import type { Sense } from "./instrument";
 import { Pod, type SkyFrame } from "./pod";
 import { Specks, drawSpecks } from "./specks";
 import { Subjects, rigCells, rigMap } from "./subjects";
-import { canvas2d, renderTexture, type PrintedArt } from "./texture";
+import {
+  canvas2d,
+  renderTexture,
+  type Artwork,
+  type PrintedArt,
+} from "./texture";
 import { ART_HEIGHT, ART_WIDTH, PAINT_ZOOM, toPainting } from "./viewport";
 import { VERTEX_FLOATS, WHALE_OUTLINES, WHALE_VERTICES } from "./whale-body";
 
@@ -31,14 +36,14 @@ export class FlightRenderer {
   ) {}
 
   /** `onRestore` runs after a lost GPU context is rebuilt, so a paused frame can be redrawn. */
-  static create(image: HTMLImageElement, onRestore = () => {}) {
-    const print = renderTexture(image);
+  static create(art: Artwork, onRestore = () => {}) {
+    const print = renderTexture(art);
     const mask = occluderMask(print.sample);
     const pod = new Pod(Haze.fromSample(print.sample), new Subjects());
     const surface = FlowSurface.create(
       {
         print,
-        image,
+        image: art.bitmap,
         cells: rigCells(print.cells, rigMap(print.sample)),
         mask,
         streams: pod.streams,

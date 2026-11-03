@@ -7,7 +7,7 @@ import * as shaders from "./shaders";
 import { Specks } from "./specks";
 import { STREAM_IDS, STREAMS } from "./streams";
 import { SUBJECTS, Subjects } from "./subjects";
-import { canvas2d } from "./texture";
+import { canvas2d, type Artwork } from "./texture";
 import { ART_HEIGHT, ART_WIDTH, PAINT_ZOOM } from "./viewport";
 import { WHALE_INDICES } from "./whale-body";
 
@@ -47,7 +47,7 @@ export function posterKey() {
 }
 
 /** Renders an art-space frame after `seconds` of motion, before viewport scaling and feathering. */
-export async function captureFrame(image: HTMLImageElement, seconds = 0) {
+export async function captureFrame(image: Artwork, seconds = 0) {
   const renderer = FlightRenderer.create(image);
   try {
     if (!renderer.accelerated)
@@ -81,7 +81,7 @@ export type ScriptEvent = {
  * interactions can be judged frame by frame.
  */
 export async function captureScript(
-  image: HTMLImageElement,
+  image: Artwork,
   events: readonly ScriptEvent[],
   shots: readonly number[],
 ) {
@@ -143,7 +143,7 @@ declare global {
  * Development only: `await flight.capturePoster()` downloads flight-poster.png;
  * `flight.captureFrame(seconds)` returns a later frame as a PNG data URL.
  */
-export function installFlightDebug(image: HTMLImageElement) {
+export function installFlightDebug(image: Artwork) {
   window.flight = {
     async capturePoster() {
       const url = await captureFrame(image);

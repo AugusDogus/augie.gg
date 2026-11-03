@@ -9,7 +9,7 @@ import { ART_HEIGHT, ART_WIDTH } from "./viewport";
 
 export type SurfaceSources = {
   print: PrintedArt;
-  image: HTMLImageElement;
+  image: ImageBitmap;
   /** 600x437 RGBA: the baked lattice cells, with the rig code in alpha. */
   cells: Uint8Array;
   /** 600x437 RGB occluder layers. */
