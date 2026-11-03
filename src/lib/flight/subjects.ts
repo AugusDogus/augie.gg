@@ -1,6 +1,6 @@
 import { type Raster, checked, luminance } from "./art-maps";
 import type { Gesture, Hand } from "./instrument";
-import { type Point, valueAt } from "./route";
+import { type Point, rasterAt, valueAt } from "./route";
 import { smoothstep } from "./streams";
 import { hash } from "./texture";
 import { ART_WIDTH } from "./viewport";
@@ -128,13 +128,13 @@ function envelope(
   z[0] = -Infinity;
   z[1] = Infinity;
   for (let q = 1; q < n; q++) {
-    const fq = valueAt(f, q) + q * q;
-    let p = valueAt(v, k);
-    let s = (fq - valueAt(f, p) - p * p) / (2 * (q - p));
-    while (s <= valueAt(z, k)) {
+    const fq = rasterAt(f, q) + q * q;
+    let p = rasterAt(v, k);
+    let s = (fq - rasterAt(f, p) - p * p) / (2 * (q - p));
+    while (s <= rasterAt(z, k)) {
       k--;
-      p = valueAt(v, k);
-      s = (fq - valueAt(f, p) - p * p) / (2 * (q - p));
+      p = rasterAt(v, k);
+      s = (fq - rasterAt(f, p) - p * p) / (2 * (q - p));
     }
     k++;
     v[k] = q;
@@ -143,9 +143,9 @@ function envelope(
   }
   k = 0;
   for (let q = 0; q < n; q++) {
-    while (valueAt(z, k + 1) < q) k++;
-    const p = valueAt(v, k);
-    out[q] = (q - p) * (q - p) + valueAt(f, p);
+    while (rasterAt(z, k + 1) < q) k++;
+    const p = rasterAt(v, k);
+    out[q] = (q - p) * (q - p) + rasterAt(f, p);
   }
 }
 
@@ -158,14 +158,14 @@ function distances(seeds: Uint8Array, width: number, height: number) {
     v = new Int32Array(n),
     z = new Float64Array(n + 1);
   for (let x = 0; x < width; x++) {
-    for (let y = 0; y < height; y++) f[y] = valueAt(grid, y * width + x);
+    for (let y = 0; y < height; y++) f[y] = rasterAt(grid, y * width + x);
     envelope(f, height, out, v, z);
-    for (let y = 0; y < height; y++) grid[y * width + x] = valueAt(out, y);
+    for (let y = 0; y < height; y++) grid[y * width + x] = rasterAt(out, y);
   }
   for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) f[x] = valueAt(grid, y * width + x);
+    for (let x = 0; x < width; x++) f[x] = rasterAt(grid, y * width + x);
     envelope(f, width, out, v, z);
-    for (let x = 0; x < width; x++) grid[y * width + x] = valueAt(out, x);
+    for (let x = 0; x < width; x++) grid[y * width + x] = rasterAt(out, x);
   }
   return grid;
 }
@@ -185,8 +185,8 @@ function foreignCells(key: Uint8Array, width: number, height: number) {
         foreign[i] = 1;
       else if (
         (x === 1 || y === 1 || x === width - 2 || y === height - 2) &&
-        valueAt(key, i) &&
-        !valueAt(foreign, i)
+        rasterAt(key, i) &&
+        !rasterAt(foreign, i)
       ) {
         foreign[i] = 1;
         stack.push(i);
@@ -198,7 +198,7 @@ function foreignCells(key: Uint8Array, width: number, height: number) {
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++) {
         const j = (y + dy) * width + x + dx;
-        if (valueAt(key, j) && !valueAt(foreign, j)) {
+        if (rasterAt(key, j) && !rasterAt(foreign, j)) {
           foreign[j] = 1;
           stack.push(j);
         }
@@ -229,15 +229,15 @@ export function rigMap(sample: Raster): Uint8Array {
             ? 1
             : 0;
     const foreign = foreignCells(key, w, h);
-    const own = key.map((value, i) => (value && !valueAt(foreign, i) ? 1 : 0));
+    const own = key.map((value, i) => (value && !rasterAt(foreign, i) ? 1 : 0));
     const toSubject = distances(own, w, h),
       toForeign = distances(foreign, w, h);
     const { dilate, feather } = matte;
     for (let y = 1; y < h - 1; y++)
       for (let x = 1; x < w - 1; x++) {
         const i = y * w + x;
-        const ds = cell * Math.sqrt(valueAt(toSubject, i)),
-          df = cell * Math.sqrt(valueAt(toForeign, i));
+        const ds = cell * Math.sqrt(rasterAt(toSubject, i)),
+          df = cell * Math.sqrt(rasterAt(toForeign, i));
         const weight = Math.max(
           0,
           Math.min(1, Math.min(dilate + feather - ds, df - 2) / feather),
@@ -259,7 +259,7 @@ export function rigCells(cells: Raster, codes: Uint8Array): Uint8Array {
       `Expected ${width}x${height} rig codes, got ${codes.length}`,
     );
   const bytes = new Uint8Array(data);
-  for (let i = 0; i < codes.length; i++) bytes[i * 4 + 3] = valueAt(codes, i);
+  for (let i = 0; i < codes.length; i++) bytes[i * 4 + 3] = rasterAt(codes, i);
   return bytes;
 }
 

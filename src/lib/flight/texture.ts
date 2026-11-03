@@ -1,4 +1,4 @@
-import { valueAt } from "./route";
+import { rasterAt } from "./route";
 
 /** Approved two-pixel ordered dither, blended with the original artwork. */
 export const clamp = (value: number, min = 0, max = 255) =>
@@ -119,9 +119,9 @@ export function renderTexture({ image, bitmap }: Artwork): PrintedArt {
         b = pixels[index + 2];
       if (r === undefined || g === undefined || b === undefined)
         throw new Error("Artwork pixel buffer is incomplete");
-      pixels[index] = valueAt(levels, tile + r);
-      pixels[index + 1] = valueAt(levels, tile + g);
-      pixels[index + 2] = valueAt(levels, tile + b);
+      pixels[index] = rasterAt(levels, tile + r);
+      pixels[index + 1] = rasterAt(levels, tile + g);
+      pixels[index + 2] = rasterAt(levels, tile + b);
     }
   }
   // Expand the dither cells in one draw instead of issuing 262,200 rectangles.

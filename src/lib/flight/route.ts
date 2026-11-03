@@ -10,7 +10,21 @@ export type RouteFrame = {
 export const ROUTE_SAMPLES = 64;
 const DENSITY = 256;
 
+/** Per-frame reads of float arrays; one-off passes over rasters use rasterAt. */
 export function valueAt(values: ArrayLike<number>, index: number): number {
+  const value = values[index];
+  if (value === undefined)
+    throw new RangeError(`Index ${index} is outside ${values.length} values`);
+  return value;
+}
+
+/**
+ * valueAt for the startup passes over byte rasters and integer grids. Every
+ * caller of a function shares its one load, so these array types stay out of
+ * valueAt's: past four, V8 turns it megamorphic and boxes every float the
+ * per-frame code reads.
+ */
+export function rasterAt(values: ArrayLike<number>, index: number): number {
   const value = values[index];
   if (value === undefined)
     throw new RangeError(`Index ${index} is outside ${values.length} values`);

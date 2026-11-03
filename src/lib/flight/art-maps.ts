@@ -1,4 +1,4 @@
-import { valueAt } from "./route";
+import { rasterAt, valueAt } from "./route";
 import { smoothstep } from "./streams";
 import { ART_WIDTH } from "./viewport";
 
@@ -60,9 +60,9 @@ export function checked(raster: Raster) {
   return raster;
 }
 export const luminance = (data: Uint8ClampedArray, pixel: number) =>
-  0.2126 * valueAt(data, pixel * 4) +
-  0.7152 * valueAt(data, pixel * 4 + 1) +
-  0.0722 * valueAt(data, pixel * 4 + 2);
+  0.2126 * rasterAt(data, pixel * 4) +
+  0.7152 * rasterAt(data, pixel * 4 + 1) +
+  0.0722 * rasterAt(data, pixel * 4 + 2);
 
 /**
  * 600x437x3 bytes, row 0 at the painting top; 255 where paint covers new elements.
@@ -87,7 +87,7 @@ export function occluderMask(sample: Raster): Uint8Array {
             smoothstep(lighter - soft, lighter + soft, luminance(data, pixel)),
         );
         const index = pixel * 3 + channel;
-        mask[index] = Math.max(valueAt(mask, index), key);
+        mask[index] = Math.max(rasterAt(mask, index), key);
       }
   }
   return mask;
@@ -115,14 +115,14 @@ export class Haze {
           4;
         for (let c = 0; c < 3; c++)
           sums[block + c] =
-            valueAt(sums, block + c) + valueAt(data, (y * width + x) * 4 + c);
-        sums[block + 3] = valueAt(sums, block + 3) + 1;
+            rasterAt(sums, block + c) + rasterAt(data, (y * width + x) * 4 + c);
+        sums[block + 3] = rasterAt(sums, block + 3) + 1;
       }
     const colors = new Float32Array(columns * rows * 3);
     for (let i = 0; i < columns * rows; i++)
       for (let c = 0; c < 3; c++)
         colors[i * 3 + c] =
-          valueAt(sums, i * 4 + c) / valueAt(sums, i * 4 + 3) / 255;
+          rasterAt(sums, i * 4 + c) / rasterAt(sums, i * 4 + 3) / 255;
     return new Haze(colors, columns, rows, (ART_WIDTH / width) * HAZE_BLOCK);
   }
 
