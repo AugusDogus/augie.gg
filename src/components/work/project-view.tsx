@@ -55,24 +55,13 @@ function Chip({ project }: { project: Project }) {
   return null;
 }
 
-/**
- * In place of captures: the project's evidence line, set as type, and why
- * there's nothing to look at. Never an empty frame.
- */
-function NoMedia({ project }: { project: Project }) {
+/** In place of captures: the project's evidence line, set as type. Never an empty frame. */
+function NoMedia({ highlight }: { highlight: string }) {
   return (
-    <div className="flex flex-col justify-end gap-2.5 rounded-[8px] bg-[radial-gradient(110%_120%_at_0%_100%,#8fe3f01a,transparent_55%),linear-gradient(180deg,#ffffff0a,#ffffff03)] p-5 shadow-[inset_0_0_0_1px_#ffffff12]">
-      {project.highlight && (
-        <p className="text-fg text-[17px]/[1.35] font-medium tracking-[-0.018em] text-balance">
-          {project.highlight}
-        </p>
-      )}
-      {project.private && (
-        <p className="text-fg-3 flex items-center gap-1.5 text-[12.5px]">
-          <LockSimpleIcon aria-hidden="true" className="size-3.5 shrink-0" />
-          Private repository, so no screenshots
-        </p>
-      )}
+    <div className="flex flex-col justify-end rounded-[8px] bg-[radial-gradient(110%_120%_at_0%_100%,#8fe3f01a,transparent_55%),linear-gradient(180deg,#ffffff0a,#ffffff03)] p-5 shadow-[inset_0_0_0_1px_#ffffff12]">
+      <p className="text-fg text-[17px]/[1.35] font-medium tracking-[-0.018em] text-balance">
+        {highlight}
+      </p>
     </div>
   );
 }
@@ -154,14 +143,12 @@ export function ProjectView({
   bodyRef?: Ref<HTMLDivElement>;
 }) {
   const showcase = Showcase.of(project.media);
-  // Without captures, the evidence and the private note stand in for them.
-  const cover =
-    showcase === null &&
-    (project.highlight !== undefined || project.private === true);
+  // Without captures, the evidence line stands in for them.
+  const cover = showcase === null ? (project.highlight ?? null) : null;
   // Tighter under a phone's overhang, which already leaves room, and with nothing above.
   const tight =
     (showcase?.kind === "desktop" && showcase.phone !== null) ||
-    (showcase === null && !cover);
+    (showcase === null && cover === null);
   const destination = Destination.of(project);
   const started = monthYear(project.date);
   return (
@@ -180,7 +167,7 @@ export function ProjectView({
           }
         />
       ) : (
-        cover && <NoMedia project={project} />
+        cover !== null && <NoMedia highlight={cover} />
       )}
       <div ref={bodyRef} className={cn("px-3 pb-3", tight ? "pt-2.5" : "pt-4")}>
         <Chip project={project} />
@@ -200,14 +187,12 @@ export function ProjectView({
         <Description className="text-fg mt-3.5 text-[15px]/[1.6] text-pretty">
           <RichText text={project.blurb} />
         </Description>
-        {project.highlight && !cover && (
+        {project.highlight && cover === null && (
           <p className="text-fg-2 border-accent/40 mt-3.5 border-l-2 pl-3.5 text-sm/[1.6] text-pretty">
             {project.highlight}
           </p>
         )}
-        {!(cover && destination.kind === "private") && (
-          <DestinationAction destination={destination} />
-        )}
+        <DestinationAction destination={destination} />
       </div>
     </div>
   );
