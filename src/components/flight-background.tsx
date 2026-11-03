@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { Button } from "~/components/ui/button";
 import { createBackground } from "~/lib/flight/background";
 
-// The persistent root background and the home caption share one motion preference.
+// The persistent root background and the home dock share one motion preference.
 let paused = false;
 const listeners = new Set<() => void>();
 function subscribe(listener: () => void) {
@@ -19,7 +18,13 @@ function subscribeMotion(listener: () => void) {
   media.addEventListener("change", listener);
   return () => media.removeEventListener("change", listener);
 }
-function usePlaying() {
+/** Pauses or resumes the artwork; shared by the dock and the command menu. */
+export function toggleAnimation() {
+  paused = !paused;
+  listeners.forEach((listener) => listener());
+}
+
+export function usePlaying() {
   const userPaused = useSyncExternalStore(
     subscribe,
     () => paused,
@@ -28,7 +33,7 @@ function usePlaying() {
   const reduced = useSyncExternalStore(
     subscribeMotion,
     () => matchMedia("(prefers-reduced-motion: reduce)").matches,
-    () => true,
+    () => false,
   );
   return { playing: !userPaused && !reduced, reduced };
 }
@@ -79,37 +84,6 @@ export function FlightBackground() {
     <div className="artwork" data-ready={ready} aria-hidden="true">
       <div className="artwork-poster" />
       <canvas id="sky" ref={canvas} />
-    </div>
-  );
-}
-
-export function ArtworkCaption() {
-  const { playing, reduced } = usePlaying();
-  return (
-    <div className="art-caption fixed right-(--gutter) bottom-5 flex items-center gap-5 text-[10px] text-[#e2ebe7] [text-shadow:0_1px_6px_#193440cc] max-[1000px]:static max-[1000px]:mt-5 max-[1000px]:justify-end max-[600px]:mt-3.5 max-[600px]:justify-between max-[600px]:gap-2.5">
-      <Button
-        variant="link"
-        className="py-2.5 text-inherit [text-shadow:inherit] hover:text-white"
-        disabled={reduced}
-        onClick={() => {
-          paused = !paused;
-          listeners.forEach((listener) => listener());
-        }}
-      >
-        {reduced
-          ? "Animation paused"
-          : playing
-            ? "Pause animation"
-            : "Play animation"}
-      </Button>
-      <a
-        className="hover:text-white"
-        href="https://www.gallerynucleus.com/detail/2126/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Flight by Kazu Kibuishi
-      </a>
     </div>
   );
 }

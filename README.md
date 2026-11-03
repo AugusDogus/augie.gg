@@ -6,11 +6,11 @@ My personal website.
 
 - [Next.js 16](https://nextjs.org)
 - [Tailwind CSS](https://tailwindcss.com)
-- [shadcn/ui](https://ui.shadcn.com)
+- [Radix UI](https://www.radix-ui.com) primitives
 - [MDX](https://mdxjs.com)
 - [sugar-high](https://github.com/huozhi/sugar-high)
 - [Phosphor Icons](https://phosphoricons.com)
-- Newsreader and Instrument Sans, self-hosted with their OFL licenses
+- Inter and Geist Mono, self-hosted with their OFL licenses
 
 ## Projects
 
@@ -47,7 +47,10 @@ bun install
 bun dev
 ```
 
-No environment variables or GitHub token are required.
+No environment variables are required. To show the GitHub activity graph, set
+`GITHUB_TOKEN` to a classic personal access token with no scopes (see
+`.env.example`); without it the panel is hidden and the rest of the page is
+unchanged.
 
 ```bash
 bun run check
@@ -58,10 +61,22 @@ bun run build
 
 ## Design and artwork
 
-The home page uses customized shadcn/ui buttons, cards, accordions, and
-collapsibles with Tailwind layout utilities and a shared textured surface.
-The résumé remains in `src/app/resume/page.mdx`. Print styles keep the full
-résumé in a single column on one US Letter page using the browser print button.
+The interface is dark glass (`.material` in `src/styles/globals.css`) over a
+scrim that leaves the painting clear on the right. Inter's display cut sets the
+name; Geist Mono only draws keyboard hints.
+
+- ⌘K (or Ctrl K, or /) opens a command menu over actions, selected work, open
+  source contributions, and every other project.
+- Selected work rows open a peek panel with the project's evidence and links,
+  a side sheet on wide screens and a draggable bottom sheet on narrow ones.
+  `?p=<title>` links straight to a project.
+- The activity panel prints the last year of GitHub contributions with streaks
+  and the busiest day, readable by hover, touch, or arrow keys.
+- The dock pauses the painting (or press P), credits it, and shows the time in
+  Pensacola.
+
+The résumé remains in `src/app/resume/page.mdx` on the same glass. Print styles
+keep it in a single black-on-white column on one US Letter page.
 
 The background uses Kazu Kibuishi's _Flight_ artwork, linked to its
 [Gallery Nucleus listing](https://www.gallerynucleus.com/detail/2126/).

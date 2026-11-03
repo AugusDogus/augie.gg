@@ -1,127 +1,76 @@
 import Link from "next/link";
-import {
-  FileTextIcon,
-  GithubLogoIcon,
-  CaretDownIcon,
-} from "@phosphor-icons/react/ssr";
+import { FileTextIcon, GithubLogoIcon } from "@phosphor-icons/react/ssr";
+import { Activity } from "~/components/activity";
+import { CommandMenu, CommandMenuTrigger } from "~/components/command-menu";
+import { CopyEmailButton } from "~/components/copy-email";
+import { Dock } from "~/components/dock";
+import { NowPill } from "~/components/now-pill";
+import { ProjectPeek } from "~/components/project-peek";
+import { Settled } from "~/components/settled";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
-import { Accordion } from "~/components/ui/accordion";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "~/components/ui/collapsible";
-import {
-  FeaturedEntry,
-  ArchiveEntry,
-  ExternalLink,
-} from "~/components/projects";
-import { EmailCopy } from "~/components/email-copy";
-import { ArtworkCaption } from "~/components/flight-background";
-import {
-  featuredProjects,
-  archivedProjects,
-  notableContributions,
-  groupByYear,
-} from "~/lib/projects";
+import { OpenSource } from "~/components/work/open-source";
+import { WorkList } from "~/components/work-list";
+import { GITHUB_URL } from "~/lib/site";
 
 export default function HomePage() {
   return (
-    <main
-      id="main"
-      tabIndex={-1}
-      className="portfolio-page px-(--gutter) pt-[34px] pb-6 max-[600px]:pt-[26px]"
-    >
-      <header className="site-header mb-[30px] flex items-center justify-between gap-6 max-[600px]:mb-[25px] max-[600px]:flex-col max-[600px]:items-start max-[600px]:gap-5">
-        <div>
-          <h1 className="font-[family-name:var(--font-newsreader)] text-[34px]/[1.15] font-medium tracking-[-.015em] text-[#f1f2e9] [text-shadow:0_1px_12px_#19344040] max-[600px]:text-[30px]">
+    <>
+      <header className="relative z-20 flex items-center justify-end gap-1.5 px-(--gutter) pt-5">
+        <CommandMenuTrigger />
+        <Button
+          variant="secondary"
+          className="text-fg-2 hover:text-fg size-9 px-0 pointer-coarse:size-10 [&_svg]:size-[18px]"
+          asChild
+        >
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+          >
+            <GithubLogoIcon aria-hidden="true" />
+          </a>
+        </Button>
+      </header>
+      <main
+        id="main"
+        tabIndex={-1}
+        className="relative z-10 px-(--gutter) pb-28 max-[1179px]:pb-10"
+      >
+        <section className="max-w-[600px] pt-[clamp(48px,9vh,112px)]">
+          <div className="rise [--i:0]">
+            <NowPill
+              title="teams-rs"
+              label="A native Microsoft Teams client for Linux"
+            />
+          </div>
+          <h1 className="display rise mt-6 text-[clamp(44px,5.2vw,76px)] [--i:1]">
             Augie Luebbers
           </h1>
-          <p className="mt-[9px] font-[system-ui,sans-serif] text-xs/normal text-[#e0e7e3] [text-shadow:0_1px_6px_#19344066]">
-            Product Engineer
+          <p className="text-fg-2 rise mt-5 max-w-[30em] text-[17px]/[1.55] [--i:2]">
+            Product engineer. I build fast, polished software for the web,
+            phones, and the occasional game console.
           </p>
-        </div>
-        <nav className="flex flex-wrap gap-[9px]" aria-label="Personal links">
-          <Button asChild>
-            <Link href="/resume">
-              <FileTextIcon aria-hidden="true" />
-              Résumé
-            </Link>
-          </Button>
-          <Button asChild>
-            <a
-              href="https://github.com/AugusDogus"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <GithubLogoIcon aria-hidden="true" />
-              GitHub
-            </a>
-          </Button>
-        </nav>
-      </header>
-      <div className="portfolio-content w-full max-w-[560px] max-[1000px]:max-w-[520px]">
-        <Card
-          className="work-sheet px-[26px] pt-[23px] max-[600px]:rounded-[15px] max-[600px]:px-5 max-[600px]:pt-5"
-          aria-labelledby="work-title"
-        >
-          <h2
-            id="work-title"
-            className="pb-[17px] text-[17px]/[1.4] font-medium tracking-[-.02em] max-[600px]:pb-[15px]"
-          >
-            Selected work
-          </h2>
-          <Accordion type="multiple">
-            {featuredProjects.map((project) => (
-              <FeaturedEntry key={project.title} project={project} />
-            ))}
-          </Accordion>
-          <Collapsible className="more-work border-border border-t">
-            <CollapsibleTrigger className="more-trigger flex w-full items-center justify-between py-5 text-[13px] font-medium [&>svg]:size-3.5 [&>svg]:text-[#718087] data-[state=open]:[&>svg]:rotate-180">
-              Everything else
-              <CaretDownIcon aria-hidden="true" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="project-history pb-[18px]">
-              {groupByYear(archivedProjects).map((group) => (
-                <section className="project-year pt-[25px]" key={group.year}>
-                  <h3 className="text-muted-foreground mb-[15px] text-xs/[1.6] font-medium">
-                    {group.year}
-                  </h3>
-                  <ul>
-                    {group.projects.map((project) => (
-                      <ArchiveEntry key={project.title} project={project} />
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-        <footer className="site-footer flex flex-wrap items-center justify-between gap-x-6 gap-y-[18px] px-[3px] pt-[23px] pb-3 text-[#e0e7e2] [text-shadow:0_1px_7px_#19344080] max-[600px]:gap-x-[18px] max-[600px]:pt-[22px] [&>.email-contact]:ml-auto [&>.email-contact]:shrink-0">
-          <div className="contributions max-w-full flex-none">
-            <h2 className="mb-2.5 text-[11px] font-normal">
-              Open source (minor) contributions
-            </h2>
-            <div className="flex flex-wrap gap-[18px]">
-              {notableContributions.map(
-                (project) =>
-                  project.href && (
-                    <ExternalLink
-                      key={project.title}
-                      href={project.href}
-                      className="inline-flex items-center gap-1.5 text-[11px] hover:text-white"
-                    >
-                      {project.contributionName ?? project.title}
-                    </ExternalLink>
-                  ),
-              )}
-            </div>
+          <div className="rise mt-8 flex flex-wrap gap-2.5 [--i:3]">
+            <CopyEmailButton />
+            <Button variant="secondary" asChild>
+              <Link href="/resume">
+                <FileTextIcon aria-hidden="true" />
+                Résumé
+              </Link>
+            </Button>
           </div>
-          <EmailCopy />
-        </footer>
-      </div>
-      <ArtworkCaption />
-    </main>
+        </section>
+        <div className="rise-each mt-[clamp(48px,8vh,96px)] flex max-w-[600px] flex-col gap-4 [--i:4]">
+          <WorkList />
+          <OpenSource />
+          <Activity />
+        </div>
+      </main>
+      <Dock />
+      <ProjectPeek />
+      <CommandMenu />
+      <Settled />
+    </>
   );
 }

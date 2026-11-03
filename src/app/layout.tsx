@@ -2,19 +2,23 @@ import "~/styles/globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { FlightBackground } from "~/components/flight-background";
+import { TooltipProvider } from "~/components/ui/tooltip";
 import { DEFAULT_APP_TITLE } from "~/lib/site";
 
-const instrument = localFont({
-  src: "../assets/fonts/instrument-sans-latin.woff2",
-  variable: "--font-instrument",
-  weight: "400 600",
+// Inter with its optical-size axis: the display cut at headline sizes, text cut below.
+const inter = localFont({
+  src: "../assets/fonts/inter-latin.woff2",
+  variable: "--font-inter",
+  weight: "400 650",
   display: "swap",
+  adjustFontFallback: "Arial",
 });
-const newsreader = localFont({
-  src: "../assets/fonts/newsreader-medium.ttf",
-  variable: "--font-newsreader",
-  weight: "500",
+const geistMono = localFont({
+  src: "../assets/fonts/geist-mono-latin.woff2",
+  variable: "--font-geist-mono",
+  weight: "400 500",
   display: "swap",
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
@@ -22,14 +26,15 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   title: { default: DEFAULT_APP_TITLE, template: `%s | ${DEFAULT_APP_TITLE}` },
   description:
-    "Augie Luebbers, Product Engineer. Selected projects and open source contributions.",
+    "Augie Luebbers is a product engineer building fast, polished software for the web, phones, and the occasional game console.",
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${instrument.variable} ${newsreader.variable}`}>
+    <html lang="en" className={`${inter.variable} ${geistMono.variable} dark`}>
       <head>
         <link rel="preload" as="image" href="/flight4cover_redux_spread.jpg" />
       </head>
@@ -38,7 +43,9 @@ export default function RootLayout({
           Skip to content
         </a>
         <FlightBackground />
-        <div className="relative">{children}</div>
+        <div className="relative">
+          <TooltipProvider>{children}</TooltipProvider>
+        </div>
       </body>
     </html>
   );

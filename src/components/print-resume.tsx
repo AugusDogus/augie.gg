@@ -1,10 +1,14 @@
 "use client";
-import { FileTextIcon } from "@phosphor-icons/react";
+import { PrinterIcon } from "@phosphor-icons/react";
 import { Button } from "~/components/ui/button";
-export function PrintResume() {
+export function PrintResume({ className }: { className?: string }) {
   return (
-    <Button onClick={() => window.print()}>
-      <FileTextIcon aria-hidden="true" />
+    <Button
+      variant="secondary"
+      className={className}
+      onClick={() => window.print()}
+    >
+      <PrinterIcon aria-hidden="true" />
       Print résumé
     </Button>
   );
