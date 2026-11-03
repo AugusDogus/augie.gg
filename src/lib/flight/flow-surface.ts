@@ -234,8 +234,25 @@ export class FlowSurface {
       time: gl.getUniformLocation(program, "time"),
       brushes: gl.getUniformLocation(program, "brushes[0]"),
       rig: gl.getUniformLocation(program, "rig[0]"),
-      presenter: Presenter.create(this.scope, programs.present, quad),
+      presenter: this.presenter(programs.present, quad),
     };
+  }
+
+  /**
+   * The presenter only saves copying each frame, so failing to build it (say,
+   * its scene buffer refused while VRAM runs short) keeps the GPU composite
+   * and leaves the page copying frames into #sky.
+   */
+  private presenter(programs: PresentPrograms, quad: WebGLBuffer) {
+    try {
+      return Presenter.create(this.scope, programs, quad);
+    } catch (error) {
+      console.warn(
+        "The artwork renderer could not draw frames straight to the page. Copying each frame instead.",
+        error,
+      );
+      return null;
+    }
   }
 
   private lose = (event: Event) => {
