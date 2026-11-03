@@ -41,7 +41,7 @@ export default function Image() {
           width: 1200,
           height: 630,
           background:
-            "linear-gradient(90deg, #060d11 0%, #060d11f0 26%, #060d11a6 48%, #060d1133 72%, #060d111a 100%)",
+            "linear-gradient(90deg, #060d11 17%, #060d11f0 26%, #060d11a6 48%, #060d1133 72%, #060d111a 100%)",
         }}
       />
       <div

@@ -1,5 +1,5 @@
 import "~/styles/globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { FlightBackground } from "~/components/flight-background";
 import { TooltipProvider } from "~/components/ui/tooltip";
@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   description:
     "Product engineer in Pensacola, FL. I notice something annoying, fix it, and move on. Sometimes the fix is a Plex client for the GameCube.",
   twitter: { card: "summary_large_image" },
+};
+
+// The painting runs under the notch in landscape; --gutter keeps content clear of it.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

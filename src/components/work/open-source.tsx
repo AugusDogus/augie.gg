@@ -4,6 +4,7 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { type Ref, useRef, useState } from "react";
 import type { Project } from "~/content/projects";
 import { notableContributions } from "~/lib/projects";
+import { cn } from "~/lib/utils";
 import { Catalog } from "./catalog";
 
 const more = Catalog.moreContributions(Catalog.contributions);
@@ -25,20 +26,20 @@ function Chip({
   const slash = project.title.indexOf("/");
   return (
     <li
-      className={
-        revealed
-          ? "transition-[opacity,translate] duration-200 ease-out starting:translate-y-1 starting:opacity-0"
-          : undefined
-      }
+      className={cn(
+        "max-w-full",
+        revealed &&
+          "transition-[opacity,translate] duration-200 ease-out starting:translate-y-1 starting:opacity-0",
+      )}
     >
       <a
         ref={chipRef}
         href={project.href}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${QUIET} text-fg-2 pointer-fine:hover:text-fg gap-1.5 border border-white/10 bg-white/[.06] pr-1.5 pl-2 pointer-coarse:px-3 pointer-fine:hover:bg-white/10`}
+        className={`${QUIET} text-fg-2 pointer-fine:hover:text-fg max-w-full gap-1.5 border border-white/10 bg-white/[.06] pr-1.5 pl-2 pointer-coarse:px-3 pointer-fine:hover:bg-white/10`}
       >
-        <span>
+        <span className="min-w-0 truncate">
           <span className="text-fg-3">{project.title.slice(0, slash + 1)}</span>
           {project.title.slice(slash + 1)}
         </span>
@@ -54,7 +55,7 @@ export function OpenSource() {
   const firstMore = useRef<HTMLAnchorElement>(null);
   return (
     <section aria-labelledby="open-source" className="material p-1.5">
-      <div className="flex h-10 items-center pl-3">
+      <div className="flex min-h-10 items-center py-2 pl-3">
         <h2 id="open-source" className="text-fg-2 text-[13px] font-medium">
           Open source{" "}
           <span className="text-fg-3 font-normal">
@@ -77,7 +78,7 @@ export function OpenSource() {
             />
           ))
         ) : more.length > 0 ? (
-          <li>
+          <li className="noscript:hidden">
             <button
               type="button"
               aria-expanded={false}

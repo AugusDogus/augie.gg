@@ -11,13 +11,20 @@
   letter-spacing: -0.03em;
   color: var(--color-fg);
 }
+/* Contact line: quiet text, with links set like the copyable address. */
 .resume-sheet > p:first-of-type {
   margin-top: 10px;
-  color: var(--color-fg);
 }
-.resume-sheet > p:first-of-type strong {
-  font-weight: 400;
-  color: var(--color-fg-2);
+.resume-sheet > p:first-of-type > a {
+  color: var(--color-fg);
+  text-decoration-color: #ffffff40;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .resume-sheet > p:first-of-type > a:hover {
+    text-decoration-color: var(--color-fg-2);
+  }
 }
 .resume-sheet h2 {
   margin: 32px 0 4px;
@@ -44,6 +51,12 @@
 }
 .resume-role h3 {
   margin: 0;
+}
+/* The employer reads under the role, and never breaks inside its name. */
+.resume-org {
+  font-weight: 400;
+  color: var(--color-fg-2);
+  white-space: nowrap;
 }
 .resume-sheet em {
   font-size: 13px;
@@ -80,12 +93,35 @@
   .resume-sheet h1 {
     font-size: 28px;
   }
+  /* Just small enough that "augie.gg · github.com/AugusDogus" holds one line at 320px. */
+  .resume-sheet > p:first-of-type {
+    font-size: 14px;
+  }
   .resume-role {
     flex-direction: column;
     gap: 0;
   }
   .resume-sheet hr {
     margin-top: 28px;
+  }
+}
+/* Below one line's width, role and employer take a line each, as do the
+   contact line's two pairs. Separators stay for screen readers. */
+@media (max-width: 640px) {
+  .resume-sep {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .resume-org {
+    display: block;
+  }
+}
+@media (min-width: 641px) {
+  .resume-break {
+    display: none;
   }
 }
 @page {
@@ -132,14 +168,9 @@
     margin: 0 0 6pt;
     font-size: 9.5pt;
   }
-  .resume-sheet > p:first-of-type br {
-    display: none;
-  }
-  .resume-sheet > p:first-of-type strong {
-    font-weight: 500;
-  }
-  .resume-sheet > p:first-of-type strong:not(:first-child) {
-    margin-left: 12pt;
+  .resume-sheet > p:first-of-type > a {
+    color: inherit;
+    text-decoration: none;
   }
   .resume-sheet h2 {
     font-size: 11.5pt;

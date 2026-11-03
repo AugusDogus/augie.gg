@@ -32,7 +32,7 @@ export async function Activity() {
         <h2 id="activity-title" className="text-fg-2 font-medium">
           Activity
         </h2>
-        <p className="text-fg-2">
+        <p className="text-fg-2 text-balance">
           <span className="text-fg font-medium tabular-nums">
             {total.toLocaleString("en-US")}
           </span>{" "}
@@ -48,11 +48,9 @@ export async function Activity() {
       </p>
       <dl
         className={cn(
-          "border-line mt-4 grid gap-x-4 gap-y-3 border-t pt-4",
-          // On phones the streak column takes its text's width so "and counting" never wraps.
-          unbroken
-            ? "grid-cols-[auto_1fr] sm:grid-cols-2"
-            : "grid-cols-2 sm:grid-cols-3",
+          "border-line mt-4 flex flex-wrap gap-x-6 gap-y-3 border-t pt-4 sm:grid sm:gap-x-4",
+          // On phones each stat keeps its line and wraps whole when the row is too narrow.
+          unbroken ? "sm:grid-cols-2" : "sm:grid-cols-3",
         )}
       >
         {unbroken ? (
@@ -74,7 +72,9 @@ export async function Activity() {
           {busiest ? (
             <>
               {busiest.count.toLocaleString("en-US")}{" "}
-              <span className="text-fg-2">on {shortDate(busiest.date)}</span>
+              <span className="text-fg-2">
+                on {shortDate(busiest.date, lastDay)}
+              </span>
             </>
           ) : (
             <span className="text-fg-2">None yet</span>
@@ -89,7 +89,9 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
       <dt className="text-fg-3 text-[12px]/4">{label}</dt>
-      <dd className="text-fg mt-1 text-[14px]/5 tabular-nums">{children}</dd>
+      <dd className="text-fg mt-1 text-[14px]/5 whitespace-nowrap tabular-nums">
+        {children}
+      </dd>
     </div>
   );
 }

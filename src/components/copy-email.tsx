@@ -1,8 +1,8 @@
 "use client";
 
-import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
+import { CheckIcon, CopyIcon, EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { EMAIL } from "~/lib/site";
 
 /** How a visitor finishes the copy by hand: a key chord, or touch selection. */
@@ -122,70 +122,93 @@ export function CopyEmailButton() {
   }, [manualKind, dismissFailure]);
 
   return (
-    <span className="relative inline-flex">
-      <Button
-        ref={button}
-        variant="primary"
-        aria-label={`Copy ${EMAIL}`}
-        data-phase={state.phase}
-        className="data-[phase=failed]:outline-accent data-[phase=failed]:outline-2 data-[phase=failed]:outline-offset-2"
-        onClick={(event) => void copy(event.detail === 0)}
-      >
-        <span className="copy-swap" data-instant={state.instant}>
-          <span data-active={state.phase === "idle"}>
-            <CopyIcon aria-hidden="true" />
-            {EMAIL}
-          </span>
-          <span data-active={state.phase === "copied"}>
-            <CheckIcon weight="bold" aria-hidden="true" />
-            Copied
-          </span>
-          {manual?.kind === "keys" ? (
-            <span data-active="true" data-enter="true">
-              {manual.label} to copy
-            </span>
-          ) : null}
-        </span>
-      </Button>
-      {manual?.kind === "touch" ? (
-        // Outside the button, so the address can be selected and copied by hand.
-        <span
-          className="copy-swap absolute inset-0 text-[13.5px] font-medium text-[#0a1317]"
-          onCopy={() => copied(true)}
+    <>
+      <span className="relative inline-flex noscript:hidden">
+        <Button
+          ref={button}
+          variant="primary"
+          aria-label={`Copy ${EMAIL}`}
+          data-phase={state.phase}
+          className="data-[phase=failed]:outline-accent data-[phase=failed]:outline-2 data-[phase=failed]:outline-offset-2"
+          onClick={(event) => void copy(event.detail === 0)}
         >
-          <span
-            ref={shown}
-            data-active="true"
-            data-enter="true"
-            className="select-all"
-          >
-            {EMAIL}
+          <span className="copy-swap" data-instant={state.instant}>
+            <span data-active={state.phase === "idle"}>
+              <CopyIcon aria-hidden="true" />
+              {EMAIL}
+            </span>
+            <span data-active={state.phase === "copied"}>
+              <CheckIcon weight="bold" aria-hidden="true" />
+              Copied
+            </span>
+            {manual?.kind === "keys" ? (
+              <span data-active="true" data-enter="true">
+                {manual.label} to copy
+              </span>
+            ) : null}
           </span>
-        </span>
-      ) : null}
-      {manual?.kind === "keys" ? (
-        <input
-          ref={field}
-          readOnly
-          value={EMAIL}
-          aria-label="Email address"
-          tabIndex={-1}
-          className="sr-only"
-          onCopy={() => {
-            copied(true);
-            button.current?.focus();
-          }}
-          onBlur={dismissFailure}
-          onKeyDown={(event) => {
-            if (event.key !== "Escape") return;
-            button.current?.focus();
-          }}
-        />
-      ) : null}
-      <output aria-live="polite" className="sr-only">
-        {announcement(state)}
-      </output>
-    </span>
+        </Button>
+        {manual?.kind === "touch" ? (
+          // Outside the button, so the address can be selected and copied by hand.
+          <>
+            <span
+              className="copy-swap absolute inset-0 text-[13.5px] font-medium text-[#0a1317]"
+              onCopy={() => copied(true)}
+            >
+              <span
+                ref={shown}
+                data-active="true"
+                data-enter="true"
+                className="selection:text-fg select-all selection:bg-[#0a1317]"
+              >
+                {EMAIL}
+              </span>
+            </span>
+            {/* The <output> below already says this to screen readers. Where
+                the Résumé button wraps under this one, the hint goes above. */}
+            <span
+              aria-hidden="true"
+              className="text-fg-2 absolute top-full left-0 mt-2 text-xs whitespace-nowrap max-[289px]:top-auto max-[289px]:bottom-full max-[289px]:mt-0 max-[289px]:mb-2"
+            >
+              Press and hold to copy
+            </span>
+          </>
+        ) : null}
+        {manual?.kind === "keys" ? (
+          <input
+            ref={field}
+            readOnly
+            value={EMAIL}
+            aria-label="Email address"
+            tabIndex={-1}
+            className="sr-only"
+            onCopy={() => {
+              copied(true);
+              button.current?.focus();
+            }}
+            onBlur={dismissFailure}
+            onKeyDown={(event) => {
+              if (event.key !== "Escape") return;
+              button.current?.focus();
+            }}
+          />
+        ) : null}
+        <output aria-live="polite" className="sr-only">
+          {announcement(state)}
+        </output>
+      </span>
+      {/* Copying needs script; without it the address is a plain mail link.
+          Hidden with script, so it never takes a gap in the button row. */}
+      <noscript className="hidden noscript:contents">
+        <a
+          href={`mailto:${EMAIL}`}
+          className={buttonVariants({ variant: "primary" })}
+        >
+          <EnvelopeSimpleIcon aria-hidden="true" />
+          {EMAIL}
+        </a>
+      </noscript>
+    </>
   );
 }
 

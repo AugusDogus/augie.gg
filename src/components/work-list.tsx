@@ -1,7 +1,7 @@
 "use client";
 
 import { CaretDownIcon, LockSimpleIcon } from "@phosphor-icons/react";
-import { type KeyboardEvent, type Ref, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, useId, useRef, useState } from "react";
 import { STATUS_LABEL, StatusIcon, statusOf } from "~/components/status-icon";
 import { Blurb } from "~/components/work/blurb";
 import { Catalog } from "~/components/work/catalog";
@@ -49,6 +49,7 @@ function FeaturedRow({
   onKeyDown,
 }: RowProps) {
   const status = statusOf(project.labels);
+  const blurbId = useId();
   return (
     <button
       ref={rowRef}
@@ -57,6 +58,10 @@ function FeaturedRow({
       tabIndex={tabbable ? 0 : -1}
       aria-haspopup="dialog"
       aria-expanded={open}
+      aria-label={
+        status ? `${project.title}, ${STATUS_LABEL[status]}` : project.title
+      }
+      aria-describedby={blurbId}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
       onClick={() => toggle(project.title, open)}
@@ -65,11 +70,11 @@ function FeaturedRow({
       <span className="flex size-3.5">
         {status && <StatusIcon status={status} />}
       </span>
-      <span className="text-fg font-medium whitespace-nowrap">
-        {project.title}
-        {status && <span className="sr-only">, {STATUS_LABEL[status]}</span>}
-      </span>
-      <span className="text-fg-2 col-[2/4] row-start-2 line-clamp-2 text-pretty">
+      <span className="text-fg truncate font-medium">{project.title}</span>
+      <span
+        id={blurbId}
+        className="text-fg-2 col-[2/4] row-start-2 text-pretty"
+      >
         {Blurb.plain(project.blurb)}
       </span>
       <span className="text-fg-3 col-start-3 row-start-1 text-[13px] tabular-nums">
@@ -87,6 +92,7 @@ function ArchiveRow({
   onFocus,
   onKeyDown,
 }: RowProps) {
+  const blurbId = useId();
   return (
     <button
       ref={rowRef}
@@ -95,24 +101,28 @@ function ArchiveRow({
       tabIndex={tabbable ? 0 : -1}
       aria-haspopup="dialog"
       aria-expanded={open}
+      aria-label={
+        project.private ? `${project.title}, private repository` : project.title
+      }
+      aria-describedby={blurbId}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
       onClick={() => toggle(project.title, open)}
       className={`${ROW} grid min-h-9 grid-cols-[14px_auto_minmax(0,1fr)_2rem] items-center gap-x-3 text-[13.5px] max-[600px]:grid-cols-[14px_minmax(0,1fr)_2rem] max-[600px]:gap-y-0.5 max-[600px]:py-2 pointer-coarse:min-h-10`}
     >
-      <span className="text-fg col-start-2 flex items-center gap-1.5 font-medium whitespace-nowrap">
-        {project.title}
+      <span className="text-fg col-start-2 flex min-w-0 items-center gap-1.5 font-medium whitespace-nowrap">
+        <span className="truncate">{project.title}</span>
         {project.private && (
-          <>
-            <LockSimpleIcon
-              aria-hidden="true"
-              className="text-fg-3 size-3 shrink-0"
-            />
-            <span className="sr-only">, private repository</span>
-          </>
+          <LockSimpleIcon
+            aria-hidden="true"
+            className="text-fg-3 size-3 shrink-0"
+          />
         )}
       </span>
-      <span className="text-fg-2 truncate max-[600px]:col-start-2 max-[600px]:line-clamp-2 max-[600px]:whitespace-normal">
+      <span
+        id={blurbId}
+        className="text-fg-2 truncate max-[600px]:col-start-2 max-[600px]:line-clamp-2 max-[600px]:whitespace-normal"
+      >
         {Blurb.plain(project.blurb)}
       </span>
     </button>
@@ -187,12 +197,12 @@ export function WorkList() {
           aria-expanded={expanded}
           aria-controls="archive"
           onClick={() => {
-            // Folding from deep in the archive brings the list back up under the header.
+            // Folding from deep in the archive brings the list back up, 12px clear of the top.
             const top = panel.current?.getBoundingClientRect().top ?? 0;
-            if (expanded && top < 0) window.scrollBy({ top });
+            if (expanded && top < 0) window.scrollBy({ top: top - 12 });
             setExpanded(!expanded);
           }}
-          className="group text-fg-2 pointer-fine:hover:text-fg inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] transition-[background-color,color,scale] duration-150 ease-out active:scale-[.97] pointer-coarse:h-10 pointer-fine:hover:bg-white/[.05]"
+          className="group text-fg-2 pointer-fine:hover:text-fg inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] transition-[background-color,color,scale] duration-150 ease-out active:scale-[.97] pointer-coarse:h-10 pointer-fine:hover:bg-white/[.05] noscript:hidden"
         >
           All {Catalog.count} projects
           <CaretDownIcon
@@ -214,8 +224,7 @@ export function WorkList() {
         inert={!expanded}
         className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-260 ease-out data-[expanded=true]:grid-rows-[1fr]"
       >
-        {/* Relative, so the clip also holds the rows' absolute sr-only text; folded, it would stretch the page. */}
-        <div className="relative min-h-0 overflow-clip">
+        <div className="min-h-0 overflow-clip">
           <div className="border-line mt-1.5 flex flex-col gap-2 border-t pt-1.5">
             {archive.map(({ year, projects }) => (
               <section

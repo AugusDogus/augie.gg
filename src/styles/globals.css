@@ -20,7 +20,7 @@
 }
 .skip-link {
   position: fixed;
-  left: 16px;
+  left: max(16px, env(safe-area-inset-left));
   top: -70px;
   z-index: 60;
   background: var(--color-fg);
@@ -34,12 +34,15 @@
   top: 16px;
 }
 .artwork {
-  /* Keep the art at least 60vw wide without crowding out the blurred backdrop. */
-  --artwork-height: max(100vh, calc(60vw * 874 / 1200));
+  /* Keep the art at least 60vw wide without crowding out the blurred backdrop,
+     but never overscan more than 12% of the height: on 32:9 the bird stays
+     whole and clear of the dock. */
+  --artwork-height: max(100vh, min(calc(60vw * 874 / 1200), 112vh));
   position: fixed;
-  /* A modal's scroll lock removes the scrollbar; keep the art where it was. */
-  inset: calc((100vh - var(--artwork-height)) / 2)
-    var(--removed-body-scroll-bar-size, 0px) auto 0;
+  /* A modal's scroll lock removes the scrollbar; keep the art where it was,
+     and let the blurred backdrop fill the vacated gutter. */
+  inset: calc((100vh - var(--artwork-height)) / 2) 0 auto 0;
+  padding-right: var(--removed-body-scroll-bar-size, 0px);
   height: var(--artwork-height);
   overflow: hidden;
   pointer-events: none;
@@ -70,14 +73,14 @@
     linear-gradient(
       90deg,
       #060d11e6 0%,
-      #060d11c2 28%,
-      #060d1166 46%,
-      transparent 66%
+      #060d11c2 max(28%, calc(var(--gutter) + 440px)),
+      #060d1166 max(46%, calc(var(--gutter) + 660px)),
+      transparent max(66%, calc(var(--gutter) + 880px))
     );
 }
-@media (max-width: 1000px), (aspect-ratio <= 1200 / 874) {
+@media (max-width: 1000px), (aspect-ratio <= 5 / 4) {
   :root {
-    --gutter: 28px;
+    --gutter: max(28px, env(safe-area-inset-left), env(safe-area-inset-right));
   }
   .artwork::after {
     background: linear-gradient(
@@ -88,9 +91,24 @@
     );
   }
 }
+/* Narrow but wide windows (landscape phones): the art is pinned right at full
+   height, so shade from the column side like desktop. */
+@media (max-width: 1000px) and (aspect-ratio > 1200 / 874) {
+  .artwork::after {
+    background:
+      linear-gradient(180deg, #060d1166, transparent 140px),
+      linear-gradient(
+        90deg,
+        #060d11e6 0,
+        #060d11c2 calc(var(--gutter) + 440px),
+        #060d1180 calc(var(--gutter) + 560px),
+        transparent calc(var(--gutter) + 780px)
+      );
+  }
+}
 @media (max-width: 600px) {
   :root {
-    --gutter: 18px;
+    --gutter: max(18px, env(safe-area-inset-left), env(safe-area-inset-right));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -104,7 +122,7 @@
 .artwork-poster {
   position: absolute;
   top: 0;
-  right: 0;
+  right: var(--removed-body-scroll-bar-size, 0px);
   width: min(100vw, calc(var(--artwork-height) * 1200 / 874));
   aspect-ratio: 1200 / 874;
   background-size: 100% 100%;
@@ -114,6 +132,11 @@
 @media (aspect-ratio > 1200 / 874) {
   .artwork-poster {
     mask-image: linear-gradient(90deg, transparent, black 16.6667%);
+  }
+  /* Wide windows show more blurred backdrop beside the painting; keep it a
+     dark field, not a grey haze. */
+  .artwork::before {
+    filter: blur(32px) brightness(0.5) saturate(0.78);
   }
 }
 .artwork[data-ready="true"] #sky {
@@ -132,7 +155,11 @@
     color: var(--color-fg);
     background: #0a1317;
     color-scheme: dark;
-    --gutter: clamp(24px, 5vw, 80px);
+    --gutter: max(
+      clamp(24px, 5vw, 80px),
+      env(safe-area-inset-left),
+      env(safe-area-inset-right)
+    );
   }
   * {
     box-sizing: border-box;
@@ -168,6 +195,10 @@
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+  }
+  /* Focus scrolling stops short of the edge, so rings are never cut off. */
+  :where(a, button, input, summary, [tabindex="0"]) {
+    scroll-margin-block: 16px;
   }
   ::selection {
     background: #8fe3f04d;

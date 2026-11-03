@@ -13,7 +13,7 @@ const buttonVariants = cva(
           "h-9 pointer-coarse:h-10 rounded-[10px] bg-fg px-3.5 text-[13.5px] text-[#0a1317] shadow-[inset_0_-1px_0_#0000001f,0_1px_2px_#00000040] hover:bg-white [&_svg]:size-4",
         /** Glass, for secondary destinations. */
         secondary:
-          "h-9 pointer-coarse:h-10 rounded-[10px] border border-white/10 bg-[#16232a]/60 shadow-[inset_0_1px_0_#ffffff0f] px-3.5 text-[13.5px] text-fg backdrop-blur-xl hover:bg-[#213038]/80 [&_svg]:size-4",
+          "h-9 pointer-coarse:h-10 rounded-[10px] border border-white/10 bg-[#16232a]/60 shadow-[inset_0_1px_0_#ffffff0f] px-3.5 text-[13.5px] text-fg backdrop-blur-xl hover:bg-[#213038]/80 focus-visible:shadow-[inset_0_1px_0_#ffffff0f,0_0_0_4px_#060d11d9] [&_svg]:size-4",
         /** Quiet square buttons for icons. */
         icon: "size-9 pointer-coarse:size-10 rounded-[10px] text-fg-2 hover:bg-white/[.08] hover:text-fg [&_svg]:size-[18px]",
         link: "bg-transparent p-0 underline-offset-4 hover:underline active:scale-100",

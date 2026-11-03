@@ -247,11 +247,16 @@ export function ActivityGraph({
         ref={scroller}
         onScroll={onScroll}
         data-reveal={revealed ? "shown" : "pending"}
-        style={{
-          maskImage: `linear-gradient(90deg, transparent, #000 ${fade === "left" || fade === "both" ? 32 : 0}px, #000 calc(100% - ${fade === "right" || fade === "both" ? 32 : 0}px), transparent)`,
-        }}
-        // rtl starts the scroll at the latest weeks with no script and no jump.
-        className="group/graph -mx-5 -my-1.5 overflow-x-auto overscroll-x-contain px-5 py-1.5 [direction:rtl] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={
+          fade === "none"
+            ? undefined
+            : {
+                maskImage: `linear-gradient(90deg, transparent, #000 ${fade === "left" || fade === "both" ? 32 : 0}px, #000 calc(100% - ${fade === "right" || fade === "both" ? 32 : 0}px), transparent)`,
+              }
+        }
+        // rtl starts the scroll at the latest weeks with no script and no jump,
+        // so until it is measured a phone's graph hides its oldest weeks on the left.
+        className="group/graph -mx-5 -my-1.5 overflow-x-auto overscroll-x-contain px-5 py-1.5 [direction:rtl] [scrollbar-width:none] max-sm:[mask-image:linear-gradient(90deg,transparent,#000_32px)] [&::-webkit-scrollbar]:hidden"
       >
         {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- role="application": one tab stop that reads days with the arrow keys */}
         <div
@@ -262,7 +267,7 @@ export function ActivityGraph({
           aria-label="GitHub contribution graph"
           data-selecting={selection !== null || undefined}
           aria-describedby={describedBy}
-          className="w-full min-w-max cursor-default touch-manipulation outline-none [direction:ltr] sm:min-w-0"
+          className="w-full min-w-max cursor-default touch-manipulation scroll-my-6 outline-none [direction:ltr] sm:min-w-0"
           onPointerMove={onPointerMove}
           onPointerLeave={onPointerLeave}
           onPointerUp={onPointerUp}
@@ -362,7 +367,9 @@ export function ActivityGraph({
             <span className="text-fg font-medium tabular-nums">
               {contributions(tipDay.count)}
             </span>{" "}
-            <span className="text-fg-2">on {tooltipDate(tipDay.date)}</span>
+            <span className="text-fg-2">
+              on {tooltipDate(tipDay.date, days.at(-1)?.date ?? tipDay.date)}
+            </span>
           </>
         )}
       </div>

@@ -22,9 +22,9 @@ import { closeProject, openProject, usePeek } from "~/lib/peek";
 
 /**
  * Phones and narrow or tall windows, where the painting sits above the content,
- * and windows too narrow to fit the 600px list and the 400px peek side by side.
+ * and windows too narrow to fit the 600px list and a 340px peek side by side.
  */
-const SHEET_QUERY = "(max-width: 1160px), (max-aspect-ratio: 1200/874)";
+const SHEET_QUERY = "(max-width: 1080px), (max-aspect-ratio: 5/4)";
 
 function subscribeLayout(listener: () => void) {
   const media = matchMedia(SHEET_QUERY);
@@ -91,6 +91,7 @@ function Peek({
   const sequence = Catalog.sequenceFor(project.title);
   const previous = Catalog.neighbor(sequence, project.title, -1);
   const next = Catalog.neighbor(sequence, project.title, 1);
+  const position = Catalog.position(sequence, project.title);
   const { body, backdrop, handlers } = useSheetDrag(closeProject);
 
   function step(target: Project | null) {
@@ -177,7 +178,11 @@ function Peek({
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            PeekFocus.restore(opener.current, project.title);
+            PeekFocus.restore(
+              opener.current,
+              project.title,
+              sheet ? "sheet" : "side",
+            );
           }}
           onInteractOutside={(event) => {
             // Wide screens keep the sheet open beside the page; rows switch it.
@@ -199,10 +204,12 @@ function Peek({
               : (event) => PeekFocus.leave(event, opener.current, project.title)
           }
           {...(sheet ? handlers : {})}
+          data-media={project.media !== undefined || undefined}
           className={
             sheet
-              ? "material ease-drawer fixed inset-x-0 bottom-0 z-40 mx-auto flex max-h-[calc(100dvh-40px)] min-h-[min(404px,calc(100dvh-40px))] max-w-[640px] [translate:0_var(--drag,0px)] touch-none flex-col rounded-t-2xl rounded-b-none border-b-0 pb-[env(safe-area-inset-bottom)] transition-[translate] duration-300 outline-none after:absolute after:inset-x-0 after:top-full after:h-20 after:bg-[#0d171c] data-dragging:transition-none data-[phase=closed]:translate-y-full starting:translate-y-full pointer-coarse:min-h-[min(360px,calc(100dvh-40px))]"
-              : "material fixed top-[76px] right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] z-40 flex h-[min(400px,calc(100dvh-152px))] max-h-[calc(100dvh-152px)] w-[400px] flex-col transition-[opacity,translate] duration-220 ease-out outline-none data-[phase=closed]:pointer-events-none data-[phase=closed]:translate-x-3 data-[phase=closed]:opacity-0 data-[phase=closed]:duration-160 starting:translate-x-3 starting:opacity-0"
+              ? // Runs 4rem (Drag.UPWARD_LIMIT) past the viewport, so lifting it shows more glass, not a seam; its top clears the header.
+                "material ease-drawer fixed inset-x-0 -bottom-16 z-40 mx-auto flex max-h-[calc(100dvh-72px+4rem)] min-h-[calc(min(404px,100dvh-72px)+4rem)] max-w-[640px] [translate:0_var(--drag,0px)] touch-none flex-col rounded-t-2xl rounded-b-none border-b-0 pb-[calc(env(safe-area-inset-bottom)+4rem)] transition-[translate] duration-300 outline-none data-dragging:transition-none data-[phase=closed]:translate-y-full starting:translate-y-full pointer-coarse:min-h-[calc(min(400px,100dvh-72px)+4rem)]"
+              : "material fixed top-[76px] right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] z-40 flex h-[min(400px,calc(100dvh-152px))] max-h-[calc(100dvh-152px)] w-[clamp(340px,calc(100vw-600px-3*var(--gutter)-16px),400px)] flex-col transition-[opacity,translate] duration-220 ease-out outline-none data-media:h-[min(640px,calc(100dvh-152px))] data-media:w-[clamp(340px,calc(100vw-600px-3*var(--gutter)-16px),480px)] data-[phase=closed]:pointer-events-none data-[phase=closed]:translate-x-3 data-[phase=closed]:opacity-0 data-[phase=closed]:duration-160 starting:translate-x-3 starting:opacity-0 pointer-coarse:h-[min(356px,calc(100dvh-152px))] pointer-coarse:data-media:h-[min(600px,calc(100dvh-152px))]"
           }
         >
           {sheet && (
@@ -216,6 +223,8 @@ function Peek({
             project={project}
             previous={previous}
             next={next}
+            position={position}
+            total={sequence.length}
             onStep={step}
           />
           <div
@@ -225,10 +234,7 @@ function Peek({
           >
             <PeekDetails key={project.title} ref={measure} project={project} />
           </div>
-          <PeekFooter
-            position={Catalog.position(sequence, project.title)}
-            total={sequence.length}
-          />
+          <PeekFooter position={position} total={sequence.length} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

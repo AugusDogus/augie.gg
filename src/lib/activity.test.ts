@@ -246,9 +246,14 @@ describe("wording", () => {
   });
 
   test("dates are the calendar day in Chicago", () => {
-    expect(tooltipDate("2026-10-25")).toBe("Sun, Oct 25");
-    expect(shortDate("2026-01-01")).toBe("Jan 1");
+    expect(tooltipDate("2026-10-25", "2026-11-02")).toBe("Sun, Oct 25");
+    expect(shortDate("2026-01-01", "2026-11-02")).toBe("Jan 1");
     expect(longDate("2026-10-25")).toBe("Sunday, October 25, 2026");
+  });
+
+  test("dates from before the window's final year carry the year", () => {
+    expect(tooltipDate("2025-11-02", "2026-11-02")).toBe("Sun, Nov 2, 2025");
+    expect(shortDate("2025-12-31", "2026-11-02")).toBe("Dec 31, 2025");
   });
 
   test("the summary states the total, the window, and the longest streak", () => {

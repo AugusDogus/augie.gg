@@ -43,7 +43,7 @@ export function FlightBackground() {
   const renderer = useRef<ReturnType<typeof createBackground> | null>(null);
   const pathname = usePathname();
   const { playing } = usePlaying();
-  const active = playing && pathname === "/";
+  const active = playing && (pathname === "/" || pathname.startsWith("/lab/"));
   const activeRef = useRef(active);
   const [ready, setReady] = useState(false);
   useEffect(() => {

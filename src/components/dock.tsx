@@ -83,10 +83,11 @@ export function Dock() {
       : "Play animation";
 
   // Pinned bottom-right only once the pill clears the 600px content column;
-  // otherwise it closes the page, centered under that column.
+  // otherwise it closes the page, centered under that column. Without the
+  // animation (reduced motion, or no script) the pill is just the credit.
   return (
-    <footer className="flex max-w-[calc(600px+2*var(--gutter))] justify-center px-(--gutter) pb-6 [@media(min-width:1180px)_and_(aspect-ratio>1200/874)]:fixed [@media(min-width:1180px)_and_(aspect-ratio>1200/874)]:right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] [@media(min-width:1180px)_and_(aspect-ratio>1200/874)]:bottom-5 [@media(min-width:1180px)_and_(aspect-ratio>1200/874)]:z-20 [@media(min-width:1180px)_and_(aspect-ratio>1200/874)]:p-0">
-      <div className="material flex h-10 max-w-full items-center gap-3 rounded-full pr-3.5 pl-1 text-[12.5px] whitespace-nowrap max-[480px]:gap-2 max-[480px]:pr-3 max-[420px]:text-[12px]">
+    <footer className="flex max-w-[calc(600px+2*var(--gutter))] justify-center px-(--gutter) pb-6 [@media(width>1000px)_and_(aspect-ratio>5/4)]:fixed [@media(width>1000px)_and_(aspect-ratio>5/4)]:right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] [@media(width>1000px)_and_(aspect-ratio>5/4)]:bottom-5 [@media(width>1000px)_and_(aspect-ratio>5/4)]:z-20 [@media(width>1000px)_and_(aspect-ratio>5/4)]:p-0">
+      <div className="material flex h-10 max-w-full items-center gap-3 rounded-full pr-3.5 pl-1 text-[12.5px] whitespace-nowrap motion-reduce:pl-3.5 max-[480px]:gap-2 max-[480px]:pr-3 max-[480px]:motion-reduce:pl-3 max-[420px]:text-[12px] noscript:pl-3.5 max-[480px]:noscript:pl-3">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -97,7 +98,7 @@ export function Dock() {
               onClick={() => {
                 if (!reduced) toggleAnimation();
               }}
-              className="text-fg-2 hover:text-fg relative -mr-1 grid size-8 place-items-center rounded-full transition-[background-color,color,scale] duration-150 ease-out before:absolute before:-inset-1 hover:bg-white/[.08] focus-visible:outline-offset-0 active:scale-[.97] aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-transparent aria-disabled:active:scale-100 motion-reduce:opacity-50 [&_svg]:size-4"
+              className="text-fg-2 hover:text-fg relative -mr-1 grid size-8 place-items-center rounded-full transition-[background-color,color,scale] duration-150 ease-out before:absolute before:-inset-1 hover:bg-white/[.08] focus-visible:outline-offset-0 active:scale-[.97] aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-transparent aria-disabled:active:scale-100 motion-reduce:hidden noscript:hidden [&_svg]:size-4"
             >
               {playing ? (
                 <PauseIcon weight="fill" aria-hidden="true" />
@@ -115,24 +116,28 @@ export function Dock() {
             {label}
           </TooltipContent>
         </Tooltip>
-        <Divider />
+        <Divider className="motion-reduce:hidden noscript:hidden" />
         <a
           href="https://www.gallerynucleus.com/detail/2126/"
           target="_blank"
           rel="noopener noreferrer"
           className="group text-fg-2 hover:text-fg relative inline-flex items-center gap-1 rounded-sm transition-colors duration-150 before:absolute before:inset-x-0 before:-inset-y-3.5"
         >
-          “Flight” by Kazu Kibuishi
+          <span>
+            <cite className="[font-synthesis:style]">Flight</cite> by Kazu
+            Kibuishi
+          </span>
           <ArrowUpRightIcon
             aria-hidden="true"
             className="text-fg-3 group-hover:text-fg-2 size-3 transition-colors duration-150 max-[480px]:hidden"
           />
         </a>
         {/* The narrowest phones keep the credit and drop the clock. */}
-        <Divider className="max-[389px]:hidden" />
+        <Divider className="max-[389px]:hidden noscript:hidden [@media(width>1000px)_and_(width<1180px)_and_(aspect-ratio>5/4)]:hidden" />
         <span
+          aria-hidden={time === null || undefined}
           className={cn(
-            "text-fg-2 tabular-nums transition-opacity duration-200 max-[389px]:hidden",
+            "text-fg-2 tabular-nums transition-opacity duration-200 max-[389px]:hidden noscript:hidden [@media(width>1000px)_and_(width<1180px)_and_(aspect-ratio>5/4)]:hidden",
             time === null ? "opacity-0" : "opacity-100",
           )}
         >

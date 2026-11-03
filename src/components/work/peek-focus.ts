@@ -53,8 +53,11 @@ export const PeekFocus = {
    * On close: back to the opener, unless focus is already on the page. A row
    * opener gives way to the row of the project last shown, since stepping moves
    * on; so does a lost one, as in Safari, where clicked buttons never take focus.
+   * The side peek kept its row in view while stepping, so a page the reader has
+   * since scrolled stays put. The modal sheet stepped without moving the list,
+   * so a keyboard close brings the ringed row back; a tap leaves the page alone.
    */
-  restore(opener: Element | null, title: string) {
+  restore(opener: Element | null, title: string, layout: "side" | "sheet") {
     if (onPage(document.activeElement)) return;
     const fromRow =
       opener instanceof Element && opener.closest("[data-project]") !== null;
@@ -63,8 +66,13 @@ export const PeekFocus = {
       return;
     }
     const row = rowOf(title);
-    if (row !== null) row.focus();
-    else fallbackFor(title)?.focus({ preventScroll: true });
+    if (row === null) {
+      fallbackFor(title)?.focus({ preventScroll: true });
+      return;
+    }
+    row.focus({ preventScroll: true });
+    if (layout === "sheet" && row.matches(":focus-visible"))
+      row.scrollIntoView({ block: "nearest" });
   },
   /**
    * Tab past either end of the side peek: on as if it sat right after the open

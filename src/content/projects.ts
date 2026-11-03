@@ -13,6 +13,14 @@
  * - `notable: n` names a merged upstream contribution at position n of the
  *   OSS line.
  * - Non-featured projects appear in Everything else, grouped by year.
+ * - `media` lists real captures of the project, lead first, served from
+ *   `public/work/<slug>/`. Only use captures checked for personal data. Give
+ *   each its pixel `width` and `height` (the frame reserves that shape before
+ *   it loads), factual `alt` text, and a `frame`: `desktop` for a browser or
+ *   desktop app, `phone`, or `console` for TV output (a 4:3 bezel that keeps
+ *   pixels sharp; export the 640-wide picture scaled 2x nearest neighbor).
+ *   A video is a short silent loop: `src` is the WebM, `mp4` the fallback,
+ *   and `poster` its first frame, shown whenever it can't play.
  */
 
 export type Label =
@@ -25,6 +33,30 @@ export type Label =
   | "oss"
   /** Upstream PR still in review. */
   | "pending";
+
+/** What a capture is shown in: a glass window, a phone, or a 4:3 TV bezel. */
+export type MediaFrame = "desktop" | "phone" | "console";
+
+export type Media =
+  | {
+      kind: "image";
+      src: string;
+      alt: string;
+      width: number;
+      height: number;
+      frame: MediaFrame;
+    }
+  | {
+      kind: "video";
+      /** WebM. */
+      src: string;
+      mp4: string;
+      poster: string;
+      alt: string;
+      width: number;
+      height: number;
+      frame: MediaFrame;
+    };
 
 export interface Project {
   title: string;
@@ -45,6 +77,8 @@ export interface Project {
   notable?: number;
   /** Short label for the contribution footer. */
   contributionName?: string;
+  /** Captures, lead first; see the note at the top. */
+  media?: Media[];
 }
 
 export const projects: Project[] = [
@@ -142,7 +176,7 @@ export const projects: Project[] = [
     href: "https://github.com/pingdotgg/t3code/pull/7421",
     date: "2026-08-18",
     blurb:
-      "Fixed missing GNOME and KDE launcher icons in the in-repo AUR packages by installing the AppImage's hicolor icon set.",
+      "Fixed missing GNOME and KDE launcher icons in the in-repo AUR packages by installing the AppImage’s hicolor icon set.",
     labels: ["oss"],
     notable: 1,
     contributionName: "T3 Code",
@@ -195,7 +229,7 @@ export const projects: Project[] = [
     title: "eml.md",
     href: "https://github.com/AugusDogus/eml.md",
     date: "2026-05-15",
-    blurb: "Private, local conversion of .eml email files to markdown.",
+    blurb: "Private, local conversion of .eml email files to Markdown.",
   },
   {
     title: "maria-rcks/t3code-aur",
@@ -245,7 +279,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/aur-cursor-bin-updater",
     date: "2026-03-20",
     blurb:
-      "Tracks Cursor's early access and nightly Linux builds and publishes matching AUR packages.",
+      "Tracks Cursor’s early access and nightly Linux builds and publishes matching AUR packages.",
     labels: ["active"],
   },
   {
@@ -285,7 +319,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/discord.mov",
     date: "2026-02-20",
     blurb:
-      'A Discord "Go Live" recorder built on discord.js-selfbot-v13 and FFmpeg.',
+      "A Discord “Go Live” recorder built on discord.js-selfbot-v13 and FFmpeg.",
   },
   {
     title: "nimbus",
@@ -305,7 +339,8 @@ export const projects: Project[] = [
     title: "atproto-better-auth",
     href: "https://github.com/AugusDogus/atproto-better-auth",
     date: "2026-01-24",
-    blurb: "A better-auth plugin for authenticating with ATProto and Bluesky.",
+    blurb:
+      "A better-auth plugin for authenticating with AT Protocol and Bluesky.",
   },
   {
     title: "hytale-server",
@@ -345,6 +380,26 @@ export const projects: Project[] = [
     featured: 4,
     highlight:
       "iOS, Android, and browser extension on one tRPC API; tabs arrive live over SSE",
+    media: [
+      {
+        kind: "video",
+        src: "/work/opentab/send-tab.webm",
+        mp4: "/work/opentab/send-tab.mp4",
+        poster: "/work/opentab/send-tab-poster.webp",
+        alt: "A tab sent from an Android phone to a desktop browser: Chrome’s Share menu, the opentab share target, the app’s device list, then helium.computer opening in a new desktop tab.",
+        width: 1156,
+        height: 800,
+        frame: "desktop",
+      },
+      {
+        kind: "image",
+        src: "/work/opentab/send-tab-still.webp",
+        alt: "The opentab Android app listing the account’s devices while the desktop browser is already opening the sent tab, helium.computer.",
+        width: 1434,
+        height: 992,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "hyperimport",
@@ -375,7 +430,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/capy-bun",
     date: "2025-11-07",
     blurb:
-      "TypeScript bindings for the Capy UI framework using Bun's FFI, for native cross-platform desktop apps.",
+      "TypeScript bindings for the Capy UI framework using Bun’s FFI, for native cross-platform desktop apps.",
   },
   {
     title: "adb-autoconnect",
@@ -393,6 +448,16 @@ export const projects: Project[] = [
     featured: 3,
     highlight:
       "End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native",
+    media: [
+      {
+        kind: "image",
+        src: "/work/whisp/hero.webp",
+        alt: "The whisp.chat landing page in dark mode: the headline “Ephemeral messaging that doesn’t suck”, a privacy-first tagline, and a Join Waitlist with Discord button.",
+        width: 1360,
+        height: 680,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "create-electrobun-react",
@@ -427,6 +492,34 @@ export const projects: Project[] = [
     featured: 2,
     highlight:
       "220k+ vehicles across 200+ yards and seven inventory networks, with paid plans",
+    media: [
+      {
+        kind: "video",
+        src: "/work/junkyardindex/search.webm",
+        mp4: "/work/junkyardindex/search.mp4",
+        poster: "/work/junkyardindex/search-poster.webp",
+        alt: "Junkyard Index search in dark mode: the field is cleared, “Honda Civic” is typed, and 5,120 matching vehicles appear with yard photos.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+      {
+        kind: "image",
+        src: "/work/junkyardindex/search-mobile.webp",
+        alt: "Junkyard Index on a phone: “Honda Civic” in the search field, filter, sort, and save controls, 5,120 vehicles, and the first result card.",
+        width: 1179,
+        height: 2556,
+        frame: "phone",
+      },
+      {
+        kind: "image",
+        src: "/work/junkyardindex/results.webp",
+        alt: "Junkyard Index desktop results for “Honda Civic”: 5,120 vehicles, with cards showing a yard photo, stock number, yard, VIN, date available, and city.",
+        width: 1600,
+        height: 922,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "metrics",
@@ -440,7 +533,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/moo",
     date: "2025-07-04",
     blurb:
-      "A cottage-core deduction game where you crack four-emoji codes with bulls and cows feedback.",
+      "A cottagecore deduction game where you crack four-emoji codes with bulls and cows feedback.",
   },
   {
     title: "multiplex",
@@ -452,6 +545,24 @@ export const projects: Project[] = [
     featured: 1,
     highlight:
       "Native GameCube and Wii clients in C: H.264 over HLS, TLS 1.2, synced with web viewers",
+    media: [
+      {
+        kind: "image",
+        src: "/work/multiplex/watch-together.webp",
+        alt: "The Multiplex GameCube client in Dolphin: details for Fresh (2022) with the More actions menu open and Host Watch Together focused.",
+        width: 1280,
+        height: 1056,
+        frame: "console",
+      },
+      {
+        kind: "image",
+        src: "/work/multiplex/details.webp",
+        alt: "The Multiplex GameCube client in Dolphin: details for Fresh (2022) with its tagline, rating, runtime, Resume button, synopsis, director, and a poster with a watch-progress bar.",
+        width: 1280,
+        height: 1056,
+        frame: "console",
+      },
+    ],
   },
   {
     title: "awesome-windows",
@@ -503,7 +614,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/username-colors",
     date: "2024-11-02",
     blurb:
-      "A Vendetta plugin for recoloring usernames in Discord's mobile client.",
+      "A Vendetta plugin for recoloring usernames in Discord’s mobile client.",
   },
   {
     title: "ct3a-electron",
@@ -672,7 +783,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/Yang",
     date: "2017-01-22",
     blurb:
-      "Yet Another Name Generator, a REST API and frontend for short generated names, plus Mars, a RuneScape dashboard that consumed Yang's output to build account URIs.",
+      "Yet Another Name Generator, a REST API and frontend for short generated names, plus Mars, a RuneScape dashboard that consumed Yang’s output to build account URIs.",
     labels: ["archived"],
   },
 

@@ -16,6 +16,11 @@ export function useSheetDrag(onDismiss: () => void) {
   const backdrop = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
 
+  /** The sheet runs UPWARD_LIMIT past the viewport, so lifting it reveals glass; only the rest is on screen. */
+  function visibleHeight(sheet: HTMLElement) {
+    return sheet.offsetHeight - Drag.UPWARD_LIMIT;
+  }
+
   function release(sheet: HTMLElement) {
     delete sheet.dataset.dragging;
     sheet.style.removeProperty("--drag");
@@ -70,7 +75,7 @@ export function useSheetDrag(onDismiss: () => void) {
       if (backdrop.current) {
         backdrop.current.style.transition = "none";
         backdrop.current.style.opacity = String(
-          1 - Math.max(offset, 0) / sheet.offsetHeight,
+          1 - Math.max(offset, 0) / visibleHeight(sheet),
         );
       }
     },
@@ -81,7 +86,7 @@ export function useSheetDrag(onDismiss: () => void) {
       const dismiss = Drag.shouldDismiss({
         distance: event.clientY - state.y,
         elapsed: event.timeStamp - state.time,
-        height: event.currentTarget.offsetHeight,
+        height: visibleHeight(event.currentTarget),
       });
       release(event.currentTarget);
       if (dismiss) onDismiss();

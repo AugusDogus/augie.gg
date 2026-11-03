@@ -84,7 +84,9 @@ export function CommandMenu() {
           }}
           className={cn(
             "material fixed inset-x-3 top-3 z-50 flex max-h-[calc(var(--viewport-height,100dvh)_-_24px)] origin-top flex-col overflow-hidden outline-none",
-            "sm:inset-x-0 sm:top-[clamp(72px,16vh,152px)] sm:mx-auto sm:h-[min(544px,calc(var(--viewport-height,100dvh)_-_clamp(72px,16vh,152px)_-_24px))] sm:w-[560px]",
+            "sm:inset-x-0 sm:mx-auto sm:w-[560px]",
+            // Short windows (landscape phones, a raised keyboard) keep the top-3 sheet sized to its content.
+            "[@media(min-width:640px)_and_(min-height:500px)]:top-[clamp(72px,16vh,152px)] [@media(min-width:640px)_and_(min-height:500px)]:h-[min(544px,calc(var(--viewport-height,100dvh)_-_clamp(72px,16vh,152px)_-_24px))]",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:motion-safe:slide-in-from-top-1 data-[state=open]:motion-safe:zoom-in-[.97] ease-out data-[state=open]:duration-180",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:motion-safe:slide-out-to-top-1 data-[state=closed]:motion-safe:zoom-out-[.97] data-[state=closed]:duration-120",
           )}
@@ -103,7 +105,8 @@ export function CommandMenuTrigger() {
   return (
     <Button
       variant="secondary"
-      className="text-fg-2 hover:text-fg gap-2.5 pr-1.5 pointer-coarse:h-10 pointer-coarse:pr-3.5"
+      // Without script the menu can't open, so the header keeps only GitHub.
+      className="text-fg-2 hover:text-fg gap-2.5 bg-[#16232acc] pr-1.5 hover:bg-[#213038d9] pointer-coarse:h-10 pointer-coarse:pr-3.5 noscript:hidden"
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-keyshortcuts={apple === false ? "Control+K" : "Meta+K"}

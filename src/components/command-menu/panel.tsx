@@ -19,6 +19,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
@@ -54,9 +55,35 @@ type Copy = "idle" | "copied" | "failed";
 /** The highlighted row; null means the first enabled one. Only keyboard moves scroll it into view. */
 type Selection = { key: string; via: "keyboard" | "pointer" } | null;
 
+const COARSE = "(pointer: coarse)";
+function subscribeCoarse(listener: () => void) {
+  const media = matchMedia(COARSE);
+  media.addEventListener("change", listener);
+  return () => media.removeEventListener("change", listener);
+}
+
 function openTab(href: string) {
   window.open(href, "_blank", "noopener,noreferrer");
   closeMenu();
+}
+
+/** What Enter does to the highlighted row, for the footer hint. */
+function enterVerb(entry: Entry, newTab: boolean, playing: boolean): string {
+  if (entry.kind === "project") return newTab ? "Open in new tab" : "Open";
+  switch (entry.key) {
+    case "copy-email":
+      return "Copy";
+    case "animation":
+      return playing ? "Pause" : "Play";
+    case "resume":
+      return "Open";
+    case "github":
+      return "Open in new tab";
+    default: {
+      const unreachable: never = entry;
+      return unreachable;
+    }
+  }
 }
 
 /** The link a row opens in a new tab, or undefined when it opens the peek instead. */
@@ -78,6 +105,12 @@ export function CommandPanel() {
   const router = useRouter();
   const apple = useApple();
   const { playing, reduced } = usePlaying();
+  // Touch adds a Cancel button, which leaves phones room for only a short placeholder.
+  const coarse = useSyncExternalStore(
+    subscribeCoarse,
+    () => matchMedia(COARSE).matches,
+    () => false,
+  );
   const [query, setQuery] = useState("");
   const [selection, setSelection] = useState<Selection>(null);
   const [copy, setCopy] = useState<Copy>("idle");
@@ -240,7 +273,7 @@ export function CommandPanel() {
           }
           aria-autocomplete="list"
           aria-label="Search projects and actions"
-          placeholder="Search projects and actions"
+          placeholder={coarse ? "Search" : "Search projects and actions"}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
@@ -312,8 +345,8 @@ export function CommandPanel() {
           ))}
         </div>
         {count === 0 && (
-          <p className="text-fg-2 px-6 py-10 text-center text-sm break-words">
-            No results for “{query.trim()}”
+          <p className="text-fg-2 px-6 py-10 text-center text-sm text-balance break-words">
+            No results for <span className="text-fg">“{query.trim()}”</span>
           </p>
         )}
       </div>
@@ -321,11 +354,11 @@ export function CommandPanel() {
         aria-hidden="true"
         className="border-line text-fg-2 flex h-10 shrink-0 items-center gap-4 border-t px-4 text-xs pointer-coarse:hidden"
       >
-        <Hint keys={["↑", "↓"]}>Navigate</Hint>
-        {count > 0 && (
-          <Hint keys={["↵"]}>{newTab ? "Open in new tab" : "Open"}</Hint>
+        {count > 0 && <Hint keys={["↑", "↓"]}>Navigate</Hint>}
+        {active && (
+          <Hint keys={["↵"]}>{enterVerb(active, newTab, playing)}</Hint>
         )}
-        <Hint keys={["esc"]}>Close</Hint>
+        <Hint keys={["Esc"]}>Close</Hint>
         {alternate && (
           <span className="ml-auto">
             <Hint keys={[apple === false ? "Ctrl" : "⌘", "↵"]}>
@@ -413,22 +446,33 @@ function ActionRow({
       return (
         <>
           <CopyIcon className={icon} aria-hidden="true" />
-          <span className="text-fg flex-1 truncate">{label}</span>
-          {copy === "copied" ? (
-            <span className="text-fg-2 flex items-center gap-1.5 text-xs">
-              <CheckIcon className="text-live size-3.5" aria-hidden="true" />
-              Copied
+          {/* A failure note on a phone goes under the label instead of squeezing it. */}
+          <span
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-3",
+              copy === "failed" &&
+                "max-sm:flex-col max-sm:items-start max-sm:gap-0.5 max-sm:py-2",
+            )}
+          >
+            <span className="text-fg max-w-full min-w-0 flex-1 truncate">
+              {label}
             </span>
-          ) : copy === "failed" ? (
-            <span className="text-progress text-xs">
-              Couldn’t copy{" "}
-              <span data-selectable className="cursor-text select-all">
-                {EMAIL}
+            {copy === "copied" ? (
+              <span className="text-fg-2 flex items-center gap-1.5 text-xs">
+                <CheckIcon className="text-live size-3.5" aria-hidden="true" />
+                Copied
               </span>
-            </span>
-          ) : (
-            <span className="text-fg-2 text-xs">{EMAIL}</span>
-          )}
+            ) : copy === "failed" ? (
+              <span className="text-progress text-xs">
+                Couldn’t copy{" "}
+                <span data-selectable className="cursor-text select-all">
+                  {EMAIL}
+                </span>
+              </span>
+            ) : (
+              <span className="text-fg-2 text-xs">{EMAIL}</span>
+            )}
+          </span>
         </>
       );
     case "resume":
@@ -487,8 +531,8 @@ function ProjectRow({ entry }: { entry: ProjectEntry }) {
       <span className="text-fg-2 shrink-0 text-xs tabular-nums">
         {yearOf(entry.project)}
       </span>
-      {/* Reserved on wider screens, so years line up across groups. */}
-      <span className="flex size-3.5 shrink-0 max-sm:empty:hidden">
+      {/* Always reserved, so years line up across groups. */}
+      <span className="flex size-3.5 shrink-0">
         {linkFor(entry, false) !== undefined && (
           <ArrowUpRightIcon className="text-fg-3 size-3.5" aria-hidden="true" />
         )}

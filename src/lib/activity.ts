@@ -222,7 +222,17 @@ const weekdayDate = chicago({
   month: "short",
   day: "numeric",
 });
+const weekdayDateYear = chicago({
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
 const short = chicago({ month: "short", day: "numeric" });
+const shortYear = chicago({ month: "short", day: "numeric", year: "numeric" });
+/** The window spans a year, so its first days share a month and day with its last. */
+const sameYear = (iso: string, latest: string) =>
+  iso.slice(0, 4) === latest.slice(0, 4);
 const long = chicago({
   weekday: "long",
   month: "long",
@@ -233,10 +243,12 @@ const plain = chicago({ month: "long", day: "numeric", year: "numeric" });
 
 /** `Nov` */
 export const monthName = (iso: string) => month.format(noon(iso));
-/** `Sun, Oct 25` */
-export const tooltipDate = (iso: string) => weekdayDate.format(noon(iso));
-/** `Oct 25` */
-export const shortDate = (iso: string) => short.format(noon(iso));
+/** `Sun, Oct 25`, or `Sun, Nov 2, 2025` before the year of `latest` */
+export const tooltipDate = (iso: string, latest: string) =>
+  (sameYear(iso, latest) ? weekdayDate : weekdayDateYear).format(noon(iso));
+/** `Oct 25`, or `Dec 31, 2025` before the year of `latest` */
+export const shortDate = (iso: string, latest: string) =>
+  (sameYear(iso, latest) ? short : shortYear).format(noon(iso));
 /** `Sunday, October 25, 2026` */
 export const longDate = (iso: string) => long.format(noon(iso));
 
