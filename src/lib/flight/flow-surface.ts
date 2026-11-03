@@ -127,13 +127,21 @@ export class FlowSurface {
     canvas.addEventListener("webglcontextrestored", this.restore);
   }
 
-  /** Takes over `start`, or returns null for the 2D renderer. */
+  /**
+   * Takes over `start`, or returns null for the 2D renderer. A start that was
+   * refused (say, mid GPU restart) or lost while the artwork loaded, with
+   * nothing yet listening to restore it, is begun again here.
+   */
   static create(
     sources: SurfaceSources,
     onRestore: () => void,
     start: SurfaceStart | null,
   ) {
-    const owned = start?.take();
+    let owned = (start ?? SurfaceStart.begin())?.take();
+    if (owned?.gl.isContextLost()) {
+      owned.canvas.width = 0;
+      owned = SurfaceStart.begin()?.take();
+    }
     if (!owned) return null;
     const { canvas, gl, scope, programs } = owned;
     const surface = new FlowSurface(canvas, gl, scope, sources, onRestore);
