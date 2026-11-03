@@ -4,6 +4,7 @@ import {
   contrastChannel,
   ditherChannel,
   latticeLevel,
+  printLevels,
   random,
 } from "./texture";
 
@@ -35,6 +36,15 @@ describe("ordered dither", () => {
         expect(bayerIndex(x, y)).toBe(table[(y % 4) * 4 + (x % 4)] ?? -1);
     expect(() => bayerIndex(-1, 0)).toThrow(RangeError);
     expect(() => bayerIndex(0.5, 0)).toThrow(RangeError);
+  });
+  test("printLevels tabulates the bake for every byte and cell", () => {
+    const levels = printLevels(110);
+    for (let y = 0; y < 8; y++)
+      for (let x = 0; x < 8; x++)
+        for (let v = 0; v < 256; v++)
+          expect(levels[((y % 4) * 4 + (x % 4)) * 256 + v]).toBe(
+            ditherChannel(contrastChannel(v, 110), x, y),
+          );
   });
   test("latticeLevel re-prints the bake for every value and rank", () => {
     for (let y = 0; y < 4; y++)

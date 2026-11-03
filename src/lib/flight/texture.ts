@@ -1,3 +1,5 @@
+import { valueAt } from "./route";
+
 /** Approved two-pixel ordered dither, blended with the original artwork. */
 export const clamp = (value: number, min = 0, max = 255) =>
   Math.min(max, Math.max(min, value));
@@ -19,6 +21,22 @@ export function ditherChannel(value: number, x: number, y: number) {
 }
 export function contrastChannel(channel: number, contrast: number) {
   return clamp(((channel - 127.5) * contrast) / 100 + 127.5);
+}
+/**
+ * ditherChannel(contrastChannel(v, contrast), x, y) for every byte v, at
+ * ((y % 4) * 4 + x % 4) * 256 + v: the rank repeats every four cells.
+ */
+export function printLevels(contrast: number) {
+  const levels = new Uint8Array(16 * 256);
+  for (let y = 0; y < 4; y++)
+    for (let x = 0; x < 4; x++)
+      for (let v = 0; v < 256; v++)
+        levels[(y * 4 + x) * 256 + v] = ditherChannel(
+          contrastChannel(v, contrast),
+          x,
+          y,
+        );
+  return levels;
 }
 /** Mirror of the composite's lattice(): print level 0..3 of a 0..1 channel at Bayer rank threshold t = (rank + .5) / 16, contrast 110. */
 export function latticeLevel(v01: number, t: number) {
@@ -75,17 +93,19 @@ export function renderTexture(image: HTMLImageElement): PrintedArt {
   const original = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
   const imageData = sampleContext.getImageData(0, 0, sampleWidth, sampleHeight);
   const pixels = imageData.data;
+  const levels = printLevels(110);
   for (let y = 0; y < sampleHeight; y++) {
     for (let x = 0; x < sampleWidth; x++) {
-      const index = (y * sampleWidth + x) * 4;
+      const index = (y * sampleWidth + x) * 4,
+        tile = ((y % 4) * 4 + (x % 4)) * 256;
       const r = pixels[index],
         g = pixels[index + 1],
         b = pixels[index + 2];
       if (r === undefined || g === undefined || b === undefined)
         throw new Error("Artwork pixel buffer is incomplete");
-      pixels[index] = ditherChannel(contrastChannel(r, 110), x, y);
-      pixels[index + 1] = ditherChannel(contrastChannel(g, 110), x, y);
-      pixels[index + 2] = ditherChannel(contrastChannel(b, 110), x, y);
+      pixels[index] = valueAt(levels, tile + r);
+      pixels[index + 1] = valueAt(levels, tile + g);
+      pixels[index + 2] = valueAt(levels, tile + b);
     }
   }
   // Expand the dither cells in one draw instead of issuing 262,200 rectangles.
