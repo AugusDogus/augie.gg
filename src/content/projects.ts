@@ -6,7 +6,7 @@
  *   GitHub metadata; display order is derived from it and ties keep file order.
  * - `blurb` is one sentence and supports inline links: `[text](https://...)`.
  * - Leave `href` off for private repos and pre-GitHub work; set `private` to
- *   show the lock icon; name upstream forks in the blurb.
+ *   show a private repository note; name upstream forks in the blurb.
  * - `featured: n` puts a project at position n of "Selected work". Give it a
  *   `highlight`: one line of verifiable evidence (stack, hard problem, scale).
  *   No invented numbers; round live counts down so they age gracefully.
@@ -33,7 +33,7 @@ export interface Project {
   date: string;
   blurb: string;
   labels?: Label[];
-  /** Private repo; rendered with a lock icon and no link. */
+  /** Private repo; rendered with a private repository note. */
   private?: boolean;
   /** Fork of another repo; the blurb names upstream. */
   fork?: boolean;
@@ -43,6 +43,8 @@ export interface Project {
   highlight?: string;
   /** Position in the OSS line under "Selected work", starting at 1. */
   notable?: number;
+  /** Short label for the contribution footer. */
+  contributionName?: string;
 }
 
 export const projects: Project[] = [
@@ -143,6 +145,7 @@ export const projects: Project[] = [
       "Fixed missing GNOME and KDE launcher icons in the in-repo AUR packages by installing the AppImage's hicolor icon set.",
     labels: ["oss"],
     notable: 1,
+    contributionName: "T3 Code",
   },
   {
     title: "Little Age",
@@ -256,6 +259,7 @@ export const projects: Project[] = [
   {
     title: "vercel-labs/portless",
     notable: 3,
+    contributionName: "Portless",
     href: "https://github.com/vercel-labs/portless/pull/122",
     date: "2026-03-16",
     blurb: "Documented the Windows requirements.",
@@ -537,6 +541,7 @@ export const projects: Project[] = [
       "Made the curl install script hand off to the Windows installer when run through Cygwin.",
     labels: ["oss"],
     notable: 2,
+    contributionName: "Bun",
   },
 
   // 2023

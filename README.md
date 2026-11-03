@@ -10,7 +10,7 @@ My personal website.
 - [MDX](https://mdxjs.com)
 - [sugar-high](https://github.com/huozhi/sugar-high)
 - [Phosphor Icons](https://phosphoricons.com)
-- Literata and Spline Sans Mono, self-hosted with their OFL licenses
+- Newsreader and Instrument Sans, self-hosted with their OFL licenses
 
 ## Projects
 
@@ -26,7 +26,7 @@ To add a project, insert an entry in date order (newest first):
   date: "2026-10-11", // first authored commit
   blurb: "One sentence. Inline [links](https://example.com) work.",
   labels: ["wip"], // wip | active | archived | oss | pending
-  private: true, // shows a lock instead of a link
+  private: true, // shows a private repository note
   fork: true, // name upstream in the blurb
 },
 ```
@@ -37,9 +37,8 @@ Everything lands in the expandable Everything else section, grouped by year, unl
   Add a `highlight`: one line of concrete, verifiable evidence such as the
   stack, a hard problem, or real usage. Don't invent numbers.
 - `notable: n` names a merged upstream contribution at position `n` of the OSS
-  line under Selected work, shown by its repository slug. Link `href` directly
-  to the merged PR. It also stays in Everything else. The line counts the other
-  `oss` entries for its "and six others".
+  line under Selected work. Set `contributionName` for its short display label
+  and link `href` directly to the merged PR. It also stays in Everything else.
 
 ## Development
 
@@ -48,10 +47,7 @@ bun install
 bun dev
 ```
 
-No environment variables are required. To show the GitHub contribution graph,
-set `GITHUB_TOKEN` to a classic personal access token with no scopes (see
-`.env.example`); without it the graph is hidden and the rest of the page is
-unchanged.
+No environment variables or GitHub token are required.
 
 ```bash
 bun run check
@@ -62,11 +58,8 @@ bun run build
 
 ## Design and artwork
 
-The home page leads with the name, role, and contact over the painting, then a
-paper sheet with a short introduction, the GitHub contribution calendar printed
-in the painting's ordered dither, selected work with its evidence always
-visible, open source contributions, and the archive. It uses customized
-shadcn/ui buttons, cards, and collapsibles with Tailwind layout utilities.
+The home page uses customized shadcn/ui buttons, cards, accordions, and
+collapsibles with Tailwind layout utilities and a shared textured surface.
 The résumé remains in `src/app/resume/page.mdx`. Print styles keep the full
 résumé in a single column on one US Letter page using the browser print button.
 

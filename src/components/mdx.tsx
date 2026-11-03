@@ -38,7 +38,7 @@ function codeText(children: ReactNode): string {
  */
 export function createMdxAnchor(className: string) {
   function MdxAnchor({ href, children, ...props }: AnchorProps) {
-    if (href === "mailto:hi@augie.gg") return <EmailCopy appearance="inline" />;
+    if (href === "mailto:hi@augie.gg") return <EmailCopy />;
     if (href?.startsWith("/")) {
       return (
         <Link href={href} className={className} {...props}>

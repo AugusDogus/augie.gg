@@ -1,48 +1,52 @@
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.contact-link:hover {
+  color: white;
+}
 .email-contact {
   position: relative;
   display: inline-block;
-}
-/* The primary button fills whatever cell it is given, e.g. both columns on phones. */
-.email-contact:has(> [data-variant="primary"]) {
-  display: flex;
 }
 .contact-link {
   border: 0;
   background: none;
   padding: 6px 0;
   margin: -6px 0;
-  text-decoration: underline 1px var(--link-rest);
-  text-underline-offset: 4px;
+  text-shadow: inherit;
   user-select: text;
-  transition: text-decoration-color 120ms ease-out;
+  transition: transform 120ms ease-out;
 }
-.contact-link:hover {
-  text-decoration-color: currentColor;
+.contact-link:active {
+  transform: scale(0.97);
 }
 .copy-note {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   position: absolute;
-  left: 0;
+  right: 0;
   bottom: calc(100% + 12px);
   z-index: 3;
   width: max-content;
-  max-width: 260px;
+  max-width: 240px;
   padding: 9px 13px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: var(--paper);
+  border: 1px solid #f1f3e880;
+  border-radius: 10px;
+  background: var(--noise), linear-gradient(#e4e6df, #c7d0ca);
   box-shadow:
-    0 1px 2px #0f222b40,
-    0 6px 18px #0f222b26;
+    inset 0 1px 0 #fff7,
+    0 4px 12px #18313f33;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.4;
   text-shadow: none;
   opacity: 0;
   transform: translateY(8px) rotate(-6deg) scale(0.9);
-  transform-origin: bottom left;
+  transform-origin: bottom right;
   pointer-events: none;
   transition:
     opacity 140ms ease-out,
@@ -52,11 +56,13 @@
   content: "";
   position: absolute;
   top: calc(100% - 3px);
-  left: 20px;
+  right: 20px;
   width: 6px;
   height: 6px;
-  background: var(--paper);
+  background: #c7d0ca;
   transform: rotate(45deg);
+  border-right: 1px solid #f1f3e880;
+  border-bottom: 1px solid #f1f3e880;
 }
 .copy-note[data-visible="true"] {
   opacity: 1;
@@ -73,14 +79,17 @@
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  background: #1d30380f;
+  background: #476b5c16;
+  box-shadow:
+    inset 0 1px 2px #30493c18,
+    0 1px #fff6;
 }
 .copy-note[data-result="success"] .copy-check {
   display: block;
 }
 .copy-check path {
   fill: none;
-  stroke: var(--ink);
+  stroke: #426957;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -92,7 +101,7 @@
   width: 9px;
   height: 9px;
   opacity: 0;
-  background: #e0fff1;
+  background: #e9eee3;
   clip-path: polygon(
     50% 0,
     62% 38%,
@@ -123,7 +132,7 @@
   top: 15px;
   --spark-x: 13px;
   --spark-y: -3px;
-  background: #90dce9;
+  background: #b8d7cc;
 }
 .copy-spark:last-child {
   left: 3px;
@@ -132,7 +141,7 @@
   height: 6px;
   --spark-x: -10px;
   --spark-y: 6px;
-  background: #90dce9;
+  background: #b8d7cc;
 }
 @media (prefers-reduced-motion: no-preference) {
   .copy-note[data-visible="true"][data-result="success"][data-instant="false"] {

@@ -1,30 +1,25 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "./calendar.css";
 @import "./email-copy.css";
 @import "./resume.css";
 @import "./flight-poster.css";
 @theme inline {
-  --font-serif: var(--font-literata);
-  --font-mono: var(--font-spline-mono);
+  --font-sans: var(--font-instrument);
   --color-background: #526e78;
-  --color-foreground: #1d3038;
-  --color-muted-foreground: #45565c;
-  --color-border: #1d30381f;
-  --color-ring: #1d3038;
-  --color-paper: #eef1ea;
-  --color-ink: #1d3038;
+  --color-foreground: #364248;
+  --color-muted-foreground: #596971;
+  --color-border: #45565d26;
+  --color-ring: #365d70;
 }
 .skip-link {
   position: fixed;
   left: 16px;
   top: -70px;
   z-index: 10;
-  background: var(--paper);
-  color: var(--ink);
+  background: #dce1df;
   padding: 14px;
-  border-radius: 3px;
+  border-radius: 10px;
 }
 .skip-link:focus {
   top: 16px;
@@ -64,9 +59,6 @@
   :root {
     --gutter: 28px;
   }
-}
-/* When the art spans the top of the page, the name sits on it; darken that strip. */
-@media (max-width: 1000px), (aspect-ratio <= 1200 / 874) {
   .artwork::after {
     background:
       linear-gradient(180deg, #142e4066, transparent 240px),
@@ -101,38 +93,6 @@
     mask-image: linear-gradient(90deg, transparent, black 16.6667%);
   }
 }
-/* Type on the painting: halos carry its contrast over any sky tone. */
-.sky-name {
-  text-shadow:
-    0 0 32px #10222bb3,
-    0 0 8px #10222b80,
-    0 1px 3px #10222b66;
-}
-.sky-role {
-  text-shadow:
-    0 0 14px #10222b,
-    0 0 4px #10222bcc;
-}
-.art-caption {
-  display: flex;
-  justify-content: space-between;
-  gap: 22px;
-  margin-top: 14px;
-  font-size: 13px;
-  line-height: 44px;
-  color: var(--paper);
-  text-shadow: 0 0 8px #10222bcc;
-}
-/* Fixed only while the art sits beside the content; elsewhere it would land on the bird. */
-@media (min-width: 1001px) and (aspect-ratio > 1200 / 874) {
-  .art-caption {
-    position: fixed;
-    right: var(--gutter);
-    bottom: 14px;
-    margin: 0;
-    line-height: 32px;
-  }
-}
 .artwork[data-ready="true"] #sky {
   visibility: visible;
 }
@@ -141,25 +101,15 @@
 }
 @layer base {
   :root {
-    font-family: var(--font-literata), serif;
+    font-family: var(--font-instrument), sans-serif;
     font-synthesis: none;
     line-height: normal;
-    color: var(--ink);
+    color: #364248;
     background: #526e78;
-    /* Paper is type on the sky; whale (ink) and slate (muted) are type on the sheet. */
-    --paper: #eef1ea;
-    --ink: #1d3038;
-    --muted: #45565c;
-    --line: #1d30381f;
-    --link-rest: #1d303859;
-    --halo: #10222b;
-    --cal-0: #1d303817;
-    --cal-1: #1d303847;
-    --cal-2: #1d3038a8;
-    --cal-3: #1d3038;
+    --ink: #364248;
+    --muted: #596971;
+    --line: #45565d26;
     --gutter: clamp(24px, 5vw, 80px);
-    /* The sheet's text measure: the contribution calendar's width, 53 weeks on a 10px pitch. */
-    --measure: 528px;
     --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' opacity='.07' filter='url(%23n)' d='M0 0h160v160H0z'/%3E%3C/svg%3E");
   }
   * {
@@ -194,14 +144,8 @@
     touch-action: manipulation;
   }
   :focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 3px;
-  }
-  /* Over the painting, a paper outline around an ink ring holds 3:1 on any sky tone. */
-  .on-sky :focus-visible {
-    outline-color: var(--paper);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px var(--ink);
+    outline: 2px solid #365d70;
+    outline-offset: 4px;
   }
   h1:focus,
   main:focus {
@@ -212,19 +156,61 @@
   }
 }
 @layer components {
-  .material:has(.cal[data-weeks="54"]) {
-    --measure: 538px;
-  }
   .material {
-    background-image: var(--noise), linear-gradient(#dde2ddf2, #d5dbd7f2);
+    background-image:
+      var(--noise),
+      repeating-linear-gradient(
+        45deg,
+        #ffffff08 0 1px,
+        #46555d06 1px,
+        transparent 2px 3px
+      ),
+      linear-gradient(90deg, #ccd0d0f5, #bdc6c8f5);
+    background-size:
+      160px 160px,
+      auto,
+      auto;
+    border: 1px solid #f6f6ed94;
+    border-radius: 18px;
+    box-shadow:
+      inset 0 1px 0 #ffffff45,
+      0 2px 3px #152e3514,
+      0 14px 40px #132b3633;
+    backdrop-filter: blur(18px);
+  }
+  .raised-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 15px;
+    border-radius: 11px;
+    background-image: var(--noise), linear-gradient(#e4e6df, #c7d0ca);
     background-size:
       160px 160px,
       auto;
-    border: 1px solid transparent;
-    border-radius: 3px;
+    border: 1px solid #f1f3e8b3;
+    color: #3c4c50;
     box-shadow:
-      0 2px 4px #0f222b1f,
-      0 22px 60px #0f222b40;
-    backdrop-filter: blur(18px);
+      inset 0 1px 0 #fff8,
+      0 2px 3px #1c38453b,
+      0 5px 12px #1c384519;
+    font-size: 12px;
+    font-weight: 500;
+    transition: box-shadow 120ms ease-out;
+  }
+  .raised-button:hover {
+    box-shadow:
+      inset 0 1px 0 #fff,
+      0 2px 4px #1c38454a,
+      0 6px 15px #1c38452a;
+  }
+  .raised-button:active {
+    transform: translateY(1px);
+    background-image: var(--noise), linear-gradient(#c3cdc6, #d6ded5);
+    box-shadow:
+      inset 0 1px 3px #63776d4a,
+      0 1px #ffffff45;
   }
 }

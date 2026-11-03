@@ -1,6 +1,5 @@
 "use client";
 
-import { CopySimpleIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 
@@ -8,12 +7,7 @@ type CopyState =
   | { result: "idle" }
   | { result: "success" | "error"; instant: boolean; sequence: number };
 
-/** `primary` is the paper button on the sky; `inline` is a link in running text. */
-export function EmailCopy({
-  appearance,
-}: {
-  appearance: "primary" | "inline";
-}) {
+export function EmailCopy() {
   const [state, setState] = useState<CopyState>({ result: "idle" });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const request = useRef(0);
@@ -45,15 +39,12 @@ export function EmailCopy({
   return (
     <span className="email-contact">
       <Button
-        variant={appearance === "primary" ? "primary" : "link"}
-        className={appearance === "primary" ? "w-full" : "contact-link"}
-        aria-label="Copy email address hi@augie.gg"
+        variant="link"
+        className="contact-link"
+        aria-label="Copy hi@augie.gg to clipboard"
         onClick={(event) => copy(event.detail === 0)}
       >
-        {appearance === "primary" && <CopySimpleIcon aria-hidden="true" />}
-        <span className="font-mono text-[14px] tracking-[-.01em]">
-          hi@augie.gg
-        </span>
+        hi@augie.gg
       </Button>
       <output aria-live="polite" aria-atomic="true">
         <span
@@ -68,9 +59,9 @@ export function EmailCopy({
           </svg>
           <span>
             {state.result === "success"
-              ? "Email copied"
+              ? "Copied!"
               : state.result === "error"
-                ? "Couldn’t copy: your browser blocked the clipboard. The address is hi@augie.gg."
+                ? "Couldn’t copy. Select the email and copy it manually."
                 : ""}
           </span>
           {[0, 1, 2, 3].map((i) => (
