@@ -19,6 +19,15 @@ const phoneVideo: Media = {
   height: 2556,
   frame: "phone",
 };
+const tvVideo: Media = {
+  kind: "video",
+  src: "/tv.mp4",
+  poster: "/tv.webp",
+  alt: "tv",
+  width: 1280,
+  height: 960,
+  frame: "tv",
+};
 
 describe("Showcase.of", () => {
   test("leads with the first desktop capture and sets the first phone capture in front, even when the phone comes first", () => {
@@ -31,6 +40,7 @@ describe("Showcase.of", () => {
       kind: "desktop",
       lead: desktop("/a.webp"),
       phone: phoneVideo,
+      tv: null,
     });
   });
 
@@ -39,6 +49,25 @@ describe("Showcase.of", () => {
       kind: "desktop",
       lead: desktop("/a.webp"),
       phone: null,
+      tv: null,
+    });
+  });
+
+  test("sets the first TV capture in front of a desktop lead, beside the phone", () => {
+    expect(Showcase.of([tvVideo, desktop("/a.webp"), phoneVideo])).toEqual({
+      kind: "desktop",
+      lead: desktop("/a.webp"),
+      phone: phoneVideo,
+      tv: tvVideo,
+    });
+  });
+
+  test("leads with a TV capture when there is no desktop capture", () => {
+    expect(Showcase.of([phoneVideo, tvVideo])).toEqual({
+      kind: "desktop",
+      lead: tvVideo,
+      phone: phoneVideo,
+      tv: null,
     });
   });
 
@@ -63,6 +92,13 @@ describe("Showcase.aspect", () => {
 
   test("leaves room under the lead for the phone's overhang", () => {
     const showcase = Showcase.of([desktop("/a.webp", 1600, 1000), phoneVideo]);
+    expect(showcase && Showcase.aspect(showcase)).toBeCloseTo(
+      1 / (1000 / 1600 + Showcase.OVERHANG),
+    );
+  });
+
+  test("leaves the same room for a TV capture's overhang without a phone", () => {
+    const showcase = Showcase.of([desktop("/a.webp", 1600, 1000), tvVideo]);
     expect(showcase && Showcase.aspect(showcase)).toBeCloseTo(
       1 / (1000 / 1600 + Showcase.OVERHANG),
     );

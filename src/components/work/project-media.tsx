@@ -194,6 +194,7 @@ function ProjectMedia({
   const screen = <Screen media={media} sizes={sizes} decorative={decorative} />;
   switch (media.frame) {
     case "desktop":
+    case "tv":
       return <div className={cn(SCREEN_FRAME, "rounded-[8px]")}>{screen}</div>;
     case "phone":
       return <PhoneFrame>{screen}</PhoneFrame>;
@@ -206,8 +207,9 @@ function ProjectMedia({
 
 /**
  * A project's captures as one picture: the lead screen, with its phone capture
- * overlapping the lower right when there is one. Every length is in container
- * units, so the composition scales as a whole.
+ * overlapping the lower right and its TV capture the lower left when there are
+ * ones. Every length is in container units, so the composition scales as a
+ * whole.
  */
 export function MediaShowcase({
   showcase,
@@ -227,13 +229,24 @@ export function MediaShowcase({
         <div className={cn("@container relative", className)} style={style}>
           <div
             style={
-              showcase.phone === null
+              showcase.phone === null && showcase.tv === null
                 ? undefined
                 : { paddingBottom: `${Showcase.OVERHANG * 100}cqw` }
             }
           >
             <ProjectMedia media={showcase.lead} sizes={sizes} />
           </div>
+          {showcase.tv !== null && (
+            <div
+              className="absolute bottom-0 left-[5cqw] drop-shadow-[0_18px_30px_#000000a6]"
+              style={{ width: `${Showcase.TV_INSET * 100}cqw` }}
+            >
+              <ProjectMedia
+                media={showcase.tv}
+                sizes="(max-width: 640px) 35vw, 260px"
+              />
+            </div>
+          )}
           {showcase.phone !== null && (
             <div className="absolute right-[5cqw] bottom-0 w-[20cqw] drop-shadow-[0_18px_30px_#000000a6]">
               <ProjectMedia

@@ -13,17 +13,19 @@
  * - `notable: n` names a merged upstream contribution at position n of the
  *   OSS line.
  * - Non-featured projects appear in Everything else, grouped by year.
- * - `media` lists real captures of the project, served from
- *   `public/work/<slug>/`. Only use captures checked for personal data. Give
- *   each its pixel `width` and `height` (the frame reserves that shape before
- *   it loads), factual `alt` text, and a `frame`: `desktop` for anything
- *   shown as a screen (a browser, a desktop app, TV output) or `phone`. The
- *   project view shows the first desktop capture with the first phone capture
- *   set in front of it; the rest are not shown. Images and videos share one
- *   frame. Mark pixel art and console output `pixelated: true` (export it scaled
- *   2x nearest neighbor) so it stays sharp. A video is a short silent loop:
- *   `src` is an H.264 MP4 and `poster` its first frame, shown whenever it
- *   can't play.
+ * - `media` lists captures of the project, served from `public/work/<slug>/`.
+ *   Anything personal in them is made up; only use captures checked for
+ *   personal data. Give each its pixel `width` and `height` (the frame
+ *   reserves that shape before it loads), factual `alt` text, and a `frame`:
+ *   `desktop` for anything shown as a screen (a browser, a desktop app),
+ *   `phone`, or `tv` for console output on a television. The project view
+ *   shows the first desktop capture with the first phone capture set in front
+ *   of it at the lower right and the first TV capture at the lower left; the
+ *   rest are not shown. Images and videos share one frame. Mark pixel art and
+ *   console output `pixelated: true` (export it scaled 2x nearest neighbor) so
+ *   it stays sharp. A video is a short silent loop: `src` is an H.264 MP4 and
+ *   `poster` a representative frame, shown before it plays and whenever it
+ *   can't.
  */
 
 export type Label =
@@ -37,8 +39,8 @@ export type Label =
   /** Upstream PR still in review. */
   | "pending";
 
-/** What a capture is shown in: a screen, or a phone. */
-export type MediaFrame = "desktop" | "phone";
+/** What a capture is shown in: a screen, a phone, or a television. */
+export type MediaFrame = "desktop" | "phone" | "tv";
 
 export type Media =
   | {

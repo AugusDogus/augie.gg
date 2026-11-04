@@ -147,7 +147,8 @@ export function ProjectView({
   const cover = showcase === null ? (project.highlight ?? null) : null;
   // Tighter under a phone's overhang, which already leaves room, and with nothing above.
   const tight =
-    (showcase?.kind === "desktop" && showcase.phone !== null) ||
+    (showcase?.kind === "desktop" &&
+      (showcase.phone !== null || showcase.tv !== null)) ||
     (showcase === null && cover === null);
   const destination = Destination.of(project);
   const started = monthYear(project.date);
