@@ -132,6 +132,7 @@ const fail = (error) => ({ ok: false, error });
  * @property {import("three").WebGLRenderer} renderer
  * @property {import("three").WebGLRenderer} axesRenderer For an axes inset this page never shows.
  * @property {import("three").Object3D} content The model, centered on the origin.
+ * @property {import("three").Scene} scene
  * @property {{ bgColor: string, exposure: number }} state
  * @property {unknown} controls Whichever controls Prism resizes with the frame.
  * @property {(time: number) => void} animate Prism's loop, which asks for each next frame through this property.
@@ -636,24 +637,109 @@ function releaseModel(element) {
 }
 
 /**
- * Backplane's finish, a stop darker for this page: the soldermask at the deep
- * green of KiCad's own render, and the scene exposed for the dark ground.
+ * An environment for the board: dark below and at the horizon, brightening
+ * toward an overhead light, and the same from every side, so the board looks
+ * the same all the way round its turn. Radiance by height on a dome, as
+ * Three.js prefilters it for reflections.
+ * @param {import("three").WebGLRenderer} renderer
+ * @param {ModelModules["three"]} three
+ */
+function overheadLight(renderer, three) {
+  const { BackSide, Float32BufferAttribute, Mesh, MeshBasicMaterial } = three;
+  const dome = new three.SphereGeometry(1, 64, 32);
+  const position = dome.getAttribute("position");
+  /** @type {number[]} */
+  const colors = [];
+  for (let index = 0; index < position.count; index++) {
+    const height = position.getY(index);
+    const radiance = height > 0 ? 0.05 + 1.95 * height ** 3 : 0.02;
+    colors.push(radiance, radiance, radiance);
+  }
+  dome.setAttribute("color", new Float32BufferAttribute(colors, 3));
+  const material = new MeshBasicMaterial({
+    side: BackSide,
+    vertexColors: true,
+  });
+  const generator = new three.PMREMGenerator(renderer);
+  const target = generator.fromScene(
+    new three.Scene().add(new Mesh(dome, material)),
+  );
+  generator.dispose();
+  dome.dispose();
+  material.dispose();
+  return target.texture;
+}
+
+/** The board's own layers in the GLB, by the names Backplane gives them; Three.js adds "_1" to a repeat. */
+const LAYER = /_(copper|pad|via|silkscreen|soldermask|pcb)(?:_\d+)?$/i;
+
+/**
+ * This page's light and finish over Backplane's (model-appearance.js): a deep
+ * green board with white legends and gold pads on the dark ground, the same
+ * from every side.
+ *
+ * Prism lights the model with Three.js's RoomEnvironment, a dim room with a
+ * few far brighter light panels, fixed in the world. As the camera goes round,
+ * the soldermask's gloss and the gold copper pour under it (the mask is 83%
+ * opaque) mirror those panels, and at most angles the board washes out to a
+ * pale beige green with a blown highlight; the opening view happens to miss
+ * them. Instead the board sits under `overheadLight`, with a quieter gloss,
+ * the pour dimmed as it is under resin, and its pads gold, as the board's ENIG
+ * finish makes them.
+ *
+ * The mask and the legends on it are both see-through, and Three.js draws
+ * those back to front by their middles, which put the legends under the mask
+ * for half the turn. The legends now come after the mask, and the board body
+ * is opaque, so neither shows through it from below.
  * @param {ModelViewer} viewer
  * @param {ModelModules["three"]} three
  */
-function deepen(viewer, three) {
-  /** @type {Set<{ color: { multiplyScalar(scale: number): unknown } }>} */
-  const soldermasks = new Set();
+function finishBoard(viewer, three) {
+  const { Mesh, MeshPhysicalMaterial, MeshStandardMaterial } = three;
+  /** @type {{ layer: string, mesh: import("three").Mesh, material: import("three").MeshStandardMaterial }[]} */
+  const surfaces = [];
   viewer.content.traverse((/** @type {import("three").Object3D} */ object) => {
     if (
-      !(object instanceof three.Mesh) ||
-      !/_soldermask(?:_|$)/i.test(object.name)
+      !(object instanceof Mesh) ||
+      !(object.material instanceof MeshStandardMaterial)
     )
       return;
-    for (const material of [object.material].flat()) soldermasks.add(material);
+    const layer = LAYER.exec(object.name)?.[1]?.toLowerCase();
+    if (layer !== undefined)
+      surfaces.push({ layer, mesh: object, material: object.material });
   });
-  for (const material of soldermasks) material.color.multiplyScalar(0.55);
-  viewer.state.exposure = -0.6;
+  const gold = surfaces
+    .find(({ layer }) => layer === "copper")
+    ?.material.color.clone();
+  for (const { layer, mesh, material } of surfaces) {
+    if (layer === "soldermask") {
+      material.color.multiplyScalar(0.33);
+      material.roughness = 0.35;
+      if (material instanceof MeshPhysicalMaterial) {
+        material.specularIntensity = 0.4;
+        material.clearcoat = 0.25;
+        material.clearcoatRoughness = 0.2;
+      }
+      mesh.renderOrder = 1;
+    } else if (layer === "silkscreen") {
+      mesh.renderOrder = 2;
+    } else if (layer === "pcb") {
+      material.transparent = false;
+      material.opacity = 1;
+      material.depthWrite = true;
+    } else if (layer === "pad" && gold !== undefined) {
+      material.color.copy(gold);
+    } else if (layer === "copper") {
+      // The vias keep the shared gold.
+      const pour = material.clone();
+      pour.color.multiplyScalar(0.4);
+      pour.roughness = 0.8;
+      mesh.material = pour;
+    }
+    material.needsUpdate = true;
+  }
+  viewer.scene.environment = overheadLight(viewer.renderer, three);
+  viewer.state.exposure = -0.5;
   viewer.updateLights();
 }
 
@@ -704,7 +790,7 @@ function stageModel(viewer, panel, modules) {
   viewer.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   viewer.state.bgColor = GROUND;
   viewer.updateBackground();
-  deepen(viewer, three);
+  finishBoard(viewer, three);
 
   const size = new Box3()
     .setFromObject(viewer.content)

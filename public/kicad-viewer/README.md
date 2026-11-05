@@ -73,13 +73,15 @@ text, so they go out compressed.
 
 `embed.js` takes over the 3D viewer's camera and drawing (an opening view that
 matches the board's poster, one slow turn unless motion is reduced, and frames
-drawn only while something moves), sets every view on the site's ground, and
-fits the PCB and schematic clear of the controls, after Backplane's canvas
-presentation adapter. The board poster is a capture of that opening view at
-1280 by 800 at 2x, with the controls hidden and motion reduced, so the model
-fades in over it without a jump; render it again whenever the model or the
-opening view changes. `inter-latin.woff2` is the site's own Inter, for the
-controls.
+drawn only while something moves), lights the board under an overhead light
+that is the same from every side in place of Prism's room, sets every view on
+the site's ground, and fits the PCB and schematic clear of the controls, after
+Backplane's canvas presentation adapter. Judge any change to the board's light
+all the way round, not only at the opening view. The board poster is a capture
+of that opening view at 1280 by 800 at 2x, with the controls hidden (still laid
+out) and motion reduced, so the model fades in over it without a jump; render
+it again whenever the model, its light, or the opening view changes.
+`inter-latin.woff2` is the site's own Inter, for the controls.
 
 `embed.js` is plain JavaScript checked by TypeScript (`// @ts-check`, against
 `tsconfig.viewer.json`, as part of `bun run typecheck`). Prism ships no types,
