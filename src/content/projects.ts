@@ -500,7 +500,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/radio-mic-usb-ptt",
     date: "2026-06-26",
     blurb:
-      "A draft PCB, not built yet, and STM32 firmware to turn a BTECH QHM22 handheld mic into USB audio plus an F13 push-to-talk key.",
+      "An unbuilt draft PCB and STM32 firmware that turn a BTECH QHM22 handheld mic into USB audio plus an F13 push-to-talk key.",
     labels: ["wip"],
     media: [
       {
