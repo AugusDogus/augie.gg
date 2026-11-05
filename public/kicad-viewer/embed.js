@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The board viewer augie.gg frames: a board's 3D model, PCB, and schematic in
  * three tabs. The page around it names the files as same-origin URLs:
@@ -88,11 +89,160 @@ const ok = (value) => ({ ok: true, value });
 /** @param {string} error @returns {Result<never>} */
 const fail = (error) => ({ ok: false, error });
 
-/** A file named by the page around the viewer; only this site's own files open. */
+/**
+ * @typedef {{ kind: "none" }
+ *   | { kind: "loading", text: string }
+ *   | { kind: "error", text: string, retry: (() => void) | null }} Status
+ * @typedef {{ top: number, right: number, bottom: number, left: number }} Insets
+ * @typedef {"pcb" | "schematic"} DocumentKind
+ * @typedef {{ distance: number, shift: { x: number, y: number } }} Framing
+ *   A camera distance and lens shift (fractions of the frame).
+ */
+
+/**
+ * One tab's view.
+ * @typedef {object} View
+ * @property {() => void} show
+ * @property {() => void} hide
+ * @property {(direction: "in" | "out") => void} zoom
+ * @property {() => void} reset
+ * @property {(event: KeyboardEvent) => boolean} key Whether the view used the key.
+ */
+
+/*
+ * Prism's internals this page reaches, as far as it uses them. The bundles
+ * ship no types, so these follow their sources: three-gltf-viewer's Viewer
+ * for the 3D view, and KiCanvas's viewers for the PCB and schematic. Each is
+ * checked where it first comes from Prism.
+ */
+
+/**
+ * The viewer behind Prism's <ecad-3d-viewer>.
+ * @typedef {object} ModelViewer
+ * @property {ModelCamera} defaultCamera
+ * @property {import("three").WebGLRenderer} renderer
+ * @property {import("three").WebGLRenderer} axesRenderer For an axes inset this page never shows.
+ * @property {import("three").Object3D} content The model, centered on the origin.
+ * @property {{ bgColor: string, exposure: number }} state
+ * @property {unknown} controls Whichever controls Prism resizes with the frame.
+ * @property {(time: number) => void} animate Prism's loop, which asks for each next frame through this property.
+ * @property {() => void} updateBackground
+ * @property {() => void} updateLights
+ * @property {() => void} resize
+ * @property {() => void} render
+ */
+
+/**
+ * Prism's perspective camera, as far as this page moves it.
+ * @typedef {object} ModelCamera
+ * @property {number} fov
+ * @property {number} near
+ * @property {number} far
+ * @property {number} aspect
+ * @property {import("three").Vector3} position
+ * @property {import("three").Quaternion} quaternion
+ * @property {import("three").Vector3} up
+ * @property {(target: import("three").Vector3) => void} lookAt
+ * @property {(fullWidth: number, fullHeight: number, x: number, y: number, width: number, height: number) => void} setViewOffset
+ * @property {() => void} updateProjectionMatrix
+ */
+
+/**
+ * Prism's <ecad-viewer>.
+ * @typedef {HTMLElement & {
+ *   ready: Promise<unknown>,
+ *   replaceSources(request: { revisionKey: string, sources: { filename: string, content: string }[] }): Promise<unknown>,
+ *   setActive(active: boolean): void,
+ *   resize(): void,
+ *   setViewportInsets(insets: Partial<Insets> | undefined): void,
+ * }} DocumentElement
+ */
+
+/**
+ * A KiCanvas color.
+ * @typedef {object} Color
+ * @property {{ from_css(css: string): Color }} constructor
+ * @property {() => [number, number, number, number]} to_array
+ */
+
+/**
+ * A KiCanvas box, in world units.
+ * @typedef {object} BBox
+ * @property {new (x: number, y: number, width: number, height: number) => BBox} constructor
+ */
+
+/**
+ * KiCanvas's board or schematic viewer, inside <ecad-viewer>.
+ * @typedef {object} DocumentViewer
+ * @property {{ background_color: Color, gl?: WebGL2RenderingContext }} renderer
+ * @property {{ background: Color }} theme
+ * @property {{ camera: { zoom: number, center: { x: number, y: number, set(x: number, y: number): void }, bbox: BBox } }} viewport
+ * @property {{ width: number, height: number }} drawing_sheet The page, in millimeters.
+ * @property {() => { by_name(name: string): { visible: boolean } | undefined }} create_layer_set
+ * @property {() => void} zoom_fit_top_item
+ * @property {() => void} paint
+ * @property {() => void} draw
+ */
+
+/** @param {unknown} value @returns {value is ModelViewer} */
+function isModelViewer(value) {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "defaultCamera" in value &&
+    "renderer" in value &&
+    "content" in value &&
+    "state" in value
+  );
+}
+
+/** @param {HTMLElement} element @returns {element is DocumentElement} */
+function isDocumentElement(element) {
+  return (
+    "replaceSources" in element &&
+    "setViewportInsets" in element &&
+    "setActive" in element
+  );
+}
+
+/** @param {unknown} value @returns {value is DocumentViewer} */
+function isDocumentViewer(value) {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "viewport" in value &&
+    "renderer" in value &&
+    "zoom_fit_top_item" in value &&
+    "create_layer_set" in value
+  );
+}
+
+/**
+ * An element the viewer's own markup always has.
+ * @param {ParentNode} root
+ * @param {string} selector
+ * @returns {HTMLElement}
+ */
+function part(root, selector) {
+  const element = root.querySelector(selector);
+  if (!(element instanceof HTMLElement))
+    throw new Error(
+      `embed.html has no ${selector}, which the viewer needs to start.`,
+    );
+  return element;
+}
+
+/**
+ * A file named by the page around the viewer; only this site's own files open.
+ * @param {URLSearchParams} params
+ * @param {string} name
+ * @returns {Result<URL>}
+ */
 function sameOriginUrl(params, name) {
   const value = params.get(name);
   if (value === null)
     return fail(`The viewer was opened without a ${name} file.`);
+  /** @type {URL} */
   let url;
   try {
     url = new URL(value, location.href);
@@ -123,9 +273,11 @@ function readBoard() {
  * Status in a view: nothing, a loading line, or an error with a way to try
  * again. It is a live region, so it changes only when what it says does, and
  * screen readers hear each line once.
+ * @param {HTMLElement} panel
+ * @param {Status} status
  */
 function setStatus(panel, status) {
-  const box = panel.querySelector(".status");
+  const box = part(panel, ".status");
   const said = status.kind === "none" ? "" : `${status.kind}: ${status.text}`;
   if (box.dataset.said === said) return;
   box.dataset.said = said;
@@ -155,8 +307,14 @@ function setStatus(panel, status) {
   box.append(message);
 }
 
-/** A file's bytes. */
+/**
+ * A file's bytes.
+ * @param {URL} url
+ * @param {string} what
+ * @returns {Promise<Result<Blob>>}
+ */
 async function fetchBlob(url, what) {
+  /** @type {Response} */
   let response;
   try {
     response = await fetch(url);
@@ -178,7 +336,7 @@ async function fetchBlob(url, what) {
   }
 }
 
-/** A URL's file name, as KiCad wrote it; a malformed escape stays as it came. */
+/** A URL's file name, as KiCad wrote it; a malformed escape stays as it came. @param {URL} url */
 function fileName(url) {
   const last = url.pathname.split("/").at(-1) ?? "";
   try {
@@ -188,13 +346,21 @@ function fileName(url) {
   }
 }
 
+/** @param {URL} url @param {string} what @returns {Promise<Result<string>>} */
 async function fetchText(url, what) {
   const blob = await fetchBlob(url, what);
   return blob.ok ? ok(await blob.value.text()) : blob;
 }
 
-/** Imports a module once, as a value: a failed import can be tried again. */
+/**
+ * Imports a module once, as a value: a failed import can be tried again.
+ * @template T
+ * @param {() => Promise<T>} load
+ * @param {string} what
+ * @returns {() => Promise<Result<T>>}
+ */
 function lazyModule(load, what) {
+  /** @type {Promise<Result<T>> | null} */
   let pending = null;
   return () => {
     pending ??= load().then(
@@ -210,20 +376,19 @@ function lazyModule(load, what) {
   };
 }
 
-const loadModelModules = lazyModule(
-  () =>
-    Promise.all([
-      import("three"),
-      import("three/addons/controls/TrackballControls.js"),
-      import("./model-appearance.js"),
-      import("./3d-viewer.js"),
-    ]).then(([three, trackball, appearance]) => ({
-      three,
-      TrackballControls: trackball.TrackballControls,
-      finishBoardModel: appearance.finishBoardModel,
-    })),
-  "3D",
-);
+const importModelModules = () =>
+  Promise.all([
+    import("three"),
+    import("three/addons/controls/TrackballControls.js"),
+    import("./model-appearance.js"),
+    import("./3d-viewer.js"),
+  ]).then(([three, trackball, appearance]) => ({
+    three,
+    TrackballControls: trackball.TrackballControls,
+    finishBoardModel: appearance.finishBoardModel,
+  }));
+/** @typedef {Awaited<ReturnType<typeof importModelModules>>} ModelModules */
+const loadModelModules = lazyModule(importModelModules, "3D");
 
 const loadDocumentModules = lazyModule(
   () =>
@@ -246,10 +411,14 @@ function canDrawWebGL() {
   return true;
 }
 
-const nextFrame = () =>
-  new Promise((resolve) => requestAnimationFrame(resolve));
+/** @returns {Promise<number>} */
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(resolve));
+}
 
+/** @param {number} t */
 const easeInOut = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
+/** @param {number} t */
 const easeOut = (t) => 1 - (1 - t) ** 3;
 
 /** How long Prism gets to show a file that is already here before the view gives up on it. */
@@ -259,9 +428,14 @@ const SETTLE_MS = 30000;
  * Prism's work on a file, as a value. Prism reports some failures only as an
  * uncaught error or rejection in this window, and a stall not at all, so
  * those and a deadline fail it too. The browser still logs what was thrown.
+ * @template T
+ * @param {() => Promise<T>} work
+ * @param {string} what
+ * @returns {Promise<Result<T>>}
  */
 function settled(work, what) {
   return new Promise((resolve) => {
+    /** @param {Result<T>} result */
     const done = (result) => {
       clearTimeout(timer);
       removeEventListener("error", thrown);
@@ -282,7 +456,13 @@ function settled(work, what) {
   });
 }
 
-/** A step through Prism's or an adapter's internals that may throw, as a value; the cause goes to the console. */
+/**
+ * A step through Prism's or an adapter's internals that may throw, as a value; the cause goes to the console.
+ * @template T
+ * @param {() => T} step
+ * @param {string} what
+ * @returns {Result<T>}
+ */
 function attempt(step, what) {
   try {
     return ok(step());
@@ -295,27 +475,36 @@ function attempt(step, what) {
 /**
  * Prism's <ecad-3d-viewer> on the model, once the model is in its scene.
  * Prism asks its ancestors for a "project" with the model's URL.
+ * @param {HTMLElement} host
+ * @param {string} src
+ * @returns {Promise<Result<HTMLElement>>}
  */
 async function mountModel(host, src) {
   const project = Object.assign(new EventTarget(), {
     loaded: Promise.resolve(),
     ov_3d_url: src,
   });
+  /** @param {Event} event */
   const provide = (event) => {
-    if (event.context_name === "project") event.callback(project);
+    if (
+      "context_name" in event &&
+      event.context_name === "project" &&
+      "callback" in event &&
+      typeof event.callback === "function"
+    )
+      event.callback(project);
   };
   const element = document.createElement("ecad-3d-viewer");
+  /** @type {() => Promise<HTMLElement>} */
+  const appended = () =>
+    new Promise((resolve) => {
+      project.addEventListener("3d:viewer:loaded", () => resolve(element), {
+        once: true,
+      });
+      host.append(element);
+    });
   host.addEventListener("context-request", provide);
-  const mounted = await settled(
-    () =>
-      new Promise((resolve) => {
-        project.addEventListener("3d:viewer:loaded", () => resolve(element), {
-          once: true,
-        });
-        host.append(element);
-      }),
-    "3D model",
-  );
+  const mounted = await settled(appended, "3D model");
   host.removeEventListener("context-request", provide);
   URL.revokeObjectURL(src);
   if (!mounted.ok) element.remove();
@@ -325,11 +514,18 @@ async function mountModel(host, src) {
 /**
  * Backplane's finish, a stop darker for this page: the soldermask at the deep
  * green of KiCad's own render, and the scene exposed for the dark ground.
+ * @param {ModelViewer} viewer
+ * @param {ModelModules["three"]} three
  */
-function deepen(viewer) {
+function deepen(viewer, three) {
+  /** @type {Set<{ color: { multiplyScalar(scale: number): unknown } }>} */
   const soldermasks = new Set();
-  viewer.content.traverse((object) => {
-    if (!object.isMesh || !/_soldermask(?:_|$)/i.test(object.name)) return;
+  viewer.content.traverse((/** @type {import("three").Object3D} */ object) => {
+    if (
+      !(object instanceof three.Mesh) ||
+      !/_soldermask(?:_|$)/i.test(object.name)
+    )
+      return;
     for (const material of [object.material].flat()) soldermasks.add(material);
   });
   for (const material of soldermasks) material.color.multiplyScalar(0.55);
@@ -337,13 +533,19 @@ function deepen(viewer) {
   viewer.updateLights();
 }
 
-/** Each mesh's bounding box corners, in the scene: what the opening view fits. */
-function cornersOf(content, { Box3, Vector3 }) {
+/**
+ * Each mesh's bounding box corners, in the scene: what the opening view fits.
+ * @param {import("three").Object3D} content
+ * @param {ModelModules["three"]} three
+ */
+function cornersOf(content, three) {
+  const { Box3, Mesh, Vector3 } = three;
+  /** @type {import("three").Vector3[]} */
   const corners = [];
   const box = new Box3();
   content.updateMatrixWorld(true);
-  content.traverse((object) => {
-    if (!object.isMesh) return;
+  content.traverse((/** @type {import("three").Object3D} */ object) => {
+    if (!(object instanceof Mesh)) return;
     object.geometry.computeBoundingBox();
     box.copy(object.geometry.boundingBox).applyMatrix4(object.matrixWorld);
     for (const x of [box.min.x, box.max.x])
@@ -358,15 +560,15 @@ function cornersOf(content, { Box3, Vector3 }) {
  * Takes over the 3D viewer's camera and drawing once the model is in: the
  * opening view, a single slow turn, and frames drawn only while something
  * moves, where Prism draws every frame for as long as it lives.
+ * @param {ModelViewer} viewer
+ * @param {HTMLElement} panel
+ * @param {ModelModules} modules
  */
-function stageModel(element, { three, TrackballControls }) {
-  const { Box3, PerspectiveCamera, Quaternion, Vector3 } = three;
-  // Prism's own name for the viewer behind the element; Backplane's adapter reaches it the same way.
-  // oxlint-disable-next-line no-underscore-dangle
-  const viewer = element._viewer_container;
+function stageModel(viewer, panel, modules) {
+  const { three, TrackballControls } = modules;
+  const { Box3, Matrix4, Quaternion, Vector3 } = three;
   const camera = viewer.defaultCamera;
   const canvas = viewer.renderer.domElement;
-  const panel = element.closest('[role="tabpanel"]');
   const target = new Vector3();
   const vertical = new Vector3(0, 1, 0);
 
@@ -378,7 +580,7 @@ function stageModel(element, { three, TrackballControls }) {
   viewer.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   viewer.state.bgColor = GROUND;
   viewer.updateBackground();
-  deepen(viewer);
+  deepen(viewer, three);
 
   const size = new Box3()
     .setFromObject(viewer.content)
@@ -404,23 +606,35 @@ function stageModel(element, { three, TrackballControls }) {
   })();
 
   const corners = cornersOf(viewer.content, three);
-  const probe = new PerspectiveCamera();
+  const projection = new Matrix4();
+  const toCamera = new Matrix4();
+  const eye = new Vector3();
+  const unit = new Vector3(1, 1, 1);
   const point = new Vector3();
   const turn = new Quaternion();
 
-  /** Where the model's corners land on screen (-1 to 1 each way), seen from an orientation and distance. */
+  /**
+   * Where the model's corners land on screen (-1 to 1 each way), seen from an orientation and distance.
+   * @param {import("three").Quaternion} quaternion
+   * @param {number} distance
+   */
   function extent(quaternion, distance) {
-    probe.fov = camera.fov;
-    probe.aspect = camera.aspect;
-    probe.near = camera.near;
-    probe.far = camera.far;
-    probe.updateProjectionMatrix();
-    probe.quaternion.copy(quaternion);
-    probe.position.set(0, 0, distance).applyQuaternion(quaternion);
-    probe.updateMatrixWorld();
+    // The camera's own projection, without its lens shift.
+    const top = camera.near * Math.tan((camera.fov * Math.PI) / 360);
+    const right = top * camera.aspect;
+    projection.makePerspective(
+      -right,
+      right,
+      top,
+      -top,
+      camera.near,
+      camera.far,
+    );
+    eye.set(0, 0, distance).applyQuaternion(quaternion);
+    toCamera.compose(eye, quaternion, unit).invert();
     const box = { left: 1, right: -1, bottom: 1, top: -1 };
     for (const corner of corners) {
-      point.copy(corner).project(probe);
+      point.copy(corner).applyMatrix4(toCamera).applyMatrix4(projection);
       box.left = Math.min(box.left, point.x);
       box.right = Math.max(box.right, point.x);
       box.bottom = Math.min(box.bottom, point.y);
@@ -429,7 +643,11 @@ function stageModel(element, { three, TrackballControls }) {
     return box;
   }
 
-  /** The distance at which the model, seen from an orientation, spans at most these fractions of the frame. */
+  /**
+   * The distance at which the model, seen from an orientation, spans at most these fractions of the frame.
+   * @param {import("three").Quaternion} quaternion
+   * @param {{ width: number, height: number }} room
+   */
   function distanceFor(quaternion, room) {
     let distance = size * 2;
     // Nearer corners grow faster than farther ones as the camera closes in, so this settles in a few steps.
@@ -449,6 +667,8 @@ function stageModel(element, { three, TrackballControls }) {
    * The opening view inside insets from the frame's edges, in CSS pixels: the
    * distance that fits the model there (and inside the frame all through its
    * turn), and the lens shift that centers it there.
+   * @param {Insets} insets
+   * @returns {Framing}
    */
   function framing(insets) {
     const width = canvas.clientWidth || 1;
@@ -481,7 +701,11 @@ function stageModel(element, { three, TrackballControls }) {
     };
   }
 
-  /** The insets the opening view keeps: the poster's margins, and the controls' where they reach further in. */
+  /**
+   * The insets the opening view keeps: the poster's margins, and the controls' where they reach further in.
+   * @param {boolean} controls
+   * @returns {Insets}
+   */
   function clearance(controls) {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -508,7 +732,6 @@ function stageModel(element, { three, TrackballControls }) {
     };
   }
 
-  let controls;
   /** Still at the opening view (or turning through it): a new frame shape refits it. */
   let untouched = true;
   let interacting = false;
@@ -518,10 +741,15 @@ function stageModel(element, { three, TrackballControls }) {
   /** @type {{ start: number | null, duration: number, ease: (t: number) => number, apply: (t: number) => void, spin: boolean } | null} */
   let motion = null;
   /** The lens shift, as fractions of the frame: it centers the model in the room the controls leave. */
+  /** @type {Framing["shift"]} */
   let lens = { x: 0, y: 0 };
   let opening = fits();
+  let controls = createControls();
 
-  /** Shifts the lens without moving the camera; Three.js would also square the aspect, which Prism set from the frame. */
+  /**
+   * Shifts the lens without moving the camera; Three.js would also square the aspect, which Prism set from the frame.
+   * @param {Framing["shift"]} shift
+   */
   function shiftLens(shift) {
     lens = shift;
     const aspect = camera.aspect;
@@ -530,7 +758,13 @@ function stageModel(element, { three, TrackballControls }) {
     camera.updateProjectionMatrix();
   }
 
-  /** Between two views, by `t`. */
+  /**
+   * Between two views, by `t`.
+   * @param {Framing} from
+   * @param {Framing} to
+   * @param {number} t
+   * @returns {Framing}
+   */
   function blend(from, to, t) {
     return {
       distance: from.distance + (to.distance - from.distance) * t,
@@ -541,13 +775,21 @@ function stageModel(element, { three, TrackballControls }) {
     };
   }
 
-  /** The camera at an orientation, at a view's distance and lens shift. */
+  /**
+   * The camera at an orientation, at a view's distance and lens shift.
+   * @param {import("three").Quaternion} quaternion
+   * @param {Framing} view
+   */
   function setView(quaternion, view) {
     place(quaternion, view.distance);
     shiftLens(view.shift);
   }
 
-  /** The camera at an orientation and distance from the target, as the trackball would leave it. */
+  /**
+   * The camera at an orientation and distance from the target, as the trackball would leave it.
+   * @param {import("three").Quaternion} quaternion
+   * @param {number} length
+   */
   function place(quaternion, length) {
     camera.quaternion.copy(quaternion);
     camera.position
@@ -557,35 +799,41 @@ function stageModel(element, { three, TrackballControls }) {
     camera.up.set(0, 1, 0).applyQuaternion(quaternion);
   }
 
-  /** Fresh trackball controls, as Prism configures them: a new one carries no momentum. */
-  function attachControls() {
-    controls?.dispose();
-    controls = new TrackballControls(camera, canvas);
-    controls.rotateSpeed = 1;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.minDistance = size * 0.6;
-    controls.maxDistance = size * 8;
-    controls.staticMoving = reducedMotion.matches;
-    controls.addEventListener("change", () => {
+  /** Trackball controls as Prism configures them, which Prism resizes with the frame. */
+  function createControls() {
+    const created = new TrackballControls(camera, canvas);
+    created.rotateSpeed = 1;
+    created.zoomSpeed = 1.2;
+    created.panSpeed = 0.8;
+    created.minDistance = size * 0.6;
+    created.maxDistance = size * 8;
+    created.staticMoving = reducedMotion.matches;
+    created.addEventListener("change", () => {
       changed = true;
     });
-    controls.addEventListener("start", () => {
+    created.addEventListener("start", () => {
       interacting = true;
       panel.dataset.dragging = "";
       untouched = false;
       motion = null;
       wake();
     });
-    controls.addEventListener("end", () => {
+    created.addEventListener("end", () => {
       interacting = false;
       delete panel.dataset.dragging;
       wake();
     });
-    // Prism resizes whichever controls it holds.
-    viewer.controls = controls;
+    viewer.controls = created;
+    return created;
   }
 
+  /** Fresh controls: a new one carries no momentum. */
+  function attachControls() {
+    controls.dispose();
+    controls = createControls();
+  }
+
+  /** @param {number} now */
   function tick(now) {
     frame = 0;
     if (!shown) return;
@@ -607,6 +855,11 @@ function stageModel(element, { three, TrackballControls }) {
     if (frame === 0 && shown) frame = requestAnimationFrame(tick);
   }
 
+  /**
+   * @param {number} duration
+   * @param {(t: number) => void} apply
+   * @param {(t: number) => number} [ease]
+   */
   function animate(duration, apply, ease = easeOut) {
     if (reducedMotion.matches) {
       apply(1);
@@ -616,7 +869,11 @@ function stageModel(element, { three, TrackballControls }) {
     wake();
   }
 
-  /** Turns the camera about the target, by a yaw about the vertical and a pitch about its own right. */
+  /**
+   * Turns the camera about the target, by a yaw about the vertical and a pitch about its own right.
+   * @param {number} yaw
+   * @param {number} pitch
+   */
   function orbit(yaw, pitch) {
     untouched = false;
     const from = camera.quaternion.clone();
@@ -632,7 +889,6 @@ function stageModel(element, { three, TrackballControls }) {
     );
   }
 
-  attachControls();
   // As it fades in over the poster, the model matches it; reduced motion skips the fade.
   setView(
     homeQuaternion,
@@ -690,6 +946,7 @@ function stageModel(element, { three, TrackballControls }) {
       cancelAnimationFrame(frame);
       frame = 0;
     },
+    /** @param {"in" | "out"} direction */
     zoom(direction) {
       untouched = false;
       const from = camera.position.distanceTo(controls.target);
@@ -728,9 +985,10 @@ function stageModel(element, { three, TrackballControls }) {
         easeInOut,
       );
     },
-    /** Arrow keys turn the model, as a drag would. */
+    /** Arrow keys turn the model, as a drag would. @param {KeyboardEvent} event */
     key(event) {
       const step = event.shiftKey ? 45 : 15;
+      /** @type {Record<string, [number, number] | undefined>} */
       const turns = {
         ArrowLeft: [step, 0],
         ArrowRight: [-step, 0],
@@ -745,17 +1003,24 @@ function stageModel(element, { three, TrackballControls }) {
   };
 }
 
-/** The 3D tab: Prism's 3D viewer on the board's GLB export. */
+/**
+ * The 3D tab: Prism's 3D viewer on the board's GLB export.
+ * @param {HTMLElement} panel
+ * @param {URL} url
+ * @returns {View}
+ */
 function modelView(panel, url) {
-  const host = panel.querySelector(".canvas");
+  const host = part(panel, ".canvas");
   /** @type {{ kind: "idle" } | { kind: "loading" } | { kind: "ready", stage: ReturnType<typeof stageModel> } | { kind: "failed" }} */
   let state = { kind: "idle" };
   let shown = true;
+  const retry = () => void load();
 
-  function failed(error, retry) {
+  /** @param {string} error @param {(() => void) | null} again */
+  function failed(error, again) {
     state = { kind: "failed" };
     panel.dataset.state = "failed";
-    setStatus(panel, { kind: "error", text: error, retry });
+    setStatus(panel, { kind: "error", text: error, retry: again });
   }
 
   async function load() {
@@ -774,18 +1039,22 @@ function modelView(panel, url) {
       fetchBlob(url, "3D model"),
       loadModelModules(),
     ]);
-    if (!modules.ok) return failed(modules.error, load);
-    if (!file.ok) return failed(file.error, load);
+    if (!modules.ok) return failed(modules.error, retry);
+    if (!file.ok) return failed(file.error, retry);
     const mounted = await mountModel(host, URL.createObjectURL(file.value));
     if (!mounted.ok)
       return failed(
         "The 3D model couldn't be read. Reload the page to try again.",
         null,
       );
-    const staged = attempt(() => {
-      modules.value.finishBoardModel(mounted.value);
-      return stageModel(mounted.value, modules.value);
-    }, "Showing the 3D model");
+    const viewer = modelViewerOf(mounted.value);
+    const staged =
+      viewer === null
+        ? fail("Prism's 3D element has no viewer behind it")
+        : attempt(() => {
+            modules.value.finishBoardModel(mounted.value);
+            return stageModel(viewer, panel, modules.value);
+          }, "Showing the 3D model");
     if (!staged.ok) {
       mounted.value.remove();
       return failed(
@@ -822,16 +1091,38 @@ function modelView(panel, url) {
   };
 }
 
-/** Prism's own board or schematic viewer inside its element, once it has one. */
-function innerViewer(element, kind) {
-  return (
-    element.shadowRoot?.querySelector(
-      kind === "pcb" ? "kc-board-app" : "kc-schematic-app",
-    )?.viewer ?? null
-  );
+/**
+ * The viewer behind Prism's 3D element, once it has loaded a model.
+ * @param {HTMLElement} element
+ * @returns {ModelViewer | null}
+ */
+function modelViewerOf(element) {
+  if (!("_viewer_container" in element)) return null;
+  // Prism's own name for it; Backplane's adapter reaches it the same way.
+  // oxlint-disable-next-line no-underscore-dangle
+  const viewer = element._viewer_container;
+  return isModelViewer(viewer) ? viewer : null;
 }
 
-/** Leaves out Prism's layers of these names each time it paints, which makes them anew. */
+/**
+ * Prism's own board or schematic viewer inside its element, once it has one.
+ * @param {DocumentElement} element
+ * @param {DocumentKind} kind
+ * @returns {DocumentViewer | null}
+ */
+function innerViewer(element, kind) {
+  const app = element.shadowRoot?.querySelector(
+    kind === "pcb" ? "kc-board-app" : "kc-schematic-app",
+  );
+  const viewer = app != null && "viewer" in app ? app.viewer : null;
+  return isDocumentViewer(viewer) ? viewer : null;
+}
+
+/**
+ * Leaves out Prism's layers of these names each time it paints, which makes them anew.
+ * @param {DocumentViewer} viewer
+ * @param {string[]} names
+ */
 function hideLayers(viewer, names) {
   const create = viewer.create_layer_set.bind(viewer);
   viewer.create_layer_set = () => {
@@ -853,6 +1144,8 @@ function hideLayers(viewer, names) {
  * only show as stray lines. A schematic takes the site's colors, without the
  * white paper, and fits its whole sheet where Prism fits only what is drawn on
  * it, so the frame and title block never sit under the controls.
+ * @param {DocumentViewer} viewer
+ * @param {DocumentKind} kind
  */
 function present(viewer, kind) {
   const Color = viewer.renderer.background_color.constructor;
@@ -900,14 +1193,15 @@ function present(viewer, kind) {
 
 /** The room the tabs take above and the view tools below, in CSS pixels from the frame's edges. */
 function chromeInsets() {
-  const tabBar = document.querySelector(".tabs").getBoundingClientRect();
-  const tools = document.querySelector(".tools").getBoundingClientRect();
+  const tabBar = part(document, ".tabs").getBoundingClientRect();
+  const tools = part(document, ".tools").getBoundingClientRect();
   return { top: tabBar.bottom + 4, bottom: innerHeight - tools.top + 4 };
 }
 
 /**
  * Fits leave room for the tabs above and the zoom controls below, whatever
  * insets Prism or an adapter asks for besides.
+ * @param {DocumentElement} element
  */
 function reserveChrome(element) {
   const set = element.setViewportInsets.bind(element);
@@ -923,23 +1217,32 @@ function reserveChrome(element) {
   element.setViewportInsets({});
 }
 
-/** The PCB and schematic tabs: Prism's <ecad-viewer> on one KiCad file each. */
+/**
+ * The PCB and schematic tabs: Prism's <ecad-viewer> on one KiCad file each.
+ * @param {HTMLElement} panel
+ * @param {URL} url
+ * @param {DocumentKind} kind
+ * @returns {View}
+ */
 function documentView(panel, url, kind) {
-  const host = panel.querySelector(".canvas");
+  const host = part(panel, ".canvas");
   const what = kind === "pcb" ? "PCB" : "schematic";
-  /** @type {{ kind: "idle" } | { kind: "loading" } | { kind: "ready", element: HTMLElement, viewer: any } | { kind: "failed" }} */
+  /** @type {{ kind: "idle" } | { kind: "loading" } | { kind: "ready", element: DocumentElement, viewer: DocumentViewer } | { kind: "failed" }} */
   let state = { kind: "idle" };
   let shown = false;
   /** The camera as last fit; while it stays there, a resize fits again. */
+  /** @type {{ zoom: number, x: number, y: number } | null} */
   let fitted = null;
   /** The frame changed size while this view was hidden: it fits again when shown. */
   let stale = false;
+  const retry = () => void load();
 
-  function failed(error, retry) {
+  /** @param {string} error @param {(() => void) | null} again */
+  function failed(error, again) {
     host.replaceChildren();
     state = { kind: "failed" };
     panel.dataset.state = "failed";
-    setStatus(panel, { kind: "error", text: error, retry });
+    setStatus(panel, { kind: "error", text: error, retry: again });
   }
 
   async function load() {
@@ -957,9 +1260,14 @@ function documentView(panel, url, kind) {
       fetchText(url, what),
       loadDocumentModules(),
     ]);
-    if (!modules.ok) return failed(modules.error, load);
-    if (!file.ok) return failed(file.error, load);
+    if (!modules.ok) return failed(modules.error, retry);
+    if (!file.ok) return failed(file.error, retry);
     const element = document.createElement("ecad-viewer");
+    if (!isDocumentElement(element))
+      return failed(
+        `The ${what} viewer didn't start. Reload the page to try again.`,
+        null,
+      );
     element.setAttribute("source-mode", "host");
     element.setAttribute("show-header", "false");
     element.setAttribute("hide-chrome", "");
@@ -1010,7 +1318,11 @@ function documentView(panel, url, kind) {
     setStatus(panel, { kind: "none" });
   }
 
-  /** The view at the frame's size, fit again unless someone moved it. */
+  /**
+   * The view at the frame's size, fit again unless someone moved it.
+   * @param {DocumentElement} element
+   * @param {DocumentViewer} viewer
+   */
   function refit(element, viewer) {
     stale = false;
     element.setViewportInsets({});
@@ -1021,11 +1333,13 @@ function documentView(panel, url, kind) {
     }
   }
 
+  /** @param {DocumentViewer} viewer */
   function remember(viewer) {
     const camera = viewer.viewport.camera;
     fitted = { zoom: camera.zoom, x: camera.center.x, y: camera.center.y };
   }
 
+  /** @param {DocumentViewer} viewer @param {{ zoom: number, x: number, y: number }} camera */
   function same(viewer, camera) {
     const now = viewer.viewport.camera;
     return (
@@ -1048,6 +1362,7 @@ function documentView(panel, url, kind) {
       shown = false;
       if (state.kind === "ready") state.element.setActive(false);
     },
+    /** @param {"in" | "out"} direction */
     zoom(direction) {
       if (state.kind !== "ready") return;
       state.viewer.viewport.camera.zoom *=
@@ -1059,9 +1374,10 @@ function documentView(panel, url, kind) {
       state.viewer.zoom_fit_top_item();
       remember(state.viewer);
     },
-    /** Arrow keys pan the sheet a little at a time. */
+    /** Arrow keys pan the sheet a little at a time. @param {KeyboardEvent} event */
     key(event) {
       if (state.kind !== "ready") return false;
+      /** @type {Record<string, [number, number] | undefined>} */
       const moves = {
         ArrowLeft: [-1, 0],
         ArrowRight: [1, 0],
@@ -1082,18 +1398,25 @@ function documentView(panel, url, kind) {
   };
 }
 
-/** Tabs per the ARIA pattern: arrows, Home, and End move between them and select. */
+/**
+ * Tabs per the ARIA pattern: arrows, Home, and End move between them and select.
+ * @param {Map<HTMLElement, View>} views
+ */
 function tabs(views) {
-  const list = document.querySelector('[role="tablist"]');
-  const all = [...list.querySelectorAll('[role="tab"]')];
-  let current = all[0];
+  const list = part(document, '[role="tablist"]');
+  const all = [...list.querySelectorAll('[role="tab"]')].filter(
+    (tab) => tab instanceof HTMLElement,
+  );
+  let current = part(list, '[aria-selected="true"]');
 
+  /** @param {HTMLElement} tab @param {boolean} focus */
   function select(tab, focus) {
     for (const each of all) {
       const on = each === tab;
       each.setAttribute("aria-selected", String(on));
       each.tabIndex = on ? 0 : -1;
-      document.getElementById(each.getAttribute("aria-controls")).hidden = !on;
+      part(document, `#${each.getAttribute("aria-controls") ?? ""}`).hidden =
+        !on;
     }
     if (focus) tab.focus();
     if (tab === current) return;
@@ -1160,7 +1483,7 @@ function start() {
     document.documentElement.dataset.standalone = "";
   forwardEscape();
   const board = readBoard();
-  const firstPanel = document.getElementById("view-3d");
+  const firstPanel = part(document, "#view-3d");
   if (!board.ok) {
     setStatus(firstPanel, { kind: "error", text: board.error, retry: null });
     return;
@@ -1168,19 +1491,17 @@ function start() {
   // Named for the board, for when it opens in a tab of its own.
   const name = fileName(board.value.pcb).replace(/\.kicad_pcb$/, "");
   if (name !== "") document.title = `${name} board`;
+  /** @type {Map<HTMLElement, View>} */
   const views = new Map([
+    [part(document, "#tab-3d"), modelView(firstPanel, board.value.model)],
     [
-      document.getElementById("tab-3d"),
-      modelView(firstPanel, board.value.model),
+      part(document, "#tab-pcb"),
+      documentView(part(document, "#view-pcb"), board.value.pcb, "pcb"),
     ],
     [
-      document.getElementById("tab-pcb"),
-      documentView(document.getElementById("view-pcb"), board.value.pcb, "pcb"),
-    ],
-    [
-      document.getElementById("tab-schematic"),
+      part(document, "#tab-schematic"),
       documentView(
-        document.getElementById("view-schematic"),
+        part(document, "#view-schematic"),
         board.value.schematic,
         "schematic",
       ),
@@ -1189,6 +1510,7 @@ function start() {
   const tabList = tabs(views);
   // A focused view takes arrows (turn or pan) and + or - (zoom).
   for (const panel of document.querySelectorAll('[role="tabpanel"]')) {
+    if (!(panel instanceof HTMLElement)) continue;
     panel.addEventListener("keydown", (event) => {
       if (
         event.target !== panel ||
@@ -1210,6 +1532,7 @@ function start() {
     });
   }
   for (const button of document.querySelectorAll(".tool")) {
+    if (!(button instanceof HTMLElement)) continue;
     button.addEventListener("click", () => {
       const view = tabList.active();
       const action = button.dataset.action;

@@ -14,7 +14,7 @@
     "lint:fix": "oxlint . --fix",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.viewer.json",
     "test": "bun test"
   },
   "dependencies": {

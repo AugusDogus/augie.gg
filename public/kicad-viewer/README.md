@@ -80,3 +80,8 @@ presentation adapter. The board poster is a capture of that opening view at
 fades in over it without a jump; render it again whenever the model or the
 opening view changes. `inter-latin.woff2` is the site's own Inter, for the
 controls.
+
+`embed.js` is plain JavaScript checked by TypeScript (`// @ts-check`, against
+`tsconfig.viewer.json`, as part of `bun run typecheck`). Prism ships no types,
+so the internals it reaches are declared as small shapes at the top of the
+file and checked where they first come from Prism.
