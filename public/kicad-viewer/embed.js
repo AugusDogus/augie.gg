@@ -27,6 +27,8 @@ const TURN_MS = 24000;
 const MARGIN = { x: 0.08, y: 0.12 };
 /** How long the model takes to make room for the controls, where they reach past those margins. */
 const MAKE_ROOM_MS = 700;
+/** The schematic's paper, a step above the ground. */
+const PAPER = "#0f1a1f";
 /**
  * The schematic in the site's colors instead of on white paper: KiCad's own
  * scheme (green wires, red symbols, teal text, blue notes) lifted to read on
@@ -174,15 +176,57 @@ const fail = (error) => ({ ok: false, error });
 /**
  * KiCanvas's board or schematic viewer, inside <ecad-viewer>.
  * @typedef {object} DocumentViewer
- * @property {{ background_color: Color, gl?: WebGL2RenderingContext }} renderer
+ * @property {{ background_color: Color, gl?: WebGL2RenderingContext, end_layer(): unknown }} renderer
+ *   `end_layer` hands back each layer it has just recorded.
  * @property {{ background: Color }} theme
  * @property {{ camera: { zoom: number, center: { x: number, y: number, set(x: number, y: number): void }, bbox: BBox } }} viewport
- * @property {{ width: number, height: number }} drawing_sheet The page, in millimeters.
+ * @property {{ width: number, height: number, items(): Iterable<object> }} drawing_sheet
+ *   The page, in millimeters, and what KiCad draws on it.
  * @property {() => { by_name(name: string): { visible: boolean } | undefined }} create_layer_set
  * @property {() => void} zoom_fit_top_item
  * @property {() => void} paint
  * @property {() => void} draw
  */
+
+/**
+ * A layer KiCanvas's 2D renderer, which draws the schematic, has recorded.
+ * @typedef {object} CanvasLayer
+ * @property {string} name
+ * @property {unknown[]} commands
+ */
+
+/**
+ * A fill or stroke in a 2D layer.
+ * @typedef {object} DrawCommand
+ * @property {string | null} fill A CSS color.
+ * @property {string | null} stroke A CSS color.
+ * @property {number} stroke_width In world units.
+ * @property {(context: CanvasRenderingContext2D) => void} render
+ */
+
+/** @param {unknown} value @returns {value is CanvasLayer} */
+function isCanvasLayer(value) {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "commands" in value &&
+    Array.isArray(value.commands)
+  );
+}
+
+/** @param {unknown} value @returns {value is DrawCommand} */
+function isDrawCommand(value) {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "fill" in value &&
+    "stroke" in value &&
+    "stroke_width" in value &&
+    "render" in value
+  );
+}
 
 /** @param {unknown} value @returns {value is ModelViewer} */
 function isModelViewer(value) {
@@ -1198,14 +1242,59 @@ function hideLayers(viewer, names) {
 }
 
 /**
+ * The schematic's sheet as it reads at any size: the paper filled a step
+ * above the ground, so its edge is the fill's (KiCad's outline around it, a
+ * hairline, goes), and the frame and title block stroked at least a device
+ * pixel wide, where KiCad's hairlines would break up in a small frame.
+ * @param {DocumentViewer} viewer
+ */
+function drawSheet(viewer) {
+  const sheet = viewer.drawing_sheet;
+  const items = sheet.items.bind(sheet);
+  sheet.items = function* () {
+    for (const item of items())
+      if (!("comment" in item && item.comment === "page outline")) yield item;
+  };
+  const renderer = viewer.renderer;
+  const endLayer = renderer.end_layer.bind(renderer);
+  renderer.end_layer = () => {
+    const layer = endLayer();
+    if (!isCanvasLayer(layer)) return layer;
+    for (const command of layer.commands) {
+      if (!isDrawCommand(command)) continue;
+      if (layer.name === ":DrawingSheet:Background" && command.fill !== null)
+        command.fill = PAPER;
+      if (layer.name === ":DrawingSheet" && command.stroke !== null)
+        keepPixelWide(command);
+    }
+    return layer;
+  };
+}
+
+/**
+ * A stroke that stays at least a device pixel wide at any zoom.
+ * @param {DrawCommand} command
+ */
+function keepPixelWide(command) {
+  const width = command.stroke_width;
+  const render = command.render.bind(command);
+  command.render = (context) => {
+    // World units to device pixels, as the layer is drawn.
+    const { a, b } = context.getTransform();
+    command.stroke_width = Math.max(width, 1 / Math.hypot(a, b));
+    render(context);
+  };
+}
+
+/**
  * The view on the site's ground, and every fit (Prism's, an adapter's, or
  * Reset's) eased out by `margin`, as Backplane's canvas presentation does to
  * keep pads and features past a board's outline in view.
  *
  * A board keeps Prism's colors, without the KiCad page around it, which would
- * only show as stray lines. A schematic takes the site's colors, without the
- * white paper, and fits its whole sheet where Prism fits only what is drawn on
- * it, so the frame and title block never sit under the controls.
+ * only show as stray lines. A schematic takes the site's colors, on dark
+ * paper instead of white, and fits its whole sheet where Prism fits only what
+ * is drawn on it, so the frame and title block never sit under the controls.
  * @param {DocumentViewer} viewer
  * @param {DocumentKind} kind
  */
@@ -1215,7 +1304,7 @@ function present(viewer, kind) {
     hideLayers(viewer, [":DrawingSheet"]);
     viewer.theme.background = Color.from_css(GROUND);
   } else {
-    hideLayers(viewer, [":DrawingSheet:Background"]);
+    drawSheet(viewer);
     viewer.theme = {
       ...viewer.theme,
       ...Object.fromEntries(
@@ -1253,15 +1342,25 @@ function present(viewer, kind) {
   viewer.zoom_fit_top_item();
 }
 
-/** The room the tabs take above and the view tools below, in CSS pixels from the frame's edges. */
+/**
+ * The room the controls take, in CSS pixels from the frame's edges: the tabs
+ * above, the view tools below, and the margin they keep at the sides.
+ * @returns {Insets}
+ */
 function chromeInsets() {
   const tabBar = part(document, ".tabs").getBoundingClientRect();
   const tools = part(document, ".tools").getBoundingClientRect();
-  return { top: tabBar.bottom + 4, bottom: innerHeight - tools.top + 4 };
+  return {
+    top: tabBar.bottom + 4,
+    bottom: innerHeight - tools.top + 4,
+    left: tabBar.left,
+    right: innerWidth - tools.right,
+  };
 }
 
 /**
- * Fits leave room for the tabs above and the zoom controls below, whatever
+ * Fits leave room for the tabs above and the zoom controls below, and keep
+ * their margin at the sides (a page's edge never runs off the frame), whatever
  * insets Prism or an adapter asks for besides.
  * @param {DocumentElement} element
  */
@@ -1270,8 +1369,8 @@ function reserveChrome(element) {
   element.setViewportInsets = (insets) => {
     const chrome = chromeInsets();
     set({
-      left: insets?.left ?? 0,
-      right: insets?.right ?? 0,
+      left: Math.max(insets?.left ?? 0, chrome.left),
+      right: Math.max(insets?.right ?? 0, chrome.right),
       top: Math.max(insets?.top ?? 0, chrome.top),
       bottom: Math.max(insets?.bottom ?? 0, chrome.bottom),
     });
