@@ -807,6 +807,10 @@ function forwardEscape() {
     const frame = window.frameElement;
     const outer = frame?.ownerDocument.defaultView;
     if (!frame || !outer || frame.ownerDocument.fullscreenElement) return;
+    // Closing drops this frame, and focus with it; from the box around the
+    // frame, the page can still hand it back to the project's row.
+    const box = frame.parentElement;
+    if (box instanceof outer.HTMLElement) box.focus({ preventScroll: true });
     frame.dispatchEvent(
       new outer.KeyboardEvent("keydown", {
         key: "Escape",
