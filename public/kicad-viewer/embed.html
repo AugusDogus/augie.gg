@@ -119,21 +119,23 @@
       [data-view="schematic"] {
         background: var(--ground);
       }
+      /* Each view fades in once it has drawn and fit; until then Prism's own white and loader stay hidden. */
       .canvas {
         position: absolute;
         inset: 0;
+        opacity: 0;
+        transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      [data-state="ready"] > .canvas {
+        opacity: 1;
       }
       .canvas > * {
         display: block;
         width: 100%;
         height: 100%;
       }
-      [data-view="3d"] .canvas {
-        opacity: 0;
-        transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1);
-      }
-      [data-view="3d"][data-state="ready"] .canvas {
-        opacity: 1;
+      [data-view] ecad-viewer {
+        background: var(--ground);
       }
       .glass {
         background: linear-gradient(180deg, #16232ad9, #0d171ceb);

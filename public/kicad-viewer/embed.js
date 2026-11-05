@@ -194,6 +194,8 @@ function canDrawWebGL() {
   return true;
 }
 
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
 const easeInOut = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
 const easeOut = (t) => 1 - (1 - t) ** 3;
 
@@ -681,6 +683,9 @@ function documentView(panel, url, kind) {
         if (shown) refit(element, viewer);
         else stale = true;
       }).observe(host);
+    // Prism draws on the next frame; the view fades in once it has.
+    await nextFrame();
+    await nextFrame();
     state = { kind: "ready", element, viewer };
     panel.dataset.state = "ready";
     setStatus(panel, { kind: "none" });
