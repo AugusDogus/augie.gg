@@ -194,51 +194,80 @@ function canDrawWebGL() {
   return true;
 }
 
-const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+const nextFrame = () =>
+  new Promise((resolve) => requestAnimationFrame(resolve));
 
 const easeInOut = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
 const easeOut = (t) => 1 - (1 - t) ** 3;
 
+/** How long Prism gets to show a file that is already here before the view gives up on it. */
+const SETTLE_MS = 30000;
+
 /**
- * Prism's <ecad-3d-viewer> on the model, resolved once the model is in its
- * scene. Prism asks its ancestors for a "project" with the model's URL.
+ * Prism's work on a file, as a value. Prism reports some failures only as an
+ * uncaught error or rejection in this window, and a stall not at all, so
+ * those and a deadline fail it too. The browser still logs what was thrown.
  */
-function mountModel(host, src) {
+function settled(work, what) {
   return new Promise((resolve) => {
-    const project = Object.assign(new EventTarget(), {
-      loaded: Promise.resolve(),
-      ov_3d_url: src,
-    });
-    const provide = (event) => {
-      if (event.context_name === "project") event.callback(project);
+    const done = (result) => {
+      clearTimeout(timer);
+      removeEventListener("error", thrown);
+      removeEventListener("unhandledrejection", thrown);
+      resolve(result);
     };
-    // Prism's loader rejects where nothing awaits it; that rejection is this model's failure.
-    const rejected = (event) => {
-      event.preventDefault();
-      finish();
-      element.remove();
-      resolve(
-        fail("The 3D model couldn't be read. Reload the page to try again."),
-      );
-    };
-    const finish = () => {
-      host.removeEventListener("context-request", provide);
-      window.removeEventListener("unhandledrejection", rejected);
-      URL.revokeObjectURL(src);
-    };
-    host.addEventListener("context-request", provide);
-    window.addEventListener("unhandledrejection", rejected);
-    project.addEventListener(
-      "3d:viewer:loaded",
-      () => {
-        finish();
-        resolve(ok(element));
-      },
-      { once: true },
+    const thrown = () => done(fail(`${what}: Prism threw while loading`));
+    const timer = setTimeout(
+      () => done(fail(`${what}: Prism didn't finish in ${SETTLE_MS} ms`)),
+      SETTLE_MS,
     );
-    const element = document.createElement("ecad-3d-viewer");
-    host.append(element);
+    addEventListener("error", thrown);
+    addEventListener("unhandledrejection", thrown);
+    work().then(
+      (value) => done(ok(value)),
+      () => done(fail(`${what}: Prism rejected the file`)),
+    );
   });
+}
+
+/** A step through Prism's or an adapter's internals that may throw, as a value; the cause goes to the console. */
+function attempt(step, what) {
+  try {
+    return ok(step());
+  } catch (error) {
+    console.error(`Board viewer: ${what} failed`, error);
+    return fail(`${what} failed`);
+  }
+}
+
+/**
+ * Prism's <ecad-3d-viewer> on the model, once the model is in its scene.
+ * Prism asks its ancestors for a "project" with the model's URL.
+ */
+async function mountModel(host, src) {
+  const project = Object.assign(new EventTarget(), {
+    loaded: Promise.resolve(),
+    ov_3d_url: src,
+  });
+  const provide = (event) => {
+    if (event.context_name === "project") event.callback(project);
+  };
+  const element = document.createElement("ecad-3d-viewer");
+  host.addEventListener("context-request", provide);
+  const mounted = await settled(
+    () =>
+      new Promise((resolve) => {
+        project.addEventListener("3d:viewer:loaded", () => resolve(element), {
+          once: true,
+        });
+        host.append(element);
+      }),
+    "3D model",
+  );
+  host.removeEventListener("context-request", provide);
+  URL.revokeObjectURL(src);
+  if (!mounted.ok) element.remove();
+  return mounted;
 }
 
 /**
@@ -513,7 +542,7 @@ function modelView(panel, url) {
     setStatus(panel, { kind: "loading", text: "Loading the 3D model" });
     if (!canDrawWebGL()) {
       failed(
-        "This browser can't draw 3D here (WebGL is off or unsupported). The PCB and schematic tabs still work.",
+        "This browser can't draw 3D here (WebGL 2 is off or unsupported). The schematic tab still works.",
         null,
       );
       return;
@@ -530,9 +559,23 @@ function modelView(panel, url) {
     if (!modules.ok) return failed(modules.error, load);
     if (!file.ok) return failed(file.error, load);
     const mounted = await mountModel(host, URL.createObjectURL(file.value));
-    if (!mounted.ok) return failed(mounted.error, null);
-    modules.value.finishBoardModel(mounted.value);
-    const stage = stageModel(mounted.value, modules.value);
+    if (!mounted.ok)
+      return failed(
+        "The 3D model couldn't be read. Reload the page to try again.",
+        null,
+      );
+    const staged = attempt(() => {
+      modules.value.finishBoardModel(mounted.value);
+      return stageModel(mounted.value, modules.value);
+    }, "Showing the 3D model");
+    if (!staged.ok) {
+      mounted.value.remove();
+      return failed(
+        "The 3D model couldn't be shown. Reload the page to try again.",
+        null,
+      );
+    }
+    const stage = staged.value;
     state = { kind: "ready", stage };
     panel.dataset.state = "ready";
     setStatus(panel, { kind: "none" });
@@ -623,10 +666,11 @@ function documentView(panel, url, kind) {
   /** The frame changed size while this view was hidden: it fits again when shown. */
   let stale = false;
 
-  function failed(error) {
+  function failed(error, retry) {
+    host.replaceChildren();
     state = { kind: "failed" };
     panel.dataset.state = "failed";
-    setStatus(panel, { kind: "error", text: error, retry: load });
+    setStatus(panel, { kind: "error", text: error, retry });
   }
 
   async function load() {
@@ -634,18 +678,24 @@ function documentView(panel, url, kind) {
     state = { kind: "loading" };
     panel.dataset.state = "loading";
     setStatus(panel, { kind: "loading", text: `Loading the ${what}` });
+    // Prism draws the board with WebGL 2; the schematic is a 2D canvas.
+    if (kind === "pcb" && !canDrawWebGL())
+      return failed(
+        "This browser can't draw the PCB here (WebGL 2 is off or unsupported). The schematic tab still works.",
+        null,
+      );
     const [file, modules] = await Promise.all([
       fetchText(url, what),
       loadDocumentModules(),
     ]);
-    if (!modules.ok) return failed(modules.error);
-    if (!file.ok) return failed(file.error);
+    if (!modules.ok) return failed(modules.error, load);
+    if (!file.ok) return failed(file.error, load);
     const element = document.createElement("ecad-viewer");
     element.setAttribute("source-mode", "host");
     element.setAttribute("show-header", "false");
     element.setAttribute("hide-chrome", "");
     host.replaceChildren(element);
-    try {
+    const parsed = await settled(async () => {
       await element.replaceSources({
         revisionKey: url.pathname,
         sources: [
@@ -656,33 +706,34 @@ function documentView(panel, url, kind) {
         ],
       });
       await element.ready;
-    } catch {
-      host.replaceChildren();
+    }, what);
+    const viewer = parsed.ok ? innerViewer(element, kind) : null;
+    if (viewer === null)
       return failed(
         `The ${what} couldn't be read. Reload the page to try again.`,
+        null,
       );
-    }
-    const viewer = innerViewer(element, kind);
-    if (viewer === null) {
-      host.replaceChildren();
+    const presented = attempt(() => {
+      element.setActive(shown);
+      reserveChrome(element);
+      element.resize();
+      // The board's outline leaves out pads and jacks past it; the schematic's sheet is its whole extent.
+      present(viewer, kind === "pcb" ? 0.88 : 0.97);
+      remember(viewer);
+      modules.value.installNativeTouch(element);
+      // The schematic adapter sharpens its canvas and refits on resize; the board fits here.
+      if (kind === "schematic") modules.value.installSchematicSizing(element);
+      else
+        new ResizeObserver(() => {
+          if (shown) refit(element, viewer);
+          else stale = true;
+        }).observe(host);
+    }, `Showing the ${what}`);
+    if (!presented.ok)
       return failed(
-        `The ${what} couldn't be read. Reload the page to try again.`,
+        `The ${what} couldn't be shown. Reload the page to try again.`,
+        null,
       );
-    }
-    element.setActive(shown);
-    reserveChrome(element);
-    element.resize();
-    // The board's outline leaves out pads and jacks past it; the schematic's sheet is its whole extent.
-    present(viewer, kind === "pcb" ? 0.88 : 0.97);
-    remember(viewer);
-    modules.value.installNativeTouch(element);
-    // The schematic adapter sharpens its canvas and refits on resize; the board fits here.
-    if (kind === "schematic") modules.value.installSchematicSizing(element);
-    else
-      new ResizeObserver(() => {
-        if (shown) refit(element, viewer);
-        else stale = true;
-      }).observe(host);
     // Prism draws on the next frame; the view fades in once it has.
     await nextFrame();
     await nextFrame();
