@@ -613,6 +613,19 @@ function innerViewer(element, kind) {
   );
 }
 
+/** Leaves out Prism's layers of these names each time it paints, which makes them anew. */
+function hideLayers(viewer, names) {
+  const create = viewer.create_layer_set.bind(viewer);
+  viewer.create_layer_set = () => {
+    const layers = create();
+    for (const name of names) {
+      const layer = layers.by_name(name);
+      if (layer !== undefined) layer.visible = false;
+    }
+    return layers;
+  };
+}
+
 /**
  * The view on the site's ground, and every fit (Prism's, an adapter's, or
  * Reset's) eased out by `margin`, as Backplane's canvas presentation does to
@@ -717,6 +730,8 @@ function documentView(panel, url, kind) {
       element.setActive(shown);
       reserveChrome(element);
       element.resize();
+      // A board shown on its own has no page: its KiCad border and title block would only be stray lines.
+      if (kind === "pcb") hideLayers(viewer, [":DrawingSheet"]);
       // The board's outline leaves out pads and jacks past it; the schematic's sheet is its whole extent.
       present(viewer, kind === "pcb" ? 0.88 : 0.97);
       remember(viewer);
