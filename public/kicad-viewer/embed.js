@@ -319,6 +319,21 @@ async function mountModel(host, src) {
   return mounted;
 }
 
+/**
+ * Backplane's finish, a stop darker for this page: the soldermask at the deep
+ * green of KiCad's own render, and the scene exposed for the dark ground.
+ */
+function deepen(viewer) {
+  const soldermasks = new Set();
+  viewer.content.traverse((object) => {
+    if (!object.isMesh || !/_soldermask(?:_|$)/i.test(object.name)) return;
+    for (const material of [object.material].flat()) soldermasks.add(material);
+  });
+  for (const material of soldermasks) material.color.multiplyScalar(0.55);
+  viewer.state.exposure = -0.6;
+  viewer.updateLights();
+}
+
 /** Each mesh's bounding box corners, in the scene: what the opening view fits. */
 function cornersOf(content, { Box3, Vector3 }) {
   const corners = [];
@@ -360,6 +375,7 @@ function stageModel(element, { three, TrackballControls }) {
   viewer.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   viewer.state.bgColor = GROUND;
   viewer.updateBackground();
+  deepen(viewer);
 
   const size = new Box3()
     .setFromObject(viewer.content)
