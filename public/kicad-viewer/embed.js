@@ -7,7 +7,8 @@
  * The 3D view is KiCAD-Prism's <ecad-3d-viewer>, finished by Backplane's model
  * appearance adapter; the PCB and schematic are Prism's <ecad-viewer>. Every
  * vendored file stays as shipped: this adapts them at runtime, as Backplane's
- * runtime does, without its postMessage protocol.
+ * runtime does, without its postMessage protocol. What it takes from
+ * Backplane's runtime and canvas presentation is MIT (BACKPLANE-LICENSE.txt).
  */
 
 /** The site's ground, under every view, so the poster and the model meet without a seam. */
