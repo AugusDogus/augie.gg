@@ -424,16 +424,38 @@ const easeOut = (t) => 1 - (1 - t) ** 3;
 /** How long Prism gets to show a file that is already here before the view gives up on it. */
 const SETTLE_MS = 30000;
 
+/** Each view's scripts, by URL: what Prism throws belongs to the view whose scripts it came from. */
+const SOURCES = {
+  model: /\/kicad-viewer\/(?:3d-viewer\.js|three\/)/,
+  document: /\/kicad-viewer\/(?:ecad-viewer\.js|parser\.worker\.js)/,
+};
+
+/**
+ * The script URLs an uncaught error or rejection in this window came from:
+ * its file and stack, or nothing when it carries neither.
+ * @param {Event} event
+ */
+function thrownFrom(event) {
+  if (event instanceof ErrorEvent)
+    return `${event.filename}\n${event.error instanceof Error ? (event.error.stack ?? "") : ""}`;
+  if (event instanceof PromiseRejectionEvent && event.reason instanceof Error)
+    return event.reason.stack ?? "";
+  return "";
+}
+
 /**
  * Prism's work on a file, as a value. Prism reports some failures only as an
- * uncaught error or rejection in this window, and a stall not at all, so
- * those and a deadline fail it too. The browser still logs what was thrown.
+ * uncaught error or rejection in this window, and a stall not at all, so a
+ * deadline fails it too, as does what is thrown from `source` while it runs;
+ * what another view's scripts throw leaves it be. The browser still logs what
+ * was thrown.
  * @template T
  * @param {() => Promise<T>} work
  * @param {string} what
+ * @param {RegExp} source
  * @returns {Promise<Result<T>>}
  */
-function settled(work, what) {
+function settled(work, what, source) {
   return new Promise((resolve) => {
     /** @param {Result<T>} result */
     const done = (result) => {
@@ -442,7 +464,11 @@ function settled(work, what) {
       removeEventListener("unhandledrejection", thrown);
       resolve(result);
     };
-    const thrown = () => done(fail(`${what}: Prism threw while loading`));
+    /** @param {Event} event */
+    const thrown = (event) => {
+      if (source.test(thrownFrom(event)))
+        done(fail(`${what}: Prism threw while loading`));
+    };
     const timer = setTimeout(
       () => done(fail(`${what}: Prism didn't finish in ${SETTLE_MS} ms`)),
       SETTLE_MS,
@@ -454,6 +480,25 @@ function settled(work, what) {
       () => done(fail(`${what}: Prism rejected the file`)),
     );
   });
+}
+
+/** The end of the document Prism is reading, if any. */
+let reading = Promise.resolve();
+
+/**
+ * Prism's reading of a PCB or schematic, after any other's: the two share its
+ * scripts, so only one at a time can tell what it throws apart.
+ * @template T
+ * @param {() => Promise<T>} work
+ * @returns {Promise<T>}
+ */
+function inTurn(work) {
+  const turn = reading.then(work);
+  reading = turn.then(
+    () => undefined,
+    () => undefined,
+  );
+  return turn;
 }
 
 /**
@@ -504,11 +549,28 @@ async function mountModel(host, src) {
       host.append(element);
     });
   host.addEventListener("context-request", provide);
-  const mounted = await settled(appended, "3D model");
+  const mounted = await settled(appended, "3D model", SOURCES.model);
   host.removeEventListener("context-request", provide);
   URL.revokeObjectURL(src);
-  if (!mounted.ok) element.remove();
+  if (!mounted.ok) releaseModel(element);
   return mounted;
+}
+
+/**
+ * Drops a 3D element that won't be shown. Prism's viewer draws every frame
+ * for as long as it lives, so its loop ends here and its WebGL contexts go
+ * back, and trying again starts clean.
+ * @param {HTMLElement} element
+ */
+function releaseModel(element) {
+  element.remove();
+  const viewer = modelViewerOf(element);
+  if (viewer === null) return;
+  viewer.animate = () => undefined;
+  for (const renderer of [viewer.renderer, viewer.axesRenderer]) {
+    renderer.dispose();
+    if (!renderer.getContext().isContextLost()) renderer.forceContextLoss();
+  }
 }
 
 /**
@@ -1044,8 +1106,8 @@ function modelView(panel, url) {
     const mounted = await mountModel(host, URL.createObjectURL(file.value));
     if (!mounted.ok)
       return failed(
-        "The 3D model couldn't be read. Reload the page to try again.",
-        null,
+        "The 3D model couldn't be read. Try again, or reload the page.",
+        retry,
       );
     const viewer = modelViewerOf(mounted.value);
     const staged =
@@ -1056,7 +1118,7 @@ function modelView(panel, url) {
             return stageModel(viewer, panel, modules.value);
           }, "Showing the 3D model");
     if (!staged.ok) {
-      mounted.value.remove();
+      releaseModel(mounted.value);
       return failed(
         "The 3D model couldn't be shown. Reload the page to try again.",
         null,
@@ -1272,23 +1334,29 @@ function documentView(panel, url, kind) {
     element.setAttribute("show-header", "false");
     element.setAttribute("hide-chrome", "");
     host.replaceChildren(element);
-    const parsed = await settled(async () => {
-      await element.replaceSources({
-        revisionKey: url.pathname,
-        sources: [
-          {
-            filename: fileName(url),
-            content: file.value,
-          },
-        ],
-      });
-      await element.ready;
-    }, what);
+    const parsed = await inTurn(() =>
+      settled(
+        async () => {
+          await element.replaceSources({
+            revisionKey: url.pathname,
+            sources: [
+              {
+                filename: fileName(url),
+                content: file.value,
+              },
+            ],
+          });
+          await element.ready;
+        },
+        what,
+        SOURCES.document,
+      ),
+    );
     const viewer = parsed.ok ? innerViewer(element, kind) : null;
     if (viewer === null)
       return failed(
-        `The ${what} couldn't be read. Reload the page to try again.`,
-        null,
+        `The ${what} couldn't be read. Try again, or reload the page.`,
+        retry,
       );
     const presented = attempt(() => {
       element.setActive(shown);
