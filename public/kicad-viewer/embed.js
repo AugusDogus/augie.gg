@@ -30,6 +30,13 @@ const MAKE_ROOM_MS = 700;
 /** The schematic's paper, a step above the ground. */
 const PAPER = "#0f1a1f";
 /**
+ * The schematic's rules, by the names Prism gives the items: the sheet's
+ * frame and title block lines and boxes, and the section boxes drawn on it.
+ * They keep at least a device pixel wide; text, stroked too, keeps its own
+ * weight, where a pixel-wide stroke would fill small letters in at 1x.
+ */
+const RULES = new Set(["Line", "Rect", "Rectangle"]);
+/**
  * The schematic in the site's colors instead of on white paper: KiCad's own
  * scheme (green wires, red symbols, teal text, blue notes) lifted to read on
  * the ground.
@@ -176,8 +183,17 @@ const fail = (error) => ({ ok: false, error });
 /**
  * KiCanvas's board or schematic viewer, inside <ecad-viewer>.
  * @typedef {object} DocumentViewer
- * @property {{ background_color: Color, gl?: WebGL2RenderingContext, end_layer(): unknown }} renderer
- *   `end_layer` hands back each layer it has just recorded.
+ * @property {{
+ *   background_color: Color,
+ *   gl?: WebGL2RenderingContext,
+ *   line(...shape: unknown[]): void,
+ *   start_bbox(): void,
+ *   end_bbox(item: object): unknown,
+ *   end_layer(): unknown,
+ * }} renderer
+ *   Painting an item strokes each of its lines with `line`, between
+ *   `start_bbox` and `end_bbox`, which is handed the item; `end_layer` hands
+ *   back each layer it has just recorded.
  * @property {{ background: Color }} theme
  * @property {{ camera: { zoom: number, center: { x: number, y: number, set(x: number, y: number): void }, bbox: BBox } }} viewport
  * @property {{ width: number, height: number, items(): Iterable<object> }} drawing_sheet
@@ -198,6 +214,7 @@ const fail = (error) => ({ ok: false, error });
 /**
  * A fill or stroke in a 2D layer.
  * @typedef {object} DrawCommand
+ * @property {Path2D} path
  * @property {string | null} fill A CSS color.
  * @property {string | null} stroke A CSS color.
  * @property {number} stroke_width In world units.
@@ -221,6 +238,7 @@ function isDrawCommand(value) {
   return (
     typeof value === "object" &&
     value !== null &&
+    "path" in value &&
     "fill" in value &&
     "stroke" in value &&
     "stroke_width" in value &&
@@ -1244,8 +1262,8 @@ function hideLayers(viewer, names) {
 /**
  * The schematic's sheet as it reads at any size: the paper filled a step
  * above the ground, so its edge is the fill's (KiCad's outline around it, a
- * hairline, goes), and the frame and title block stroked at least a device
- * pixel wide, where KiCad's hairlines would break up in a small frame.
+ * hairline, goes), and its rules (RULES) stroked at least a device pixel
+ * wide, where KiCad's hairlines would break up in a small frame.
  * @param {DocumentViewer} viewer
  */
 function drawSheet(viewer) {
@@ -1256,6 +1274,7 @@ function drawSheet(viewer) {
       if (!("comment" in item && item.comment === "page outline")) yield item;
   };
   const renderer = viewer.renderer;
+  const rules = rulePaths(renderer);
   const endLayer = renderer.end_layer.bind(renderer);
   renderer.end_layer = () => {
     const layer = endLayer();
@@ -1264,11 +1283,57 @@ function drawSheet(viewer) {
       if (!isDrawCommand(command)) continue;
       if (layer.name === ":DrawingSheet:Background" && command.fill !== null)
         command.fill = PAPER;
-      if (layer.name === ":DrawingSheet" && command.stroke !== null)
+      if (command.stroke !== null && rules.has(command.path))
         keepPixelWide(command);
     }
     return layer;
   };
+}
+
+/**
+ * The paths the renderer strokes the rules (RULES) along, from here on.
+ * Prism keeps the layer it is recording to itself until the layer is done, so
+ * a stroke is known by its path: while the renderer strokes a line, the
+ * Path2D it makes is this page's own, and the paths made between an item's
+ * `start_bbox` and `end_bbox` are that item's.
+ * @param {DocumentViewer["renderer"]} renderer
+ * @returns {WeakSet<Path2D>}
+ */
+function rulePaths(renderer) {
+  /** @type {WeakSet<Path2D>} */
+  const rules = new WeakSet();
+  /** @type {Path2D[]} */
+  let stroked = [];
+  const NativePath = globalThis.Path2D;
+  class StrokePath extends NativePath {
+    /** @param {ConstructorParameters<typeof Path2D>} path */
+    constructor(...path) {
+      super(...path);
+      stroked.push(this);
+    }
+  }
+  const line = renderer.line.bind(renderer);
+  renderer.line = (...shape) => {
+    globalThis.Path2D = StrokePath;
+    try {
+      line(...shape);
+    } finally {
+      globalThis.Path2D = NativePath;
+    }
+  };
+  const startBox = renderer.start_bbox.bind(renderer);
+  renderer.start_bbox = () => {
+    stroked = [];
+    startBox();
+  };
+  const endBox = renderer.end_bbox.bind(renderer);
+  renderer.end_bbox = (item) => {
+    if (RULES.has(item.constructor.name))
+      for (const path of stroked) rules.add(path);
+    stroked = [];
+    return endBox(item);
+  };
+  return rules;
 }
 
 /**
