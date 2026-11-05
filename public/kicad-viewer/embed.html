@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <title>Board viewer</title>
+    <link
+      rel="preload"
+      href="./inter-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <style>
+      @font-face {
+        font-family: "Inter";
+        src: url("./inter-latin.woff2") format("woff2");
+        font-weight: 400 650;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --fg: #f2f6f7;
+        --fg-2: #eef4f6ad;
+        --fg-3: #eef4f682;
+        --accent: #8fe3f0;
+        --ground: #0a1317;
+        --control: 24px;
+        --inset: 10px;
+        font-family: "Inter", system-ui, sans-serif;
+        font-optical-sizing: auto;
+        font-synthesis: none;
+        letter-spacing: -0.006em;
+        color: var(--fg);
+        -webkit-font-smoothing: antialiased;
+      }
+      @media (pointer: coarse) {
+        :root {
+          --control: 32px;
+        }
+      }
+      @media (max-width: 400px) {
+        :root {
+          --inset: 8px;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        /* Every drag in here belongs to the viewer: none scrolls the page around it. */
+        touch-action: none;
+        overscroll-behavior: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* In a frame it stays clear until the model draws, so the poster behind it shows. */
+      html[data-standalone] body {
+        background: var(--ground);
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      [role="tabpanel"] {
+        position: absolute;
+        inset: 0;
+        border-radius: 8px;
+      }
+      /* The ring sits over the canvas, which would cover an outline. */
+      [role="tabpanel"]:focus-visible {
+        outline: none;
+      }
+      [role="tabpanel"]::after {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+      }
+      [role="tabpanel"]:focus-visible::after {
+        box-shadow: inset 0 0 0 2px var(--accent);
+      }
+      [data-view="3d"] canvas {
+        cursor: grab;
+      }
+      [data-view="3d"][data-dragging] canvas {
+        cursor: grabbing;
+      }
+      .hint {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      /* Hidden views keep their size, so their canvases never measure zero. */
+      [role="tabpanel"][hidden] {
+        display: block;
+        visibility: hidden;
+      }
+      [data-view="pcb"],
+      [data-view="schematic"] {
+        background: var(--ground);
+      }
+      /* Each view fades in once it has drawn and fit; until then Prism's own white and loader stay hidden. */
+      .canvas {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      [data-state="ready"] > .canvas {
+        opacity: 1;
+      }
+      .canvas > * {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      [data-view] ecad-viewer {
+        background: var(--ground);
+      }
+      .glass {
+        background: linear-gradient(180deg, #16232ad9, #0d171ceb);
+        -webkit-backdrop-filter: blur(16px) saturate(1.4);
+        backdrop-filter: blur(16px) saturate(1.4);
+        border: 1px solid #ffffff17;
+        border-radius: 10px;
+        box-shadow:
+          inset 0 1px 0 #ffffff12,
+          0 1px 2px #00000040,
+          0 8px 24px -8px #00000080;
+      }
+      .group {
+        position: absolute;
+        z-index: 2;
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+      }
+      .tabs {
+        top: var(--inset);
+        left: var(--inset);
+      }
+      .tools {
+        right: var(--inset);
+        bottom: var(--inset);
+      }
+      .tab,
+      .tool {
+        height: var(--control);
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--fg-2);
+        transition:
+          background-color 150ms ease-out,
+          color 150ms ease-out;
+      }
+      .tab {
+        padding: 0 10px;
+        font-size: 12.5px;
+        font-weight: 500;
+      }
+      .tab[aria-selected="true"] {
+        color: var(--fg);
+        background: #ffffff1a;
+        box-shadow: inset 0 0 0 1px #ffffff12;
+      }
+      .tool {
+        display: grid;
+        place-items: center;
+        width: var(--control);
+        padding: 0;
+      }
+      .tool svg {
+        width: 15px;
+        height: 15px;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .tab:hover,
+        .tool:hover {
+          color: var(--fg);
+        }
+        .tab:not([aria-selected="true"]):hover,
+        .tool:hover {
+          background: #ffffff0d;
+        }
+      }
+      .tool:active {
+        scale: 0.94;
+      }
+      .status {
+        position: absolute;
+        z-index: 1;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 56px 24px;
+        pointer-events: none;
+      }
+      .status:empty {
+        display: none;
+      }
+      .message {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 34em;
+        padding: 8px 14px;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: var(--fg-2);
+        text-align: left;
+        pointer-events: auto;
+      }
+      .message[data-tone="error"] {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px 14px;
+        color: var(--fg);
+      }
+      .spinner {
+        flex: none;
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid #ffffff26;
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 800ms linear infinite;
+      }
+      .retry {
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid #ffffff1f;
+        border-radius: 8px;
+        background: #ffffff14;
+        font-size: 12.5px;
+        font-weight: 500;
+      }
+      @keyframes spin {
+        to {
+          rotate: 360deg;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+      /* Narrow or short frames keep only Reset beside the view; scrolling or pinching zooms it. */
+      @media (max-width: 360px) {
+        .tab {
+          padding: 0 8px;
+        }
+      }
+      @media (max-width: 360px), (max-height: 240px) {
+        .tool:is([data-action="in"], [data-action="out"]) {
+          display: none;
+        }
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./three/three.module.js",
+          "three/addons/": "./three/addons/",
+          "3d-viewer": "./3d-viewer.js"
+        }
+      }
+    </script>
+    <script type="module" src="./embed.js"></script>
+  </head>
+  <body>
+    <div role="tablist" aria-label="Board views" class="group glass tabs">
+      <button
+        type="button"
+        role="tab"
+        id="tab-3d"
+        class="tab"
+        aria-controls="view-3d"
+        aria-selected="true"
+      >
+        3D
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="tab-pcb"
+        class="tab"
+        aria-controls="view-pcb"
+        aria-selected="false"
+        tabindex="-1"
+      >
+        PCB
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="tab-schematic"
+        class="tab"
+        aria-controls="view-schematic"
+        aria-selected="false"
+        tabindex="-1"
+      >
+        Schematic
+      </button>
+    </div>
+    <section
+      id="view-3d"
+      role="tabpanel"
+      aria-labelledby="tab-3d"
+      aria-describedby="hint-3d"
+      data-view="3d"
+      data-state="loading"
+      tabindex="0"
+    >
+      <div class="canvas"></div>
+      <!-- Here before the script runs, so a slow link shows the load at once; embed.js says the same. -->
+      <div class="status" role="status" data-said="loading: Loading the 3D model">
+        <div class="message glass">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading the 3D model</span>
+        </div>
+      </div>
+    </section>
+    <section
+      id="view-pcb"
+      role="tabpanel"
+      aria-labelledby="tab-pcb"
+      aria-describedby="hint-sheet"
+      data-view="pcb"
+      tabindex="0"
+      hidden
+    >
+      <div class="canvas"></div>
+      <div class="status" role="status"></div>
+    </section>
+    <section
+      id="view-schematic"
+      role="tabpanel"
+      aria-labelledby="tab-schematic"
+      aria-describedby="hint-sheet"
+      data-view="schematic"
+      tabindex="0"
+      hidden
+    >
+      <div class="canvas"></div>
+      <div class="status" role="status"></div>
+    </section>
+    <!-- Read only through each view's aria-describedby, not in passing. -->
+    <p class="hint" id="hint-3d" aria-hidden="true">
+      Drag to turn the board, and scroll or pinch to zoom. Focused, arrow keys
+      turn it and plus and minus zoom.
+    </p>
+    <p class="hint" id="hint-sheet" aria-hidden="true">
+      Drag to pan, and scroll or pinch to zoom. Focused, arrow keys pan and plus
+      and minus zoom.
+    </p>
+    <div role="toolbar" aria-label="View" class="group glass tools">
+      <button
+        type="button"
+        class="tool"
+        data-action="out"
+        aria-label="Zoom out"
+        title="Zoom out"
+      >
+        <svg viewBox="0 0 256 256" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M228 128a12 12 0 0 1-12 12H40a12 12 0 0 1 0-24h176a12 12 0 0 1 12 12Z"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="tool"
+        data-action="in"
+        aria-label="Zoom in"
+        title="Zoom in"
+      >
+        <svg viewBox="0 0 256 256" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M228 128a12 12 0 0 1-12 12h-76v76a12 12 0 0 1-24 0v-76H40a12 12 0 0 1 0-24h76V40a12 12 0 0 1 24 0v76h76a12 12 0 0 1 12 12Z"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="tool"
+        data-action="reset"
+        aria-label="Reset view"
+        title="Reset view"
+      >
+        <svg viewBox="0 0 256 256" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M228 128a100 100 0 0 1-98.66 100H128a99.39 99.39 0 0 1-68.62-27.29 12 12 0 0 1 16.48-17.45 76 76 0 1 0-1.57-109c-.13.13-.25.25-.39.37L54.89 92H72a12 12 0 0 1 0 24H24a12 12 0 0 1-12-12V56a12 12 0 0 1 24 0v20.72L58.48 56.2A100 100 0 0 1 228 128Z"
+          />
+        </svg>
+      </button>
+    </div>
+  </body>
+</html>

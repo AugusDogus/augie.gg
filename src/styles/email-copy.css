@@ -1,0 +1,80 @@
+/* Copy states share one grid cell, so a control keeps its width while its
+   label crossfades. Keyboard activation swaps instantly. */
+.copy-swap {
+  display: inline-grid;
+  place-items: center;
+  gap: inherit;
+}
+.copy-swap > * {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+  transition:
+    opacity 200ms var(--ease-out),
+    filter 200ms var(--ease-out),
+    scale 200ms var(--ease-out);
+}
+.copy-swap > [data-active="false"] {
+  opacity: 0;
+  filter: blur(2px);
+  scale: 0.96;
+}
+.copy-swap > [data-enter="true"] {
+  @starting-style {
+    opacity: 0;
+    filter: blur(2px);
+    scale: 0.96;
+  }
+}
+.copy-swap[data-instant="true"] > * {
+  transition: none;
+}
+.copy-link {
+  white-space: nowrap;
+}
+.copy-link > button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-fg);
+  text-decoration: underline;
+  text-decoration-color: #ffffff40;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  border-radius: 4px;
+  outline-offset: 1px;
+  transition: text-decoration-color 150ms var(--ease-out);
+}
+.copy-link > button > span:first-child {
+  user-select: text;
+}
+.copy-link .copy-swap {
+  align-self: center;
+  color: var(--color-fg-3);
+}
+.copy-link .copy-swap svg {
+  width: 14px;
+  height: 14px;
+}
+.copy-link .copy-swap > :last-child {
+  color: var(--color-live);
+}
+@media (hover: hover) and (pointer: fine) {
+  .copy-link > button:hover {
+    text-decoration-color: var(--color-fg-2);
+  }
+  .copy-link > button:hover .copy-swap > :first-child {
+    color: var(--color-fg-2);
+  }
+}
+.copy-link-hint {
+  margin-left: 8px;
+  color: var(--color-fg-2);
+}
+.copy-link-print {
+  display: none;
+}

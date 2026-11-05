@@ -25,7 +25,12 @@
       "version": "19.3.0"
     }
   },
-  "ignorePatterns": [".next", "node_modules"],
+  "ignorePatterns": [
+    ".next",
+    "node_modules",
+    "public/kicad-viewer/**",
+    "!public/kicad-viewer/embed.js"
+  ],
   "rules": {
     "import/no-unassigned-import": "off",
     "jsx-a11y/heading-has-content": "off",

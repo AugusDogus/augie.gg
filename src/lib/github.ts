@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { env } from "~/env.js";
 
 const GITHUB_LOGIN = "AugusDogus";
 const ENDPOINT = "https://api.github.com/graphql";
@@ -57,7 +56,7 @@ const responseSchema = z.object({
                 contributionDays: z.array(
                   z.object({
                     date: z.string(),
-                    weekday: z.number().min(0).max(6),
+                    weekday: z.number().int().min(0).max(6),
                     contributionCount: z.number(),
                     contributionLevel: contributionLevelSchema,
                   }),
@@ -71,14 +70,14 @@ const responseSchema = z.object({
   }),
 });
 
-export interface ContributionDay {
+export type ContributionDay = {
   /** Calendar date, `YYYY-MM-DD`. */
   date: string;
   count: number;
   level: ContributionLevel;
-}
+};
 
-export interface ContributionCalendar {
+export type ContributionCalendar = {
   total: number;
   /**
    * Weeks as columns, each a fixed 7 slots indexed by weekday (Sun..Sat).
@@ -88,19 +87,27 @@ export interface ContributionCalendar {
   weeks: (ContributionDay | null)[][];
   firstDay: string;
   lastDay: string;
-}
+};
 
 export type CalendarResult =
   | { ok: true; calendar: ContributionCalendar }
   | { ok: false; reason: string };
 
+/** Reads the public contribution calendar; needs a GITHUB_TOKEN with no scopes. */
 export async function fetchContributionCalendar(): Promise<CalendarResult> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token)
+    return {
+      ok: false,
+      reason:
+        "GITHUB_TOKEN is not set, so the contribution graph is hidden. Add a classic token with no scopes to show it.",
+    };
   let response: Response;
   try {
     response = await fetch(ENDPOINT, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -126,46 +133,37 @@ export async function fetchContributionCalendar(): Promise<CalendarResult> {
   }
 
   const parsed = responseSchema.safeParse(await response.json());
-  if (!parsed.success) {
+  if (!parsed.success)
     return {
       ok: false,
       reason: `Unexpected GitHub GraphQL response shape: ${parsed.error.message}`,
     };
-  }
 
   const user = parsed.data.data.user;
-  if (user === null) {
+  if (user === null)
     return { ok: false, reason: `GitHub user "${GITHUB_LOGIN}" not found.` };
-  }
 
   const calendar = user.contributionsCollection.contributionCalendar;
   const days = calendar.weeks.flatMap((week) => week.contributionDays);
   const firstDay = days.at(0);
   const lastDay = days.at(-1);
-  if (firstDay === undefined || lastDay === undefined) {
+  if (firstDay === undefined || lastDay === undefined)
     return {
       ok: false,
       reason: "GitHub returned an empty contribution calendar.",
     };
-  }
 
   const weeks = calendar.weeks.map((week) => {
-    const column: (ContributionDay | null)[] = [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    ];
-    for (const day of week.contributionDays) {
+    const column: (ContributionDay | null)[] = Array.from(
+      { length: 7 },
+      () => null,
+    );
+    for (const day of week.contributionDays)
       column[day.weekday] = {
         date: day.date,
         count: day.contributionCount,
         level: day.contributionLevel,
       };
-    }
     return column;
   });
 

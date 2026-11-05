@@ -1,153 +1,338 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-
-@custom-variant dark (&:is(.dark *));
-
+@import "./email-copy.css";
+@import "./resume.css";
+@import "./flight-poster.css";
+/* Wide side layouts with a hovering pointer, where projects open on the stage
+   (useStageLayout in src/components/work/layout.ts). */
+@custom-variant stage (@media (width > 1000px) and (aspect-ratio > 5 / 4) and (hover: hover) and (pointer: fine));
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /* Primary, secondary, and tertiary text on dark glass. */
+  --color-fg: #f2f6f7;
+  --color-fg-2: #eef4f6ad;
+  --color-fg-3: #eef4f682;
+  --color-accent: #8fe3f0;
+  --color-line: #ffffff14;
+  --color-progress: #f2c94c;
+  --color-live: #4cd7a0;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
-
-:root {
-  color-scheme: light;
-  --background: var(--color-white);
-  --foreground: var(--color-neutral-800);
-  --card: var(--color-white);
-  --card-foreground: var(--color-neutral-800);
-  --popover: var(--color-white);
-  --popover-foreground: var(--color-neutral-800);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: --alpha(var(--color-black) / 4%);
-  --secondary-foreground: var(--color-neutral-800);
-  --muted: --alpha(var(--color-black) / 4%);
-  --muted-foreground: color-mix(
-    in srgb,
-    var(--color-neutral-500) 90%,
-    var(--color-black)
-  );
-  --accent: --alpha(var(--color-black) / 4%);
-  --accent-foreground: var(--color-neutral-800);
-  --destructive: var(--color-red-500);
-  --border: --alpha(var(--color-black) / 8%);
-  --input: --alpha(var(--color-black) / 10%);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: var(--color-white);
-  --sidebar-foreground: var(--color-neutral-800);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: --alpha(var(--color-black) / 4%);
-  --sidebar-accent-foreground: var(--color-neutral-800);
-  --sidebar-border: --alpha(var(--color-black) / 8%);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
+.skip-link {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  top: -70px;
+  z-index: 60;
+  background: var(--color-fg);
+  color: #0a1317;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
 }
-
-.dark {
-  color-scheme: dark;
-  --background: color-mix(
-    in srgb,
-    var(--color-neutral-950) 95%,
-    var(--color-white)
-  );
-  --foreground: var(--color-neutral-100);
-  --card: color-mix(in srgb, var(--background) 98%, var(--color-white));
-  --card-foreground: var(--color-neutral-100);
-  --popover: color-mix(in srgb, var(--background) 98%, var(--color-white));
-  --popover-foreground: var(--color-neutral-100);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: --alpha(var(--color-white) / 4%);
-  --secondary-foreground: var(--color-neutral-100);
-  --muted: --alpha(var(--color-white) / 4%);
-  --muted-foreground: color-mix(
-    in srgb,
-    var(--color-neutral-500) 90%,
-    var(--color-white)
-  );
-  --accent: --alpha(var(--color-white) / 4%);
-  --accent-foreground: var(--color-neutral-100);
-  --destructive: color-mix(
-    in srgb,
-    var(--color-red-500) 90%,
-    var(--color-white)
-  );
-  --border: --alpha(var(--color-white) / 6%);
-  --input: --alpha(var(--color-white) / 8%);
-  --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: color-mix(in srgb, var(--background) 98%, var(--color-white));
-  --sidebar-foreground: var(--color-neutral-100);
-  --sidebar-primary: oklch(0.92 0.004 286.32);
-  --sidebar-primary-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-accent: --alpha(var(--color-white) / 4%);
-  --sidebar-accent-foreground: var(--color-neutral-100);
-  --sidebar-border: --alpha(var(--color-white) / 6%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+.skip-link:focus {
+  top: 16px;
 }
-
-/* Sugar-high syntax highlighting - Tokyo Night theme */
-:root {
-  --sh-class: #7aa2f7;
-  --sh-sign: #89ddff;
-  --sh-string: #9ece6a;
-  --sh-keyword: #bb9af7;
-  --sh-comment: #565f89;
-  --sh-jsxliterals: #7aa2f7;
-  --sh-property: #73daca;
-  --sh-entity: #e0af68;
+.artwork {
+  /* Keep the art at least 60vw wide without crowding out the blurred backdrop,
+     but never overscan more than 12% of the height: on 32:9 the bird stays
+     whole and clear of the dock. */
+  --artwork-height: max(100vh, min(calc(60vw * 874 / 1200), 112vh));
+  position: fixed;
+  /* A modal's scroll lock removes the scrollbar; keep the art where it was,
+     and let the blurred backdrop fill the vacated gutter. */
+  inset: calc((100vh - var(--artwork-height)) / 2) 0 auto 0;
+  padding-right: var(--removed-body-scroll-bar-size, 0px);
+  height: var(--artwork-height);
+  overflow: hidden;
+  pointer-events: none;
+  /* The canvas fills the content box; the clips below query its shape. */
+  container-type: size;
 }
-
+.artwork::before {
+  content: "";
+  position: absolute;
+  inset: -45px;
+  background-position: center;
+  background-size: cover;
+  filter: blur(32px) brightness(0.72) saturate(0.78);
+}
+/* Past its feather the drawn painting is opaque, so clip the backdrop to the
+   feather side (4px inside the opaque edge): the compositor then stops drawing
+   it under the painting every frame. The canvas places the art as fitArt does:
+   pinned right at full height when wide, at the top at full width when tall.
+   Within 1% of the art's own shape the canvas's rounded size may pick either
+   layout, so there is no clip. Nor is there while a scroll lock leaves a
+   gutter (any nonzero bar size): the backdrop shows beside the painting too. */
+@container (aspect-ratio > 1212 / 874) {
+  .artwork[data-ready="true"]::before {
+    clip-path: inset(
+      0
+        max(
+          0px,
+          41px + 100cqh * 1000 / 874 -
+            var(--removed-body-scroll-bar-size, 0px) * 10000
+        )
+        0 0
+    );
+  }
+}
+@container (aspect-ratio < 1188 / 874) {
+  .artwork[data-ready="true"]::before {
+    clip-path: inset(
+      max(
+          0px,
+          41px + 100cqw * 700 / 1200 -
+            var(--removed-body-scroll-bar-size, 0px) * 10000
+        )
+        0 0 0
+    );
+  }
+}
+#sky,
+#sky-gl {
+  display: block;
+  filter: brightness(0.76) saturate(0.8);
+  visibility: hidden;
+}
+#sky {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+/* While the art animates, WebGL draws it straight onto this canvas, laid
+   over #sky's box, and #sky hides: no frame is copied between canvases. */
+#sky-gl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% - var(--removed-body-scroll-bar-size, 0px));
+  height: 100%;
+}
+/* A cinematic scrim: deep on the content side, clear over the painting. */
+.artwork::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, #060d1166, transparent 140px),
+    linear-gradient(
+      90deg,
+      #060d11e6 0%,
+      #060d11c2 max(28%, calc(var(--gutter) + 440px)),
+      #060d1166 max(46%, calc(var(--gutter) + 660px)),
+      transparent max(66%, calc(var(--gutter) + 880px))
+    );
+}
+@media (max-width: 1000px), (aspect-ratio <= 5 / 4) {
+  :root {
+    --gutter: max(28px, env(safe-area-inset-left), env(safe-area-inset-right));
+  }
+  .artwork::after {
+    background: linear-gradient(
+      180deg,
+      #060d11b3 0%,
+      #060d11a6 50%,
+      #060d11f0 72%
+    );
+  }
+}
+/* Narrow but wide windows (landscape phones): the art is pinned right at full
+   height, so shade from the column side like desktop. */
+@media (max-width: 1000px) and (aspect-ratio > 1200 / 874) {
+  .artwork::after {
+    background:
+      linear-gradient(180deg, #060d1166, transparent 140px),
+      linear-gradient(
+        90deg,
+        #060d11e6 0,
+        #060d11c2 calc(var(--gutter) + 440px),
+        #060d1180 calc(var(--gutter) + 560px),
+        transparent calc(var(--gutter) + 780px)
+      );
+  }
+}
+@media (max-width: 600px) {
+  :root {
+    --gutter: max(18px, env(safe-area-inset-left), env(safe-area-inset-right));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+.artwork-poster {
+  position: absolute;
+  top: 0;
+  right: var(--removed-body-scroll-bar-size, 0px);
+  width: min(100vw, calc(var(--artwork-height) * 1200 / 874));
+  aspect-ratio: 1200 / 874;
+  background-size: 100% 100%;
+  filter: brightness(0.76) saturate(0.8);
+  mask-image: linear-gradient(black 80.0915%, transparent);
+}
+@media (aspect-ratio > 1200 / 874) {
+  .artwork-poster {
+    mask-image: linear-gradient(90deg, transparent, black 16.6667%);
+  }
+  /* Wide windows show more blurred backdrop beside the painting; keep it a
+     dark field, not a grey haze. */
+  .artwork::before {
+    filter: blur(32px) brightness(0.5) saturate(0.78);
+  }
+}
+.artwork[data-ready="true"] :is(#sky, #sky-gl) {
+  visibility: visible;
+}
+.artwork[data-ready="true"] .artwork-poster {
+  visibility: hidden;
+}
 @layer base {
+  :root {
+    font-family: var(--font-inter), system-ui, sans-serif;
+    font-optical-sizing: auto;
+    font-synthesis: none;
+    line-height: normal;
+    letter-spacing: -0.006em;
+    color: var(--color-fg);
+    background: #0a1317;
+    color-scheme: dark;
+    --gutter: max(
+      clamp(24px, 5vw, 80px),
+      env(safe-area-inset-left),
+      env(safe-area-inset-right)
+    );
+  }
   * {
-    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+  }
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button,
+  input {
+    font: inherit;
+    color: inherit;
+  }
+  button,
+  summary {
+    cursor: pointer;
+  }
+  button,
+  a,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  /* Focus scrolling stops short of the edge, so rings are never cut off. */
+  :where(a, button, input, summary, [tabindex="0"]) {
+    scroll-margin-block: 16px;
+  }
+  ::selection {
+    background: #8fe3f04d;
+  }
+  h1:focus,
+  main:focus {
+    outline: none;
+  }
+  [hidden] {
+    display: none !important;
+  }
+}
+@layer components {
+  /* Dark glass. The flight engine also treats .material as UI, so the cursor
+     never stirs the painting through a panel. */
+  .material {
+    position: relative;
+    background: linear-gradient(180deg, #16232acc, #0d171ce0);
+    backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid #ffffff17;
+    border-radius: 14px;
+    box-shadow:
+      inset 0 1px 0 #ffffff12,
+      0 1px 2px #00000040,
+      0 24px 64px -16px #00000080;
+  }
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 5px;
+    border: 1px solid #ffffff1f;
+    background: #ffffff0f;
+    color: var(--color-fg-2);
+    font-family:
+      var(--font-geist-mono), var(--font-inter), ui-monospace, monospace;
+    font-size: 11px;
+    line-height: 1;
+  }
+  /* The page's one orchestrated moment: the interface settles in over the art. */
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-settled]) .rise {
+      animation: rise 700ms var(--ease-out) both;
+      animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+    }
+    /* Glass panels animate themselves: an animated ancestor would cut off
+       their backdrop blur until it finished. */
+    :root:not([data-settled]) .rise-each > * {
+      animation: settle 700ms var(--ease-out) both;
+      animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+    }
+    :root:not([data-settled]) .rise-each > :nth-child(2) {
+      animation-delay: calc(var(--i, 0) * 70ms + 190ms);
+    }
+    :root:not([data-settled]) .rise-each > :nth-child(3) {
+      animation-delay: calc(var(--i, 0) * 70ms + 260ms);
+    }
+  }
+  /* Display headline: Inter's display cut with a light-to-mist fill. */
+  .display {
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.98;
+    /* Room below the line box so the clipped fill reaches descenders. */
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+    background: linear-gradient(180deg, #ffffff 35%, #ffffffa6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
 }

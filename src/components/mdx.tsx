@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { CopyEmailLink } from "~/components/copy-email";
 import {
   isValidElement,
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from "react";
 import { highlight } from "sugar-high";
+import { EMAIL } from "~/lib/site";
 
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type CodeProps = ComponentPropsWithoutRef<"code">;
@@ -37,6 +39,7 @@ function codeText(children: ReactNode): string {
  */
 export function createMdxAnchor(className: string) {
   function MdxAnchor({ href, children, ...props }: AnchorProps) {
+    if (href === `mailto:${EMAIL}`) return <CopyEmailLink />;
     if (href?.startsWith("/")) {
       return (
         <Link href={href} className={className} {...props}>

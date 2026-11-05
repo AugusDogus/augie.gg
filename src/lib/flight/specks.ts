@@ -1,0 +1,146 @@
+import type { Pointer } from "./flow";
+type SpeckBase = {
+  id: number;
+  x: number;
+  y: number;
+  depth: number;
+  life: number;
+};
+export type Speck = SpeckBase &
+  ({ trail: false } | { trail: true; vx: number; vy: number });
+/** Drifting specks plus trail specks never exceed this many. */
+export const MAX_SPECKS = 380;
+/** Every fifth speck is cyan; the rest are white. */
+export const SPECK_COLORS = { white: "#e0fff1", cyan: "#90dce9" } as const;
+const wrap = (value: number, size: number) => ((value % size) + size) % size;
+
+/** Dust-like marks with independent depth and inertia, without animal silhouettes. */
+export class Specks {
+  nextId = 300;
+  pointer: Pick<Pointer, "x" | "y"> | null = null;
+  emission = 0;
+  points: Speck[] = Array.from({ length: 300 }, (_, id) => {
+    const depth = 0.15 + ((id * 0.6180339) % 1) * 0.85;
+    return {
+      id,
+      x: (id * 761.7) % 1200,
+      y: (id * 397.3) % 874,
+      depth,
+      life: 1,
+      trail: false,
+    };
+  });
+
+  step(dt: number, time: number, pointer?: Pointer) {
+    for (const point of this.points) {
+      const driftX =
+        10 + point.depth * 16 + Math.sin(time * 0.55 + point.id) * 7;
+      const driftY = -3 + Math.cos(time * 0.45 + point.id * 0.7) * 9;
+      point.x = wrap(
+        point.x + (driftX + (point.trail ? point.vx : 0)) * dt,
+        1200,
+      );
+      point.y = wrap(
+        point.y + (driftY + (point.trail ? point.vy : 0)) * dt,
+        874,
+      );
+      if (point.trail) point.life -= dt * 1.8;
+    }
+    // Spent trails drop out in place, without a new array every frame.
+    let kept = 0;
+    for (const point of this.points)
+      if (!point.trail || point.life > 0) this.points[kept++] = point;
+    this.points.length = kept;
+    if (!pointer?.active) {
+      this.pointer = null;
+      return;
+    }
+    if (this.pointer) {
+      // Trails were tuned per 30 Hz step; scale so faster frame rates match.
+      const scale = dt > 0 ? 1 / (30 * dt) : 1;
+      const dx = (pointer.x - this.pointer.x) * 1200 * scale;
+      const dy = (pointer.y - this.pointer.y) * 874 * scale;
+      const distance = Math.hypot(dx, dy);
+      if (distance > 3) {
+        this.emission += (distance / scale) * 0.03;
+        while (this.emission >= 1) {
+          this.emission -= 1;
+          // Deterministic randomness keeps exports and tests reproducible.
+          const random =
+            (Math.sin(this.nextId * 12.9898 + time * 78.233) * 43758.5453) % 1;
+          if (Math.abs(random) < 0.42) this.spawn(pointer, dx, dy, time);
+        }
+      }
+    }
+    this.pointer = { x: pointer.x, y: pointer.y };
+  }
+
+  spawn(pointer: Pointer, dx: number, dy: number, time: number) {
+    if (this.points.length >= MAX_SPECKS) return;
+    const id = this.nextId++;
+    const depth = 0.35 + ((id * 0.6180339) % 1) * 0.65;
+    const random = (Math.sin(id * 39.17 + time * 9.1) * 43758.5453) % 1;
+    this.points.push({
+      id,
+      x: pointer.x * 1200 - dx * 0.1 + random * 5,
+      y: pointer.y * 874 - dy * 0.1 - random * 5,
+      depth,
+      life: 0.8 + Math.abs(random) * 0.45,
+      trail: true,
+      vx: -dx * (0.7 + depth * 0.5),
+      vy: -dy * (0.7 + depth * 0.5),
+    });
+  }
+
+  snapshot() {
+    return this.points.map((point) => ({ ...point }));
+  }
+}
+
+/**
+ * Every speck's marks as art-px rects with their alpha, in paint order: all
+ * white specks, then all cyan ones. A cross is two marks, horizontal first.
+ */
+export function forEachSpeckMark(
+  points: readonly Speck[],
+  mark: (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    alpha: number,
+    cyan: boolean,
+  ) => void,
+) {
+  // One pass per colour avoids switching fill styles between specks.
+  for (const cyan of [false, true]) {
+    for (const point of points) {
+      if ((point.id % 5 === 0) !== cyan) continue;
+      const size = (0.9 + point.depth ** 2 * 3) * (point.trail ? 0.8 : 1);
+      const alpha = (0.28 + point.depth * 0.5) * (point.trail ? point.life : 1);
+      if (point.id % 4 === 0) {
+        mark(point.x - size, point.y, size * 2, 0.85, alpha, cyan);
+        mark(point.x, point.y - size, 0.85, size * 2, alpha, cyan);
+      } else {
+        mark(point.x, point.y, size, size * 0.75, alpha, cyan);
+      }
+    }
+  }
+}
+
+export function drawSpecks(
+  context: CanvasRenderingContext2D,
+  points: readonly Speck[],
+) {
+  context.save();
+  let filled: boolean | null = null;
+  forEachSpeckMark(points, (x, y, width, height, alpha, cyan) => {
+    if (cyan !== filled) {
+      context.fillStyle = cyan ? SPECK_COLORS.cyan : SPECK_COLORS.white;
+      filled = cyan;
+    }
+    context.globalAlpha = alpha;
+    context.fillRect(x, y, width, height);
+  });
+  context.restore();
+}

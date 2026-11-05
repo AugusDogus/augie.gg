@@ -2,5 +2,5 @@
   "printWidth": 80,
   "sortPackageJson": false,
   "sortTailwindcss": {},
-  "ignorePatterns": []
+  "ignorePatterns": ["public/kicad-viewer/**", "!public/kicad-viewer/embed.js"]
 }

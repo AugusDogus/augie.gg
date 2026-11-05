@@ -1,0 +1,23 @@
+{
+  // The board viewer's own script (public/kicad-viewer/embed.js), checked
+  // apart from the site: it runs in its own page, on the vendored Three.js and
+  // Prism bundles, which are read for their types but never checked.
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "types": [],
+    "paths": {
+      "three": ["./public/kicad-viewer/three/three.module.js"],
+      "three/addons/*": ["./public/kicad-viewer/three/addons/*"]
+    }
+  },
+  "files": ["public/kicad-viewer/embed.js"]
+}
