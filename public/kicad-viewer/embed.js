@@ -618,6 +618,8 @@ function documentView(panel, url, kind) {
   let shown = false;
   /** The camera as last fit; while it stays there, a resize fits again. */
   let fitted = null;
+  /** The frame changed size while this view was hidden: it fits again when shown. */
+  let stale = false;
 
   function failed(error) {
     state = { kind: "failed" };
@@ -676,17 +678,23 @@ function documentView(panel, url, kind) {
     if (kind === "schematic") modules.value.installSchematicSizing(element);
     else
       new ResizeObserver(() => {
-        if (!shown) return;
-        element.setViewportInsets({});
-        element.resize();
-        if (fitted !== null && same(viewer, fitted)) {
-          viewer.zoom_fit_top_item();
-          remember(viewer);
-        }
+        if (shown) refit(element, viewer);
+        else stale = true;
       }).observe(host);
     state = { kind: "ready", element, viewer };
     panel.dataset.state = "ready";
     setStatus(panel, { kind: "none" });
+  }
+
+  /** The view at the frame's size, fit again unless someone moved it. */
+  function refit(element, viewer) {
+    stale = false;
+    element.setViewportInsets({});
+    element.resize();
+    if (fitted !== null && same(viewer, fitted)) {
+      viewer.zoom_fit_top_item();
+      remember(viewer);
+    }
   }
 
   function remember(viewer) {
@@ -708,7 +716,8 @@ function documentView(panel, url, kind) {
       shown = true;
       if (state.kind === "ready") {
         state.element.setActive(true);
-        state.element.resize();
+        if (stale) refit(state.element, state.viewer);
+        else state.element.resize();
       } else void load();
     },
     hide() {
