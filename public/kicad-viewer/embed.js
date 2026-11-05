@@ -19,6 +19,13 @@ const HOME = { azimuth: 35, elevation: 30, fov: 30 };
 /** One slow turn after the model appears, unless motion is reduced. */
 const TURN_MS = 24000;
 /**
+ * The opening view's margins, as fractions of the frame's width and height:
+ * the board poster's framing, which the model matches as it fades in over it.
+ */
+const MARGIN = { x: 0.08, y: 0.12 };
+/** How long the model takes to make room for the controls, where they reach past those margins. */
+const MAKE_ROOM_MS = 700;
+/**
  * The schematic in the site's colors instead of on white paper: KiCad's own
  * scheme (green wires, red symbols, teal text, blue notes) lifted to read on
  * the ground.
@@ -312,13 +319,30 @@ async function mountModel(host, src) {
   return mounted;
 }
 
+/** Each mesh's bounding box corners, in the scene: what the opening view fits. */
+function cornersOf(content, { Box3, Vector3 }) {
+  const corners = [];
+  const box = new Box3();
+  content.updateMatrixWorld(true);
+  content.traverse((object) => {
+    if (!object.isMesh) return;
+    object.geometry.computeBoundingBox();
+    box.copy(object.geometry.boundingBox).applyMatrix4(object.matrixWorld);
+    for (const x of [box.min.x, box.max.x])
+      for (const y of [box.min.y, box.max.y])
+        for (const z of [box.min.z, box.max.z])
+          corners.push(new Vector3(x, y, z));
+  });
+  return corners;
+}
+
 /**
  * Takes over the 3D viewer's camera and drawing once the model is in: the
  * opening view, a single slow turn, and frames drawn only while something
  * moves, where Prism draws every frame for as long as it lives.
  */
 function stageModel(element, { three, TrackballControls }) {
-  const { Box3, Quaternion, Vector3 } = three;
+  const { Box3, PerspectiveCamera, Quaternion, Vector3 } = three;
   // Prism's own name for the viewer behind the element; Backplane's adapter reaches it the same way.
   // oxlint-disable-next-line no-underscore-dangle
   const viewer = element._viewer_container;
@@ -344,9 +368,8 @@ function stageModel(element, { three, TrackballControls }) {
   camera.fov = HOME.fov;
   camera.near = size / 50;
   camera.far = size * 50;
-  // A slight lens shift lifts the board, which perspective otherwise sets low in the frame.
-  camera.setViewOffset(1, 1, 0, 0.05, 1, 1);
-  camera.updateProjectionMatrix();
+  // Prism's resize sets the camera's aspect from the frame, which every fit below reads.
+  viewer.resize();
 
   const azimuth = (HOME.azimuth * Math.PI) / 180;
   const elevation = (HOME.elevation * Math.PI) / 180;
@@ -361,15 +384,109 @@ function stageModel(element, { three, TrackballControls }) {
     return camera.quaternion.clone();
   })();
 
+  const corners = cornersOf(viewer.content, three);
+  const probe = new PerspectiveCamera();
+  const point = new Vector3();
+  const turn = new Quaternion();
+
+  /** Where the model's corners land on screen (-1 to 1 each way), seen from an orientation and distance. */
+  function extent(quaternion, distance) {
+    probe.fov = camera.fov;
+    probe.aspect = camera.aspect;
+    probe.near = camera.near;
+    probe.far = camera.far;
+    probe.updateProjectionMatrix();
+    probe.quaternion.copy(quaternion);
+    probe.position.set(0, 0, distance).applyQuaternion(quaternion);
+    probe.updateMatrixWorld();
+    const box = { left: 1, right: -1, bottom: 1, top: -1 };
+    for (const corner of corners) {
+      point.copy(corner).project(probe);
+      box.left = Math.min(box.left, point.x);
+      box.right = Math.max(box.right, point.x);
+      box.bottom = Math.min(box.bottom, point.y);
+      box.top = Math.max(box.top, point.y);
+    }
+    return box;
+  }
+
+  /** The distance at which the model, seen from an orientation, spans at most these fractions of the frame. */
+  function distanceFor(quaternion, room) {
+    let distance = size * 2;
+    // Nearer corners grow faster than farther ones as the camera closes in, so this settles in a few steps.
+    for (let step = 0; step < 8; step++) {
+      const box = extent(quaternion, distance);
+      const over = Math.max(
+        (box.right - box.left) / 2 / room.width,
+        (box.top - box.bottom) / 2 / room.height,
+      );
+      distance *= over;
+      if (Math.abs(over - 1) < 0.002) break;
+    }
+    return distance;
+  }
+
   /**
-   * How far the opening view stands back in this frame's shape: the board's
-   * span takes most of the width, and its tilted depth most of the height.
+   * The opening view inside insets from the frame's edges, in CSS pixels: the
+   * distance that fits the model there (and inside the frame all through its
+   * turn), and the lens shift that centers it there.
    */
-  function homeDistance() {
-    const half = Math.tan((camera.fov * Math.PI) / 360);
-    const across = size / (0.8 * 2 * half * camera.aspect);
-    const down = (size * 0.62) / (0.7 * 2 * half);
-    return Math.max(across, down);
+  function framing(insets) {
+    const width = canvas.clientWidth || 1;
+    const height = canvas.clientHeight || 1;
+    const room = {
+      width: Math.max(0.2, 1 - (insets.left + insets.right) / width),
+      height: Math.max(0.2, 1 - (insets.top + insets.bottom) / height),
+    };
+    let distance = distanceFor(homeQuaternion, room);
+    for (let step = 1; step < 12; step++) {
+      turn.setFromAxisAngle(vertical, (step * Math.PI) / 6);
+      distance = Math.max(
+        distance,
+        distanceFor(turn.multiply(homeQuaternion), {
+          width: 0.94,
+          height: 0.92,
+        }),
+      );
+    }
+    const box = extent(homeQuaternion, distance);
+    // Where the insets' center sits, from -1 to 1 each way.
+    const x = (insets.left - insets.right) / width;
+    const y = (insets.bottom - insets.top) / height;
+    return {
+      distance,
+      shift: {
+        x: ((box.left + box.right) / 2 - x) / 2,
+        y: (y - (box.bottom + box.top) / 2) / 2,
+      },
+    };
+  }
+
+  /** The insets the opening view keeps: the poster's margins, and the controls' where they reach further in. */
+  function clearance(controls) {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const margins = {
+      left: width * MARGIN.x,
+      right: width * MARGIN.x,
+      top: height * MARGIN.y,
+      bottom: height * MARGIN.y,
+    };
+    if (!controls) return margins;
+    const chrome = chromeInsets();
+    return {
+      ...margins,
+      top: Math.max(margins.top, chrome.top),
+      bottom: Math.max(margins.bottom, chrome.bottom),
+    };
+  }
+
+  /** The opening view as the poster frames it, and clear of the controls. */
+  function fits() {
+    return {
+      poster: framing(clearance(false)),
+      home: framing(clearance(true)),
+    };
   }
 
   let controls;
@@ -381,6 +498,35 @@ function stageModel(element, { three, TrackballControls }) {
   let frame = 0;
   /** @type {{ start: number | null, duration: number, ease: (t: number) => number, apply: (t: number) => void, spin: boolean } | null} */
   let motion = null;
+  /** The lens shift, as fractions of the frame: it centers the model in the room the controls leave. */
+  let lens = { x: 0, y: 0 };
+  let opening = fits();
+
+  /** Shifts the lens without moving the camera; Three.js would also square the aspect, which Prism set from the frame. */
+  function shiftLens(shift) {
+    lens = shift;
+    const aspect = camera.aspect;
+    camera.setViewOffset(1, 1, shift.x, shift.y, 1, 1);
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
+  }
+
+  /** Between two views, by `t`. */
+  function blend(from, to, t) {
+    return {
+      distance: from.distance + (to.distance - from.distance) * t,
+      shift: {
+        x: from.shift.x + (to.shift.x - from.shift.x) * t,
+        y: from.shift.y + (to.shift.y - from.shift.y) * t,
+      },
+    };
+  }
+
+  /** The camera at an orientation, at a view's distance and lens shift. */
+  function setView(quaternion, view) {
+    place(quaternion, view.distance);
+    shiftLens(view.shift);
+  }
 
   /** The camera at an orientation and distance from the target, as the trackball would leave it. */
   function place(quaternion, length) {
@@ -468,34 +614,44 @@ function stageModel(element, { three, TrackballControls }) {
   }
 
   attachControls();
-  // Setting the lens shift reset the camera's aspect; Prism's resize sets it from the frame again.
-  viewer.resize();
-  place(homeQuaternion, homeDistance());
+  // As it fades in over the poster, the model matches it; reduced motion skips the fade.
+  setView(
+    homeQuaternion,
+    reducedMotion.matches ? opening.home : opening.poster,
+  );
   // After Prism's own resize, which sets the camera's aspect.
   addEventListener("resize", () => {
-    if (untouched && !motion?.spin) place(homeQuaternion, homeDistance());
+    opening = fits();
+    if (untouched && motion === null) setView(homeQuaternion, opening.home);
     changed = true;
     wake();
   });
 
   if (!reducedMotion.matches) {
-    const turn = new Quaternion();
     const pose = new Quaternion();
-    // A beat after the model fades in; the turn ends back at the opening view.
+    // Once the model has faded in, it makes room for the controls and turns
+    // once, ending back at the opening view.
     setTimeout(() => {
       if (motion !== null || !untouched) return;
       motion = {
         start: null,
         duration: TURN_MS,
-        ease: easeInOut,
+        ease: (t) => t,
         spin: true,
         apply: (t) => {
-          turn.setFromAxisAngle(vertical, t * Math.PI * 2);
-          place(pose.multiplyQuaternions(turn, homeQuaternion), homeDistance());
+          turn.setFromAxisAngle(vertical, easeInOut(t) * Math.PI * 2);
+          setView(
+            pose.multiplyQuaternions(turn, homeQuaternion),
+            blend(
+              opening.poster,
+              opening.home,
+              easeInOut(Math.min(1, (t * TURN_MS) / MAKE_ROOM_MS)),
+            ),
+          );
         },
       };
       wake();
-    }, 700);
+    }, 400);
   }
 
   return {
@@ -507,8 +663,11 @@ function stageModel(element, { three, TrackballControls }) {
     },
     hide() {
       shown = false;
-      // The turn is an introduction: leaving the tab ends it.
-      if (motion?.spin) motion = null;
+      // The turn is an introduction: leaving the tab ends it, at the opening view.
+      if (motion?.spin) {
+        motion = null;
+        setView(homeQuaternion, opening.home);
+      }
       cancelAnimationFrame(frame);
       frame = 0;
     },
@@ -532,7 +691,10 @@ function stageModel(element, { three, TrackballControls }) {
     },
     reset() {
       const fromQuaternion = camera.quaternion.clone();
-      const fromDistance = camera.position.distanceTo(controls.target);
+      const from = {
+        distance: camera.position.distanceTo(controls.target),
+        shift: lens,
+      };
       const fromTarget = controls.target.clone();
       const quaternion = new Quaternion();
       attachControls();
@@ -542,7 +704,7 @@ function stageModel(element, { three, TrackballControls }) {
         (t) => {
           controls.target.lerpVectors(fromTarget, target, t);
           quaternion.slerpQuaternions(fromQuaternion, homeQuaternion, t);
-          place(quaternion, fromDistance + (homeDistance() - fromDistance) * t);
+          setView(quaternion, blend(from, opening.home, t));
         },
         easeInOut,
       );
@@ -556,9 +718,9 @@ function stageModel(element, { three, TrackballControls }) {
         ArrowUp: [0, step],
         ArrowDown: [0, -step],
       };
-      const turn = turns[event.key];
-      if (turn === undefined) return false;
-      orbit((turn[0] * Math.PI) / 180, (turn[1] * Math.PI) / 180);
+      const degrees = turns[event.key];
+      if (degrees === undefined) return false;
+      orbit((degrees[0] * Math.PI) / 180, (degrees[1] * Math.PI) / 180);
       return true;
     },
   };
@@ -722,6 +884,13 @@ function present(viewer, kind) {
   viewer.zoom_fit_top_item();
 }
 
+/** The room the tabs take above and the view tools below, in CSS pixels from the frame's edges. */
+function chromeInsets() {
+  const tabBar = document.querySelector(".tabs").getBoundingClientRect();
+  const tools = document.querySelector(".tools").getBoundingClientRect();
+  return { top: tabBar.bottom + 4, bottom: innerHeight - tools.top + 4 };
+}
+
 /**
  * Fits leave room for the tabs above and the zoom controls below, whatever
  * insets Prism or an adapter asks for besides.
@@ -729,13 +898,12 @@ function present(viewer, kind) {
 function reserveChrome(element) {
   const set = element.setViewportInsets.bind(element);
   element.setViewportInsets = (insets) => {
-    const tabBar = document.querySelector(".tabs").getBoundingClientRect();
-    const tools = document.querySelector(".tools").getBoundingClientRect();
+    const chrome = chromeInsets();
     set({
       left: insets?.left ?? 0,
       right: insets?.right ?? 0,
-      top: Math.max(insets?.top ?? 0, tabBar.bottom + 4),
-      bottom: Math.max(insets?.bottom ?? 0, innerHeight - tools.top + 4),
+      top: Math.max(insets?.top ?? 0, chrome.top),
+      bottom: Math.max(insets?.bottom ?? 0, chrome.bottom),
     });
   };
   element.setViewportInsets({});

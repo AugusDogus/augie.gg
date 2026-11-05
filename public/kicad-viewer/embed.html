@@ -268,13 +268,13 @@
           animation: none !important;
         }
       }
-      /* Narrow frames keep the corners for the controls; touch pinches to zoom. */
+      /* Narrow or short frames keep only Reset beside the view; scrolling or pinching zooms it. */
       @media (max-width: 360px) {
         .tab {
           padding: 0 8px;
         }
       }
-      @media (max-width: 360px) and (pointer: coarse) {
+      @media (max-width: 360px), (max-height: 240px) {
         .tool:is([data-action="in"], [data-action="out"]) {
           display: none;
         }
