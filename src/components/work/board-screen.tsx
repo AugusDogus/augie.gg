@@ -22,7 +22,6 @@ function viewerUrl(board: Board): string {
     pcb: board.pcb,
     schematic: board.schematic,
   });
-  if (board.note !== undefined) params.set("note", board.note);
   return `/kicad-viewer/embed.html?${params}`;
 }
 

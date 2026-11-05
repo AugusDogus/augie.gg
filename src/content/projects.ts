@@ -31,8 +31,9 @@
  *   opens from it: the KiCad `pcb`, its root `schematic` (one sheet), and a
  *   GLB `model` exported from the board. It leads as a desktop capture would,
  *   always alone, since a phone or TV in front would cover the viewer. The
- *   poster shows until someone opens the viewer, and is the thumbnail. A
- *   `note` is one quiet line in the viewer, such as that the board is a draft.
+ *   poster shows until someone opens the viewer, and is the thumbnail. Say
+ *   in the blurb when a board is a draft or not yet built: a render alone
+ *   reads as a finished board.
  */
 
 export type Label =
@@ -86,8 +87,6 @@ export type Board = {
   schematic: string;
   /** A GLB export of the board. */
   model: string;
-  /** One quiet line in the viewer. */
-  note?: string;
 };
 
 export type Media = Capture | Board;
@@ -501,7 +500,7 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/radio-mic-usb-ptt",
     date: "2026-06-26",
     blurb:
-      "A PCB and STM32 firmware that turn a BTECH QHM22 handheld mic into USB audio plus an F13 push-to-talk key.",
+      "A draft PCB, not built yet, and STM32 firmware to turn a BTECH QHM22 handheld mic into USB audio plus an F13 push-to-talk key.",
     labels: ["wip"],
     media: [
       {
@@ -513,7 +512,6 @@ export const projects: Project[] = [
         pcb: "/work/radio-mic-usb-ptt/radio-mic-usb-ptt.kicad_pcb",
         schematic: "/work/radio-mic-usb-ptt/radio-mic-usb-ptt.kicad_sch",
         model: "/work/radio-mic-usb-ptt/board.glb",
-        note: "Draft, not yet built",
       },
     ],
   },

@@ -39,7 +39,7 @@ and Three.js's OrbitControls.
 board's files as same-origin URLs:
 
 ```
-embed.html?model=/work/<slug>/board.glb&pcb=/work/<slug>/<name>.kicad_pcb&schematic=/work/<slug>/<name>.kicad_sch&note=Draft, not yet built
+embed.html?model=/work/<slug>/board.glb&pcb=/work/<slug>/<name>.kicad_pcb&schematic=/work/<slug>/<name>.kicad_sch
 ```
 
 The schematic is a single root sheet. The GLB is a `kicad-cli pcb export glb`

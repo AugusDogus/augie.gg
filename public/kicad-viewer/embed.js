@@ -2,7 +2,7 @@
  * The board viewer augie.gg frames: a board's 3D model, PCB, and schematic in
  * three tabs. The page around it names the files as same-origin URLs:
  *
- *   embed.html?model=/work/x/board.glb&pcb=/work/x/x.kicad_pcb&schematic=/work/x/x.kicad_sch&note=Draft
+ *   embed.html?model=/work/x/board.glb&pcb=/work/x/x.kicad_pcb&schematic=/work/x/x.kicad_sch
  *
  * The 3D view is KiCAD-Prism's <ecad-3d-viewer>, finished by Backplane's model
  * appearance adapter; the PCB and schematic are Prism's <ecad-viewer>. Every
@@ -102,7 +102,6 @@ function readBoard() {
     model: model.value,
     pcb: pcb.value,
     schematic: schematic.value,
-    note: params.get("note") ?? "",
   });
 }
 
@@ -984,7 +983,6 @@ function start() {
     setStatus(firstPanel, { kind: "error", text: board.error, retry: null });
     return;
   }
-  document.getElementById("note").textContent = board.value.note;
   // Named for the board, for when it opens in a tab of its own.
   const name = fileName(board.value.pcb).replace(/\.kicad_pcb$/, "");
   if (name !== "") document.title = `${name} board`;

@@ -26,7 +26,6 @@
         --fg-2: #eef4f6ad;
         --fg-3: #eef4f682;
         --accent: #8fe3f0;
-        --progress: #f2c94c;
         --ground: #0a1317;
         --control: 24px;
         --inset: 10px;
@@ -207,33 +206,6 @@
       .tool:active {
         scale: 0.94;
       }
-      .note {
-        position: absolute;
-        z-index: 2;
-        left: var(--inset);
-        bottom: var(--inset);
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        height: calc(var(--control) + 8px);
-        margin: 0;
-        padding: 0 11px 0 10px;
-        font-size: 12px;
-        color: var(--fg-2);
-        white-space: nowrap;
-        pointer-events: none;
-      }
-      .note::before {
-        content: "";
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--progress);
-        box-shadow: 0 0 0 3px #f2c94c26;
-      }
-      .note:empty {
-        display: none;
-      }
       .status {
         position: absolute;
         z-index: 1;
@@ -389,7 +361,6 @@
       <div class="canvas"></div>
       <div class="status" role="status"></div>
     </section>
-    <p class="note glass" id="note"></p>
     <p class="hint" id="hint-3d">
       Drag to turn the board, and scroll or pinch to zoom. Focused, arrow keys
       turn it and plus and minus zoom.

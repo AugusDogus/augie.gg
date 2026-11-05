@@ -37,7 +37,6 @@ const board: Media = {
   pcb: "/board.kicad_pcb",
   schematic: "/board.kicad_sch",
   model: "/board.glb",
-  note: "Draft",
 };
 
 describe("Showcase.of", () => {
