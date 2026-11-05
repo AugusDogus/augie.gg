@@ -158,6 +158,8 @@ function Sheet({ project, open }: { project: Project; open: boolean }) {
               <ProjectView
                 project={project}
                 sizes="(max-width: 640px) calc(100vw - 12px), 628px"
+                // Closing keeps it until the sheet is gone, so the slide out shows what was there.
+                interactive
                 mediaHeight="min(52dvh, 440px)"
                 Title={Dialog.Title}
                 Description={Dialog.Description}

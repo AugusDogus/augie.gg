@@ -57,7 +57,7 @@ function toggle(title: string, open: boolean) {
   else openProject(title);
 }
 
-/** The lead capture, cropped small, where rows can't preview on hover. */
+/** The lead capture (a board's poster), cropped small, where rows can't preview on hover. */
 function Thumb({ project }: { project: Project }) {
   const showcase = Showcase.of(project.media);
   if (showcase === null)
@@ -68,16 +68,16 @@ function Thumb({ project }: { project: Project }) {
         )}
       </span>
     );
-  const media = Showcase.cover(showcase);
+  const cover = Showcase.cover(showcase);
   return (
     <span
       className={cn(SCREEN_FRAME, "block aspect-[16/10] w-full rounded-[6px]")}
     >
       <Image
-        src={media.kind === "video" ? media.poster : media.src}
+        src={cover.src}
         alt=""
-        width={media.width}
-        height={media.height}
+        width={cover.width}
+        height={cover.height}
         sizes="72px"
         className="absolute inset-0 size-full object-cover object-top"
       />

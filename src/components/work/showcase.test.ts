@@ -28,6 +28,17 @@ const tvVideo: Media = {
   height: 960,
   frame: "tv",
 };
+const board: Media = {
+  kind: "board",
+  poster: "/board.webp",
+  alt: "board",
+  width: 2560,
+  height: 1600,
+  pcb: "/board.kicad_pcb",
+  schematic: "/board.kicad_sch",
+  model: "/board.glb",
+  note: "Draft",
+};
 
 describe("Showcase.of", () => {
   test("leads with the first desktop capture and sets the first phone capture in front, even when the phone comes first", () => {
@@ -82,6 +93,55 @@ describe("Showcase.of", () => {
     expect(Showcase.of(undefined)).toBeNull();
     expect(Showcase.of([])).toBeNull();
   });
+
+  test("leads with a board as it would a desktop capture, the first of them", () => {
+    expect(Showcase.of([board, desktop("/a.webp")])).toMatchObject({
+      kind: "desktop",
+      lead: board,
+    });
+    expect(Showcase.of([desktop("/a.webp"), board])).toMatchObject({
+      kind: "desktop",
+      lead: desktop("/a.webp"),
+    });
+  });
+
+  test("shows a board alone, since a phone or TV in front would cover its viewer", () => {
+    expect(Showcase.of([phoneVideo, board, tvVideo])).toEqual({
+      kind: "desktop",
+      lead: board,
+      phone: null,
+      tv: null,
+    });
+  });
+});
+
+describe("Showcase.cover", () => {
+  test("crops an image itself", () => {
+    const showcase = Showcase.of([desktop("/a.webp", 1600, 1000)]);
+    expect(showcase && Showcase.cover(showcase)).toEqual({
+      src: "/a.webp",
+      width: 1600,
+      height: 1000,
+    });
+  });
+
+  test("crops a video's poster", () => {
+    const showcase = Showcase.of([phoneVideo]);
+    expect(showcase && Showcase.cover(showcase)).toEqual({
+      src: "/phone.webp",
+      width: 1179,
+      height: 2556,
+    });
+  });
+
+  test("crops a board's poster, never its viewer", () => {
+    const showcase = Showcase.of([board]);
+    expect(showcase && Showcase.cover(showcase)).toEqual({
+      src: "/board.webp",
+      width: 2560,
+      height: 1600,
+    });
+  });
 });
 
 describe("Showcase.aspect", () => {
@@ -95,6 +155,11 @@ describe("Showcase.aspect", () => {
     expect(showcase && Showcase.aspect(showcase)).toBeCloseTo(
       1 / (1000 / 1600 + Showcase.OVERHANG),
     );
+  });
+
+  test("is a board's own shape, with no room for an overhang", () => {
+    const showcase = Showcase.of([board, phoneVideo]);
+    expect(showcase && Showcase.aspect(showcase)).toBeCloseTo(1.6);
   });
 
   test("leaves the same room for a TV capture's overhang without a phone", () => {

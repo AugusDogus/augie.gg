@@ -9,8 +9,9 @@ import {
   useState,
 } from "react";
 import { usePlaying } from "~/components/flight-background";
-import type { Media } from "~/content/projects";
+import type { Capture, Media } from "~/content/projects";
 import { cn } from "~/lib/utils";
+import { BoardScreen } from "./board-screen";
 import { Showcase } from "./showcase";
 
 /**
@@ -48,7 +49,7 @@ function Screen({
   sizes,
   decorative,
 }: {
-  media: Media;
+  media: Capture;
   sizes: string;
   decorative: boolean;
 }) {
@@ -90,7 +91,7 @@ function Video({
   sizes,
   className,
 }: {
-  media: Extract<Media, { kind: "video" }>;
+  media: Extract<Capture, { kind: "video" }>;
   alt: string;
   sizes: string;
   className: string;
@@ -178,19 +179,28 @@ function PhoneFrame({ children }: { children: ReactNode }) {
 }
 
 /**
- * One capture in the frame its `frame` names. `sizes` is the rendered width,
- * for picking an image size. `decorative` drops the alt text where something
- * else names the project.
+ * One capture in the frame its `frame` names, or a board in a screen's frame.
+ * `sizes` is the rendered width, for picking an image size. `decorative` drops
+ * the alt text where something else names the project. `interactive` is
+ * whether the card takes input, which a board's viewer needs.
  */
 function ProjectMedia({
   media,
   sizes,
+  interactive,
   decorative = false,
 }: {
   media: Media;
   sizes: string;
+  interactive: boolean;
   decorative?: boolean;
 }) {
+  if (media.kind === "board")
+    return (
+      <div className={cn(SCREEN_FRAME, "rounded-[8px]")}>
+        <BoardScreen board={media} sizes={sizes} interactive={interactive} />
+      </div>
+    );
   const screen = <Screen media={media} sizes={sizes} decorative={decorative} />;
   switch (media.frame) {
     case "desktop":
@@ -214,12 +224,15 @@ function ProjectMedia({
 export function MediaShowcase({
   showcase,
   sizes,
+  interactive,
   className,
   style,
 }: {
   showcase: Showcase;
   /** The composition's rendered width. */
   sizes: string;
+  /** Whether the card takes input: a board opens its viewer only then. */
+  interactive: boolean;
   className?: string;
   style?: CSSProperties;
 }) {
@@ -234,7 +247,11 @@ export function MediaShowcase({
                 : { paddingBottom: `${Showcase.OVERHANG * 100}cqw` }
             }
           >
-            <ProjectMedia media={showcase.lead} sizes={sizes} />
+            <ProjectMedia
+              media={showcase.lead}
+              sizes={sizes}
+              interactive={interactive}
+            />
           </div>
           {showcase.tv !== null && (
             <div
@@ -244,6 +261,7 @@ export function MediaShowcase({
               <ProjectMedia
                 media={showcase.tv}
                 sizes="(max-width: 640px) 35vw, 260px"
+                interactive={interactive}
               />
             </div>
           )}
@@ -252,6 +270,7 @@ export function MediaShowcase({
               <ProjectMedia
                 media={showcase.phone}
                 sizes="(max-width: 640px) 25vw, 180px"
+                interactive={interactive}
               />
             </div>
           )}
@@ -267,6 +286,7 @@ export function MediaShowcase({
             <ProjectMedia
               media={showcase.phone}
               sizes="(max-width: 640px) 40vw, 320px"
+              interactive={interactive}
             />
           </div>
         </div>

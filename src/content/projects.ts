@@ -26,6 +26,13 @@
  *   it stays sharp. A video is a short silent loop: `src` is an H.264 MP4 and
  *   `poster` a representative frame, shown before it plays and whenever it
  *   can't.
+ * - A circuit board is `kind: "board"`: a `poster` render of it (its pixel
+ *   `width` and `height`, `alt` text) and the files an interactive viewer
+ *   opens from it: the KiCad `pcb`, its root `schematic` (one sheet), and a
+ *   GLB `model` exported from the board. It leads as a desktop capture would,
+ *   always alone, since a phone or TV in front would cover the viewer. The
+ *   poster shows until someone opens the viewer, and is the thumbnail. A
+ *   `note` is one quiet line in the viewer, such as that the board is a draft.
  */
 
 export type Label =
@@ -42,7 +49,8 @@ export type Label =
 /** What a capture is shown in: a screen, a phone, or a television. */
 export type MediaFrame = "desktop" | "phone" | "tv";
 
-export type Media =
+/** A screen capture: a still or a short silent loop. */
+export type Capture =
   | {
       kind: "image";
       src: string;
@@ -63,6 +71,26 @@ export type Media =
       height: number;
       frame: MediaFrame;
     };
+
+/** A circuit board: its poster, and the KiCad files its viewer opens. */
+export type Board = {
+  kind: "board";
+  /** A render of the board, shown until the viewer opens. */
+  poster: string;
+  alt: string;
+  width: number;
+  height: number;
+  /** The `.kicad_pcb` file. */
+  pcb: string;
+  /** The root `.kicad_sch` file. */
+  schematic: string;
+  /** A GLB export of the board. */
+  model: string;
+  /** One quiet line in the viewer. */
+  note?: string;
+};
+
+export type Media = Capture | Board;
 
 export interface Project {
   title: string;

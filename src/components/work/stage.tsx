@@ -129,6 +129,7 @@ function Layer({
       <ProjectView
         project={project}
         sizes={`${width - CHROME}px`}
+        interactive={pinned}
         mediaHeight={`${media}px`}
         titleId={titleId}
         bodyRef={measureBody}

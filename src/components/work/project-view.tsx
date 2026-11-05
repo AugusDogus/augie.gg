@@ -116,6 +116,8 @@ function DestinationAction({ destination }: { destination: Destination }) {
  * over the painting and the bottom sheet both hold exactly this.
  *
  * - `sizes` is the showcase's rendered width, for picking image sizes.
+ * - `interactive` is whether the view takes input: in the sheet and on a
+ *   pinned stage card, not on a hover preview. A board's viewer opens only then.
  * - `mediaHeight` caps the showcase's height (a CSS length), so the words
  *   below it always fit; the showcase narrows and centers to keep its shape.
  * - `actions` sits beside the title, such as the stage's step and close
@@ -126,6 +128,7 @@ function DestinationAction({ destination }: { destination: Destination }) {
 export function ProjectView({
   project,
   sizes,
+  interactive,
   mediaHeight,
   actions,
   titleId,
@@ -135,6 +138,7 @@ export function ProjectView({
 }: {
   project: Project;
   sizes: string;
+  interactive: boolean;
   mediaHeight?: string;
   actions?: ReactNode;
   titleId?: string;
@@ -158,6 +162,7 @@ export function ProjectView({
         <MediaShowcase
           showcase={showcase}
           sizes={sizes}
+          interactive={interactive}
           className="mx-auto"
           style={
             mediaHeight === undefined
