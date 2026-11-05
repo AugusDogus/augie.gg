@@ -71,6 +71,12 @@ const SCHEMATIC_COLORS = {
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
+// Prism's bundles log their progress (resizes, project loads, tab changes) on
+// every open. This frame's own console, set before any of them loads, keeps
+// warnings and errors only; the vendored files stay as shipped.
+console.log = () => undefined;
+console.debug = () => undefined;
+
 /**
  * @template T
  * @typedef {{ ok: true, value: T } | { ok: false, error: string }} Result

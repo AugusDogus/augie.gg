@@ -128,7 +128,7 @@ function Expand({
 }
 
 /**
- * The board's viewer in its frame: a sandboxed page with the 3D model, PCB,
+ * The board's viewer in its frame: the site's own page with the 3D model, PCB,
  * and schematic. Unmounting it drops the page and its WebGL context.
  *
  * `frame` is the box it fills, which goes full screen. `focus` is where focus
@@ -165,6 +165,14 @@ function Viewer({
 
   return (
     <>
+      {/*
+        No sandbox: the viewer is this site's own page, and Prism needs the
+        site's origin for its parser worker, module scripts, and storage. A
+        sandbox allowing both scripts and the same origin isolates nothing
+        (the frame's scripts can lift it, and the viewer reaches its parent
+        for Esc), and the browser warns about it on every open.
+      */}
+      {/* oxlint-disable-next-line react/iframe-missing-sandbox */}
       <iframe
         ref={(element) => {
           if (!element || focused.current) return;
@@ -174,12 +182,6 @@ function Viewer({
         }}
         src={url}
         title="Board viewer: 3D model, PCB, and schematic"
-        // Prism needs its own origin for its parser worker, module scripts,
-        // and storage; the frame gets nothing else (no popups, forms, or top
-        // navigation). Same-origin scripts could lift the sandbox, but every
-        // file it runs is this site's own.
-        // oxlint-disable-next-line react/iframe-missing-sandbox
-        sandbox="allow-scripts allow-same-origin"
         referrerPolicy="no-referrer"
         className="absolute inset-0 size-full border-0 [color-scheme:dark]"
       />
@@ -191,7 +193,7 @@ function Viewer({
 /**
  * A circuit board in the shared frame: its poster, and once someone asks, an
  * interactive viewer of its 3D model, PCB, and schematic in the same box, so
- * nothing shifts. The viewer is a sandboxed page created only then; until
+ * nothing shifts. The viewer is a framed page created only then; until
  * that, the page loads nothing for it.
  *
  * `interactive` is whether the card takes input (pinned on the stage, or in
