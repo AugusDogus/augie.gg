@@ -112,9 +112,16 @@ function readBoard() {
   });
 }
 
-/** Status in a view: nothing, a loading line, or an error with a way to try again. */
+/**
+ * Status in a view: nothing, a loading line, or an error with a way to try
+ * again. It is a live region, so it changes only when what it says does, and
+ * screen readers hear each line once.
+ */
 function setStatus(panel, status) {
   const box = panel.querySelector(".status");
+  const said = status.kind === "none" ? "" : `${status.kind}: ${status.text}`;
+  if (box.dataset.said === said) return;
+  box.dataset.said = said;
   box.replaceChildren();
   if (status.kind === "none") return;
   const message = document.createElement("div");
@@ -141,8 +148,8 @@ function setStatus(panel, status) {
   box.append(message);
 }
 
-/** A file's bytes, reporting progress when the server gives a length. */
-async function fetchBlob(url, what, onProgress) {
+/** A file's bytes. */
+async function fetchBlob(url, what) {
   let response;
   try {
     response = await fetch(url);
@@ -151,28 +158,17 @@ async function fetchBlob(url, what, onProgress) {
       `The ${what} didn't load. Check your connection and try again.`,
     );
   }
-  if (!response.ok || response.body === null)
+  if (!response.ok)
     return fail(
       `The ${what} didn't load (HTTP ${response.status}). Try again, or reload the page.`,
     );
-  const total = Number(response.headers.get("content-length")) || 0;
-  const reader = response.body.getReader();
-  const chunks = [];
-  let received = 0;
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      received += value.byteLength;
-      if (total > 0) onProgress(Math.min(1, received / total));
-    }
+    return ok(await response.blob());
   } catch {
     return fail(
       `The ${what} stopped loading partway. Check your connection and try again.`,
     );
   }
-  return ok(new Blob(chunks));
 }
 
 /** A URL's file name, as KiCad wrote it; a malformed escape stays as it came. */
@@ -186,7 +182,7 @@ function fileName(url) {
 }
 
 async function fetchText(url, what) {
-  const blob = await fetchBlob(url, what, () => undefined);
+  const blob = await fetchBlob(url, what);
   return blob.ok ? ok(await blob.value.text()) : blob;
 }
 
@@ -768,12 +764,7 @@ function modelView(panel, url) {
       return;
     }
     const [file, modules] = await Promise.all([
-      fetchBlob(url, "3D model", (progress) =>
-        setStatus(panel, {
-          kind: "loading",
-          text: `Loading the 3D model, ${Math.round(progress * 100)}%`,
-        }),
-      ),
+      fetchBlob(url, "3D model"),
       loadModelModules(),
     ]);
     if (!modules.ok) return failed(modules.error, load);

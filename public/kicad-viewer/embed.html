@@ -332,10 +332,17 @@
       aria-labelledby="tab-3d"
       aria-describedby="hint-3d"
       data-view="3d"
+      data-state="loading"
       tabindex="0"
     >
       <div class="canvas"></div>
-      <div class="status" role="status"></div>
+      <!-- Here before the script runs, so a slow link shows the load at once; embed.js says the same. -->
+      <div class="status" role="status" data-said="loading: Loading the 3D model">
+        <div class="message glass">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading the 3D model</span>
+        </div>
+      </div>
     </section>
     <section
       id="view-pcb"
@@ -361,11 +368,12 @@
       <div class="canvas"></div>
       <div class="status" role="status"></div>
     </section>
-    <p class="hint" id="hint-3d">
+    <!-- Read only through each view's aria-describedby, not in passing. -->
+    <p class="hint" id="hint-3d" aria-hidden="true">
       Drag to turn the board, and scroll or pinch to zoom. Focused, arrow keys
       turn it and plus and minus zoom.
     </p>
-    <p class="hint" id="hint-sheet">
+    <p class="hint" id="hint-sheet" aria-hidden="true">
       Drag to pan, and scroll or pinch to zoom. Focused, arrow keys pan and plus
       and minus zoom.
     </p>
