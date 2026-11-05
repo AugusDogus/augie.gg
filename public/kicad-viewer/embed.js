@@ -18,6 +18,49 @@ const ZOOM_STEP = 1.25;
 const HOME = { azimuth: 35, elevation: 30, fov: 30 };
 /** One slow turn after the model appears, unless motion is reduced. */
 const TURN_MS = 24000;
+/**
+ * The schematic in the site's colors instead of on white paper: KiCad's own
+ * scheme (green wires, red symbols, teal text, blue notes) lifted to read on
+ * the ground.
+ */
+const SCHEMATIC_COLORS = {
+  background: GROUND,
+  worksheet: "#8a9ca3",
+  wire: "#5fcf8e",
+  junction: "#5fcf8e",
+  bus: "#7da2ff",
+  bus_junction: "#7da2ff",
+  component_outline: "#e08b7d",
+  component_body: "#122228",
+  pin: "#e08b7d",
+  pin_name: "#7ccad5",
+  pin_number: "#c99088",
+  reference: "#8fd6df",
+  value: "#8fd6df",
+  fields: "#c9a0d8",
+  hidden: "#4d6870",
+  label_local: "#e8eef0",
+  label_global: "#e08b7d",
+  label_hier: "#d8b65e",
+  no_connect: "#7da2ff",
+  note: "#9db5ff",
+  sheet: "#e08b7d",
+  sheet_background: "#0e1c22",
+  sheet_fields: "#c9a0d8",
+  sheet_filename: "#d8b65e",
+  sheet_label: "#7ccad5",
+  sheet_name: "#7ccad5",
+  anchor: "#7da2ff",
+  aux_items: "#e8eef0",
+  brightened: "#ff8ad8",
+  cursor: "#f2f6f7",
+  grid: "#22343b",
+  grid_axes: "#7da2ff",
+  shadow: "#8fe3f080",
+  erc_error: "#ff6b6bcc",
+  erc_warning: "#f2c94ccc",
+  dnp_marker: "#ff6b6bd9",
+};
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -629,19 +672,51 @@ function hideLayers(viewer, names) {
 /**
  * The view on the site's ground, and every fit (Prism's, an adapter's, or
  * Reset's) eased out by `margin`, as Backplane's canvas presentation does to
- * keep pads and features past a board's outline in view. Its colors stay
- * Prism's.
+ * keep pads and features past a board's outline in view.
+ *
+ * A board keeps Prism's colors, without the KiCad page around it, which would
+ * only show as stray lines. A schematic takes the site's colors, without the
+ * white paper, and fits its whole sheet where Prism fits only what is drawn on
+ * it, so the frame and title block never sit under the controls.
  */
-function present(viewer, margin) {
-  const color = viewer.renderer.background_color.constructor;
-  viewer.theme.background = color.from_css(GROUND);
+function present(viewer, kind) {
+  const Color = viewer.renderer.background_color.constructor;
+  if (kind === "pcb") {
+    hideLayers(viewer, [":DrawingSheet"]);
+    viewer.theme.background = Color.from_css(GROUND);
+  } else {
+    hideLayers(viewer, [":DrawingSheet:Background"]);
+    viewer.theme = {
+      ...viewer.theme,
+      ...Object.fromEntries(
+        Object.entries(SCHEMATIC_COLORS).map(([name, css]) => [
+          name,
+          Color.from_css(css),
+        ]),
+      ),
+    };
+  }
   viewer.renderer.background_color = viewer.theme.background;
   if (viewer.renderer.gl)
     viewer.renderer.gl.clearColor(...viewer.theme.background.to_array());
-  const fitTight = viewer.zoom_fit_top_item.bind(viewer);
+  const camera = viewer.viewport.camera;
+  const fitTight =
+    kind === "pcb"
+      ? viewer.zoom_fit_top_item.bind(viewer)
+      : () => {
+          const sheet = viewer.drawing_sheet;
+          camera.bbox = new camera.bbox.constructor(
+            0,
+            0,
+            sheet.width,
+            sheet.height,
+          );
+        };
+  // The board's outline leaves out pads and jacks past it; the sheet's paper has its own margin.
+  const margin = kind === "pcb" ? 0.88 : 1;
   viewer.zoom_fit_top_item = () => {
     fitTight();
-    viewer.viewport.camera.zoom *= margin;
+    camera.zoom *= margin;
     viewer.draw();
   };
   viewer.paint();
@@ -730,10 +805,7 @@ function documentView(panel, url, kind) {
       element.setActive(shown);
       reserveChrome(element);
       element.resize();
-      // A board shown on its own has no page: its KiCad border and title block would only be stray lines.
-      if (kind === "pcb") hideLayers(viewer, [":DrawingSheet"]);
-      // The board's outline leaves out pads and jacks past it; the schematic's sheet is its whole extent.
-      present(viewer, kind === "pcb" ? 0.88 : 0.97);
+      present(viewer, kind);
       remember(viewer);
       modules.value.installNativeTouch(element);
       // The schematic adapter sharpens its canvas and refits on resize; the board fits here.
