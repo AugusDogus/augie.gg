@@ -94,7 +94,8 @@ function Expand({
       : "Full screen"
     : "Open in a new tab";
   return (
-    <Tooltip>
+    // Not hoverable: the frame takes the pointer events that would close it.
+    <Tooltip disableHoverableContent>
       <TooltipTrigger asChild>
         {available ? (
           <button
