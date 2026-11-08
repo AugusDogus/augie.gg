@@ -721,7 +721,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/aur-cursor-bin-updater/desktop.mp4",
         poster: "/work/aur-cursor-bin-updater/desktop-poster.webp",
-        alt: "A terminal runs the updater for the nightly channel, which updates the cursor-nightly-bin PKGBUILD to Cursor 3.28.7, and a diff shows pkgver changing from 3.2.11 to 3.28.7.",
+        alt: "A terminal runs the updater's check for the nightly channel, which reports Cursor 3.29.14 as newer than the packaged 3.29.12, then runs the update, which rewrites the nightly PKGBUILD to 3.29.14.",
         width: 1920,
         height: 1200,
         frame: "desktop",
@@ -1104,7 +1104,7 @@ export const projects: Project[] = [
       {
         kind: "image",
         src: "/work/electrobun-fixes/desktop.webp",
-        alt: 'The merged GitHub pull request #83 for blackboardsh/electrobun, titled "fix(win): resolve WebView2 window resize deadlock on worker threads", is open on its Files changed tab, showing the diff that adds an async dispatch method to nativeWrapper.cpp.',
+        alt: 'The merged GitHub pull request #83 for electrobun, titled "fix(win): resolve WebView2 window resize deadlock on worker threads", shows its nativeWrapper.cpp diff adding a dispatch_async method and changing the WebView2 resize call from dispatch_sync to dispatch_async.',
         width: 2560,
         height: 1600,
         frame: "desktop",
