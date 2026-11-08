@@ -1724,12 +1724,4 @@ export const projects: Project[] = [
       },
     ],
   },
-  {
-    title: "optifine_phishing",
-    href: "https://github.com/AugusDogus/optifine_phishing",
-    date: "2016-10-20",
-    blurb:
-      "A walkthrough of common phishing techniques, using Minecraft as the example so it reaches a broad audience.",
-    labels: ["archived"],
-  },
 ];
