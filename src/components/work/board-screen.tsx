@@ -1,13 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import {
-  type MouseEvent,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -30,12 +24,11 @@ const OVERLAY =
   "border border-white/10 bg-[linear-gradient(180deg,#16232ad9,#0d171ceb)] shadow-[inset_0_1px_0_#ffffff12,0_1px_2px_#00000040,0_8px_24px_-8px_#00000080] backdrop-blur-[16px] backdrop-saturate-[1.4]";
 
 /**
- * Phosphor's regular Cube, CornersOut, CornersIn, and ArrowSquareOut, inline:
+ * Phosphor's regular CornersOut, CornersIn, and ArrowSquareOut, inline:
  * its components carry all six weights each, which every visit to the home
  * page would load for a viewer few open.
  */
 const GLYPHS = {
-  cube: "M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32h0l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z",
   expand:
     "M216,48V88a8,8,0,0,1-16,0V56H168a8,8,0,0,1,0-16h40A8,8,0,0,1,216,48ZM88,200H56V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H88a8,8,0,0,0,0-16Zm120-40a8,8,0,0,0-8,8v32H168a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,208,160ZM88,40H48a8,8,0,0,0-8,8V88a8,8,0,0,0,16,0V56H88a8,8,0,0,0,0-16Z",
   collapse:
@@ -129,23 +122,12 @@ function Expand({
 
 /**
  * The board's viewer in its frame: the site's own page with the 3D model, PCB,
- * and schematic. Unmounting it drops the page and its WebGL context.
- *
- * `frame` is the box it fills, which goes full screen. `focus` is where focus
- * lands as it opens: into the viewer's tabs, or on the frame, so the card's
- * keys keep working.
+ * and schematic, behind its own tabs. Unmounting it drops the page and its
+ * WebGL context. `frame` is the box it fills, which goes full screen. Focus
+ * stays where it was, so the card's keys keep working; Tab reaches the tabs.
  */
-function Viewer({
-  board,
-  frame,
-  focus,
-}: {
-  board: Board;
-  frame: HTMLDivElement;
-  focus: "viewer" | "frame";
-}) {
+function Viewer({ board, frame }: { board: Board; frame: HTMLDivElement }) {
   const [fullscreen, setFullscreen] = useState(false);
-  const focused = useRef(false);
   const url = viewerUrl(board);
 
   useEffect(() => {
@@ -174,12 +156,6 @@ function Viewer({
       */}
       {/* oxlint-disable-next-line react/iframe-missing-sandbox */}
       <iframe
-        ref={(element) => {
-          if (!element || focused.current) return;
-          focused.current = true;
-          if (focus === "viewer") element.focus();
-          else frame.focus({ preventScroll: true });
-        }}
         src={url}
         title="Board viewer: 3D model, PCB, and schematic"
         referrerPolicy="no-referrer"
@@ -191,14 +167,14 @@ function Viewer({
 }
 
 /**
- * A circuit board in the shared frame: its poster, and once someone asks, an
- * interactive viewer of its 3D model, PCB, and schematic in the same box, so
- * nothing shifts. The viewer is a framed page created only then; until
- * that, the page loads nothing for it.
+ * A circuit board in the shared frame: its poster, and wherever the card takes
+ * input (pinned on the stage, or in the sheet), the interactive viewer of its
+ * 3D model, PCB, and schematic over it in the same box, so nothing shifts. The
+ * poster shows until the viewer paints.
  *
- * `interactive` is whether the card takes input (pinned on the stage, or in
- * the sheet). A hover preview shows the poster alone, and a card that stops
- * taking input drops the viewer, which frees its WebGL context.
+ * A hover preview shows the poster alone and loads nothing for the viewer, and
+ * a card that stops taking input drops the viewer, which frees its WebGL
+ * context.
  */
 export function BoardScreen({
   board,
@@ -209,16 +185,7 @@ export function BoardScreen({
   sizes: string;
   interactive: boolean;
 }) {
-  /** Closed, or open with where focus lands as it replaces the control. */
-  const [open, setOpen] = useState<"viewer" | "frame" | null>(null);
   const [frame, setFrame] = useState<HTMLDivElement | null>(null);
-  if (open !== null && !interactive) setOpen(null);
-
-  function explore(event: MouseEvent<HTMLButtonElement>) {
-    // From the keyboard, into the viewer's tabs; from a pointer, the card keeps its keys.
-    setOpen(event.currentTarget.matches(":focus-visible") ? "viewer" : "frame");
-  }
-
   return (
     <div
       ref={setFrame}
@@ -234,26 +201,7 @@ export function BoardScreen({
         sizes={sizes}
         className="absolute inset-0 size-full object-contain"
       />
-      {open !== null && frame !== null ? (
-        <Viewer board={board} frame={frame} focus={open} />
-      ) : (
-        interactive && (
-          // The whole poster takes the click; the pill shows where.
-          <button
-            type="button"
-            onClick={explore}
-            aria-label="Explore in 3D, with the PCB and schematic"
-            className="group absolute inset-0 rounded-[inherit] -outline-offset-2 transition-opacity duration-200 ease-out starting:opacity-0"
-          >
-            <span
-              className={`${OVERLAY} text-fg absolute bottom-2.5 left-2.5 inline-flex h-8 items-center gap-2 rounded-[10px] pr-3 pl-2.5 text-[13px] font-medium transition-[background-color,scale] duration-150 ease-out group-active:scale-[.97] max-[400px]:bottom-2 max-[400px]:left-2 pointer-coarse:h-10 pointer-coarse:pr-3.5 pointer-coarse:pl-3 pointer-fine:group-hover:bg-[#213038] [&_svg]:size-4`}
-            >
-              <Glyph name="cube" className="text-accent" />
-              Explore in 3D
-            </span>
-          </button>
-        )
-      )}
+      {interactive && frame !== null && <Viewer board={board} frame={frame} />}
     </div>
   );
 }
