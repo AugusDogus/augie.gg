@@ -1668,6 +1668,17 @@ export const projects: Project[] = [
     date: "2018-07-18",
     blurb:
       "A TCP proxy for intercepting packets to and from the game Re:Spite.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/re-spite-proxy/desktop.mp4",
+        poster: "/work/re-spite-proxy/desktop-poster.webp",
+        alt: "Packets move between the Re:Spite client, Re-Spite Proxy on 127.0.0.1:8768 and the game server at game.re-spite.com, while the proxy's Windows console prints each received chunk with every byte shifted down by one, such as MESSAGE02??? hey everyone! in green and PLAYER_MESSAGE03??? Sam: hi Augie! in yellow.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "disc-golf-scorekeeper",
