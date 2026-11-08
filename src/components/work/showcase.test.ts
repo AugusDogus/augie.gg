@@ -200,3 +200,30 @@ describe("Showcase.clock", () => {
       expect(showcase && Showcase.clock(showcase)).toBeNull();
   });
 });
+
+describe("Showcase TV framing", () => {
+  test("frames a lone TV capture in its bezel, deeper at the bottom", () => {
+    const showcase = Showcase.of([tvVideo]);
+    expect(showcase && Showcase.aspect(showcase)).toBeCloseTo(
+      1 /
+        ((960 / 1280) * (1 - 2 * Showcase.TV_BEZEL) +
+          Showcase.TV_BEZEL +
+          Showcase.TV_CHIN),
+    );
+  });
+
+  test("lifts a TV with a console just enough that the console covers only its chin", () => {
+    const console = {
+      src: "/console.webp",
+      alt: "console",
+      width: 720,
+      height: 395,
+    };
+    const lift = Showcase.consoleLift(console);
+    const consoleHeight = Showcase.CONSOLE * (395 / 720);
+    const chin = Showcase.TV_CHIN * Showcase.TV_INSET;
+    expect(lift).toBeGreaterThan(0);
+    expect(consoleHeight - lift).toBeGreaterThan(0);
+    expect(consoleHeight - lift).toBeLessThanOrEqual(chin);
+  });
+});

@@ -1,4 +1,4 @@
-import type { Capture, Media } from "~/content/projects";
+import type { Capture, Console, Media } from "~/content/projects";
 
 /** A phone or TV set in front of a desktop capture hangs this share of the width below it. */
 const OVERHANG = 0.07;
@@ -6,6 +6,17 @@ const OVERHANG = 0.07;
 const LONE_PHONE = 0.36;
 /** A TV capture set in front of a desktop capture takes this share of the width. */
 const TV_INSET = 0.3;
+/** A TV's bezel at its sides and top, as a share of the TV's width. */
+const TV_BEZEL = 0.025;
+/** The deeper bottom bezel a TV stands on, as a share of the TV's width. */
+const TV_CHIN = 0.06;
+/** A console in front of a TV inset takes this share of the composition's width. */
+const CONSOLE = 0.16;
+/** How much of the TV's chin the console rises over; it never reaches the screen. */
+const CHIN_COVER = 0.75;
+
+/** A TV capture, which alone can have a console in front of it. */
+export type TvCapture = Extract<Capture, { frame: "tv" }>;
 
 /** Height over width of a capture or board in its frame. */
 function framedHeight(media: Media): number {
@@ -13,13 +24,14 @@ function framedHeight(media: Media): number {
   if (media.kind === "board") return height;
   switch (media.frame) {
     case "desktop":
-    case "tv":
       return height;
+    case "tv":
+      return height * (1 - 2 * TV_BEZEL) + TV_BEZEL + TV_CHIN;
     case "phone":
       // A 3.2% bezel on every side.
       return height * 0.936 + 0.064;
     default: {
-      const unreachable: never = media.frame;
+      const unreachable: never = media;
       return unreachable;
     }
   }
@@ -34,6 +46,10 @@ function isCapture(media: Media): media is Capture {
   return media.kind !== "board";
 }
 
+function isTv(media: Capture): media is TvCapture {
+  return media.frame === "tv";
+}
+
 /**
  * What a project's media shows, image or video alike: its first desktop
  * capture or board (or, without one, its first TV capture) with its first
@@ -46,7 +62,7 @@ export type Showcase =
       kind: "desktop";
       lead: Media;
       phone: Capture | null;
-      tv: Capture | null;
+      tv: TvCapture | null;
     }
   | { kind: "phone"; phone: Capture };
 
@@ -60,7 +76,7 @@ export const Showcase = {
     if (lead?.kind === "board")
       return { kind: "desktop", lead, phone: null, tv: null };
     const captures = media?.filter(isCapture);
-    const tv = captures?.find((item) => item.frame === "tv") ?? null;
+    const tv = captures?.find(isTv) ?? null;
     const phone = captures?.find((item) => item.frame === "phone") ?? null;
     if (lead !== undefined) return { kind: "desktop", lead, phone, tv };
     if (tv !== null) return { kind: "desktop", lead: tv, phone, tv: null };
@@ -105,8 +121,22 @@ export const Showcase = {
     );
     return first?.kind === "video" && second !== undefined ? first.src : null;
   },
+  /**
+   * How far a TV inset with a console in front of it rises off the bottom, as
+   * a share of the composition's width: the console stands on the bottom edge
+   * and covers only the TV's chin.
+   */
+  consoleLift(console: Pick<Console, "width" | "height">): number {
+    return (
+      (CONSOLE * console.height) / console.width -
+      TV_CHIN * TV_INSET * CHIN_COVER
+    );
+  },
   /** The composition's lengths, as shares of its width, for laying it out in container units. */
   OVERHANG,
   LONE_PHONE,
   TV_INSET,
+  TV_BEZEL,
+  TV_CHIN,
+  CONSOLE,
 } as const;

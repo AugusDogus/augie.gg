@@ -199,6 +199,26 @@ function PhoneFrame({ children }: { children: ReactNode }) {
 }
 
 /**
+ * A TV's silhouette in the phone's materials: a slim bezel, deeper at the
+ * bottom where a TV stands. Its proportions are the ones Showcase lays out.
+ */
+function TvFrame({ children }: { children: ReactNode }) {
+  const side = `${Showcase.TV_BEZEL * 100}cqw`;
+  return (
+    <div className="@container">
+      <div
+        className="rounded-[2.2cqw] bg-[linear-gradient(160deg,#28343a,#0d1418_45%,#0a1013)] shadow-[inset_0_0_0_1px_#ffffff26,inset_0_0_0_2px_#00000080,0_1px_2px_#00000040,0_24px_64px_-16px_#000000b3]"
+        style={{ padding: `${side} ${side} ${Showcase.TV_CHIN * 100}cqw` }}
+      >
+        <div className="overflow-hidden rounded-[0.6cqw] shadow-[0_0_0_1px_#000000]">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * One capture in the frame its `frame` names, or a board in a screen's frame.
  * `sizes` is the rendered width, for picking an image size. `decorative` drops
  * the alt text where something else names the project. `interactive` is
@@ -224,12 +244,13 @@ function ProjectMedia({
   const screen = <Screen media={media} sizes={sizes} decorative={decorative} />;
   switch (media.frame) {
     case "desktop":
-    case "tv":
       return <div className={cn(SCREEN_FRAME, "rounded-[8px]")}>{screen}</div>;
+    case "tv":
+      return <TvFrame>{screen}</TvFrame>;
     case "phone":
       return <PhoneFrame>{screen}</PhoneFrame>;
     default: {
-      const unreachable: never = media.frame;
+      const unreachable: never = media;
       return unreachable;
     }
   }
@@ -306,8 +327,13 @@ function Composition({
           </div>
           {showcase.tv !== null && (
             <div
-              className="absolute bottom-0 left-[5cqw] drop-shadow-[0_18px_30px_#000000a6]"
-              style={{ width: `${Showcase.TV_INSET * 100}cqw` }}
+              className="absolute left-[5cqw] drop-shadow-[0_18px_30px_#000000a6]"
+              style={{
+                width: `${Showcase.TV_INSET * 100}cqw`,
+                bottom: showcase.tv.console
+                  ? `${Showcase.consoleLift(showcase.tv.console) * 100}cqw`
+                  : 0,
+              }}
             >
               <ProjectMedia
                 media={showcase.tv}
@@ -315,6 +341,21 @@ function Composition({
                 interactive={interactive}
               />
             </div>
+          )}
+          {showcase.tv?.console && (
+            // Centred under the TV, standing on the composition's bottom edge.
+            <Image
+              src={showcase.tv.console.src}
+              alt={showcase.tv.console.alt}
+              width={showcase.tv.console.width}
+              height={showcase.tv.console.height}
+              sizes="(max-width: 640px) 18vw, 130px"
+              className="absolute bottom-0 h-auto drop-shadow-[0_10px_14px_#000000b3]"
+              style={{
+                width: `${Showcase.CONSOLE * 100}cqw`,
+                left: `${5 + ((Showcase.TV_INSET - Showcase.CONSOLE) * 100) / 2}cqw`,
+              }}
+            />
           )}
           {showcase.phone !== null && (
             <div className="absolute right-[5cqw] bottom-0 w-[20cqw] drop-shadow-[0_18px_30px_#000000a6]">

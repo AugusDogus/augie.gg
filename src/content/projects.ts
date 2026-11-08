@@ -50,15 +50,30 @@ export type Label =
 /** What a capture is shown in: a screen, a phone, or a television. */
 export type MediaFrame = "desktop" | "phone" | "tv";
 
+/**
+ * A photo of the console a TV capture runs on, cut out on transparency. It
+ * stands at the TV's base, so the platform reads at a glance.
+ */
+export type Console = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
+/** The frame a capture is shown in; only a TV has a console in front of it. */
+type Framing =
+  | { frame: Exclude<MediaFrame, "tv"> }
+  | { frame: "tv"; console?: Console };
+
 /** A screen capture: a still or a short silent loop. */
-export type Capture =
+export type Capture = (
   | {
       kind: "image";
       src: string;
       alt: string;
       width: number;
       height: number;
-      frame: MediaFrame;
       /** Pixel art, such as console output: scaled nearest neighbor, never smoothed. */
       pixelated?: true;
     }
@@ -70,8 +85,9 @@ export type Capture =
       alt: string;
       width: number;
       height: number;
-      frame: MediaFrame;
-    };
+    }
+) &
+  Framing;
 
 /** A circuit board: its poster, and the KiCad files its viewer opens. */
 export type Board = {
@@ -1240,6 +1256,13 @@ export const projects: Project[] = [
         width: 1280,
         height: 960,
         frame: "tv",
+        // Evan-Amos, public domain: commons.wikimedia.org/wiki/File:GameCube-Set.jpg
+        console: {
+          src: "/work/multiplex/gamecube-console.webp",
+          alt: "A Nintendo GameCube with its controller plugged in.",
+          width: 720,
+          height: 395,
+        },
       },
     ],
   },
