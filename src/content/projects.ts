@@ -739,7 +739,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/react-native-media-compositor/phone.mp4",
         poster: "/work/react-native-media-compositor/phone-poster.webp",
-        alt: "In the media compositor example app, a caption is dragged to the top of a lake landscape photo, Export is tapped, and the exported image appears below with the caption burned in.",
+        alt: "In the media compositor example app on Android, the preview crop is switched to 1:1, a caption is dragged from the bottom to the top of a photo of a border collie, Export is tapped, and the exported square image appears below with the caption burned in.",
         width: 592,
         height: 1280,
         frame: "phone",
@@ -1115,14 +1115,14 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/screenshot",
     date: "2025-08-19",
     blurb:
-      "A small, fast region screenshot overlay for Windows (C/Win32/GDI) and macOS (Objective-C/Cocoa).",
+      "A small, fast region screenshot overlay for Windows (C/Win32/GDI), macOS (Objective-C/Cocoa) and Linux Wayland/COSMIC (C/GTK4 with layer-shell, plus a COSMIC panel applet).",
     labels: ["wip"],
     media: [
       {
         kind: "video",
         src: "/work/screenshot/desktop.mp4",
         poster: "/work/screenshot/desktop-poster.webp",
-        alt: "PrintScreen dims the desktop, a region is dragged over a landscape photo in a notes window with its pixel size shown beside it, then the region is moved and resized from a corner handle before Enter closes the overlay.",
+        alt: "On a Windows 11 desktop, clicking the screenshot tray icon dims the screen, a region is dragged over a kingfisher photo with its size shown beside it, moved, and resized from a corner handle, then Enter copies it and closes the overlay.",
         width: 1280,
         height: 800,
         frame: "desktop",
