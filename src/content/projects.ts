@@ -1465,7 +1465,7 @@ export const projects: Project[] = [
       {
         kind: "image",
         src: "/work/bun-cygwin-install/desktop.webp",
-        alt: "A merged GitHub pull request in dark mode shows a diff to bun's install.sh, where the line telling Windows users to use WSL is replaced by a PowerShell call to the Windows installer.",
+        alt: "A merged GitHub pull request to oven-sh/bun, titled feat: make curl install script run the windows installer (if run through cygwin), shows the src/cli/install.sh diff in dark mode where the lines telling Windows users to install bun with Windows Subsystem for Linux and exit are replaced by a PowerShell call to bun's Windows installer.",
         width: 2560,
         height: 1600,
         frame: "desktop",
