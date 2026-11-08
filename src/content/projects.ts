@@ -1378,7 +1378,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/dmm/desktop.mp4",
         poster: "/work/dmm/desktop-poster.webp",
-        alt: "In Deadlock Mod Manager, the sort menu is switched from Most Viewed to Most Liked, a loading skeleton briefly replaces the mod grid, and the re-sorted mod cards are scrolled down and back to the top.",
+        alt: "In Deadlock Mod Manager on Windows, the sort menu is switched from Most Viewed to Most Liked, a loading skeleton shows, the re-sorted grid of GameBanana mods is scrolled down a row and back, and the sort is switched back to Most Viewed.",
         width: 1280,
         height: 800,
         frame: "desktop",
