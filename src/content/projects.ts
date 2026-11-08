@@ -245,7 +245,7 @@ export const projects: Project[] = [
     href: "https://thunderstore.io/c/valheim/p/AugusDogus/",
     date: "2026-09-11",
     blurb:
-      "Seven Valheim client and server mods, including [Buildheim](https://github.com/AugusDogus/Buildheim), [ComfortView](https://github.com/AugusDogus/ComfortView), and [Soundheim](https://github.com/AugusDogus/Soundheim).",
+      "Six Valheim client and server mods, including [Buildheim](https://github.com/AugusDogus/Buildheim), [ComfortView](https://github.com/AugusDogus/ComfortView), and [Soundheim](https://github.com/AugusDogus/Soundheim).",
     labels: ["active"],
     media: [
       {
