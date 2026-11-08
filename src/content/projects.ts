@@ -1716,7 +1716,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/chivskape/desktop.mp4",
         poster: "/work/chivskape/desktop-poster.webp",
-        alt: "A right-click in the left Chivskape window sends that player on a run and back, then a right-click in the right window moves the other player, and each window mirrors the other's run.",
+        alt: "In two Chivskape windows side by side, right-clicks in the left window send its player out and back, then right-clicks in the right window do the same for the other player, and each window shows the other's run as it happens.",
         width: 1280,
         height: 800,
         frame: "desktop",
