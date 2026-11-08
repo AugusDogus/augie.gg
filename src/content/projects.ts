@@ -470,7 +470,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/cursor-acp-auth-shim/desktop.mp4",
         poster: "/work/cursor-acp-auth-shim/desktop-poster.webp",
-        alt: "The shim answers T3 Code's account probe with the API key's email and replies to the cursor_login authenticate request locally with an empty success result.",
+        alt: "In a terminal, Cursor Agent rejects a cursor_login request with an Invalid params error, the t3-cursor-agent shim answers the same request with an empty success result, and its account probe returns the API key's email, person@example.com.",
         width: 1920,
         height: 1200,
         frame: "desktop",
