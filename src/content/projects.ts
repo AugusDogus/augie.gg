@@ -1244,7 +1244,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/multiplex/gamecube.mp4",
         poster: "/work/multiplex/gamecube-poster.webp",
-        alt: "The Multiplex GameCube client moves focus along its Continue Watching row, opens the details page for Signal Hill with a Resume button, then returns to the home rows.",
+        alt: "The Multiplex GameCube client running in Dolphin shows rows of movie and TV posters, moves focus two posters to the right, opens The Fresh Prince of Bel-Air while its details load, then returns to the rows and moves focus back to the first poster.",
         width: 1280,
         height: 960,
         frame: "tv",
