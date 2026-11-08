@@ -1056,14 +1056,6 @@ export const projects: Project[] = [
       "End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native",
     media: [
       {
-        kind: "image",
-        src: "/work/whisp/desktop.webp",
-        alt: "The whisp.chat landing page in dark mode with the headline Ephemeral messaging that doesn't suck and a Join Waitlist with Discord button.",
-        width: 2560,
-        height: 1600,
-        frame: "desktop",
-      },
-      {
         kind: "video",
         src: "/work/whisp/phone.mp4",
         poster: "/work/whisp/phone-poster.webp",
