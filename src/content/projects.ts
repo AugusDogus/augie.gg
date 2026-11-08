@@ -1066,7 +1066,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/whisp/phone.mp4",
         poster: "/work/whisp/phone-poster.webp",
-        alt: "In the whisp app, Augie's two new whisps open full screen one after the other, and when the viewer closes his row changes from New Whisp to Received.",
+        alt: "On whisp's Friends list, miso's new whisp opens full screen and closes, a long press on miso opens the Discord profile sheet, and tapping refresh loads miso's next whisp.",
         width: 592,
         height: 1280,
         frame: "phone",
