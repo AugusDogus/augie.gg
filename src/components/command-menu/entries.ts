@@ -2,8 +2,8 @@ import { statusOf, STATUS_LABEL } from "~/components/status-icon";
 import type { Project } from "~/content/projects";
 import {
   archivedProjects,
+  contributionProjects,
   featuredProjects,
-  notableContributions,
 } from "~/lib/projects";
 import { plainText, rank, type Searchable } from "./match";
 
@@ -35,8 +35,6 @@ export interface Group {
   entries: Entry[];
 }
 
-const isOss = (project: Project) => project.labels?.includes("oss") ?? false;
-
 function projectEntries(
   group: ProjectGroup,
   list: readonly Project[],
@@ -60,16 +58,8 @@ function projectEntries(
 }
 
 const work = projectEntries("work", featuredProjects);
-const oss = projectEntries("oss", [
-  ...notableContributions,
-  ...archivedProjects.filter(
-    (project) => isOss(project) && project.notable === undefined,
-  ),
-]);
-const archive = projectEntries(
-  "archive",
-  archivedProjects.filter((project) => !isOss(project)),
-);
+const oss = projectEntries("oss", contributionProjects);
+const archive = projectEntries("archive", archivedProjects);
 
 /** Visible groups for `query`, each ranked on its own; Everything else waits for a query. */
 export function searchGroups(query: string, actions: Entry[]): Group[] {

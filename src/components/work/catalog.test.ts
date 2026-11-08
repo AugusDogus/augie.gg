@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { type Project, projects } from "~/content/projects";
-import { archivedProjects, featuredProjects } from "~/lib/projects";
+import {
+  archivedProjects,
+  contributionProjects,
+  featuredProjects,
+  notableContributions,
+} from "~/lib/projects";
 import { Catalog } from "./catalog";
 
 const list = [{ title: "a" }, { title: "b" }, { title: "c" }];
@@ -47,11 +52,37 @@ describe("Catalog.sequenceFor", () => {
     expect(first).toBeDefined();
     if (first) expect(Catalog.sequenceFor(first.title)).toBe(archivedProjects);
   });
+
+  test("steps contributions among themselves, in the open source section's order", () => {
+    const last = contributionProjects.at(-1);
+    expect(last).toBeDefined();
+    if (last)
+      expect(Catalog.sequenceFor(last.title)).toBe(contributionProjects);
+  });
+});
+
+describe("Contributions", () => {
+  test("stay out of the archive, which lists only Augie's own projects", () => {
+    expect(
+      archivedProjects.some((project) => project.labels?.includes("oss")),
+    ).toBe(false);
+  });
+
+  test("list the notable ones first, then the rest", () => {
+    expect(contributionProjects.slice(0, notableContributions.length)).toEqual([
+      ...notableContributions,
+    ]);
+    expect(contributionProjects).toHaveLength(
+      projects.filter((project) => project.labels?.includes("oss")).length,
+    );
+  });
 });
 
 describe("Catalog counts", () => {
-  test("counts every project once", () => {
-    expect(Catalog.count).toBe(projects.length);
+  test("counts each of Augie's own projects once, leaving contributions to the open source section", () => {
+    expect(Catalog.count).toBe(
+      projects.filter((project) => !project.labels?.includes("oss")).length,
+    );
   });
 
   test("leaves notable contributions out of the rest", () => {

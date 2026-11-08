@@ -1,21 +1,27 @@
 import { type Project, projects } from "~/content/projects";
-import { archivedProjects, featuredProjects } from "~/lib/projects";
+import {
+  archivedProjects,
+  contributionProjects,
+  featuredProjects,
+} from "~/lib/projects";
 
 type Titled = { title: string };
 
 export const Catalog = {
-  /** Every project: the featured rows plus the archive. */
+  /** Augie's own projects: the featured rows plus the archive. */
   count: featuredProjects.length + archivedProjects.length,
   /** Merged upstream contributions, newest first. */
   contributions: projects.filter((project) => project.labels?.includes("oss")),
   find(title: string): Project | undefined {
     return projects.find((project) => project.title === title);
   },
-  /** The list the peek steps through: featured among featured, the rest through the archive. */
+  /** The list the peek steps through: featured among featured, contributions among contributions, the rest through the archive. */
   sequenceFor(title: string): readonly Project[] {
-    return featuredProjects.some((project) => project.title === title)
-      ? featuredProjects
-      : archivedProjects;
+    const within = (list: readonly Project[]) =>
+      list.some((project) => project.title === title);
+    if (within(featuredProjects)) return featuredProjects;
+    if (within(contributionProjects)) return contributionProjects;
+    return archivedProjects;
   },
   neighbor<T extends Titled>(
     list: readonly T[],
