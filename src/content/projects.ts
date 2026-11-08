@@ -1485,7 +1485,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/apex-calendar/desktop.mp4",
         poster: "/work/apex-calendar/desktop-poster.webp",
-        alt: "In a Discord channel, Priya runs /start and the Apex Calendar bot posts a November 2026 event calendar, then edits it to add new events.",
+        alt: "In a Discord channel, Priya runs /refresh and the Apex Calendar bot edits its April 2025 calendar post to add Pro League and Alienware Collegiate Clash events.",
         width: 1280,
         height: 800,
         frame: "desktop",
