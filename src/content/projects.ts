@@ -1565,7 +1565,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/uwu-bot/desktop.mp4",
         poster: "/work/uwu-bot/desktop-poster.webp",
-        alt: "In a Discord channel, Priya replies !uwu to Jonah's message and the bot reposts it in uwu speak, then answers Augie's uwu with uwu.",
+        alt: 'In a Discord channel, Priya sends !uwu after Jonah\'s message "Hello friends, good morning!" and the uwu bot reposts it as "Hewwo fwiends, good myownying! uwu", then answers Jonah\'s uwu with uwu.',
         width: 1280,
         height: 800,
         frame: "desktop",
