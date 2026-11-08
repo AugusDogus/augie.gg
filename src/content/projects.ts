@@ -1265,11 +1265,12 @@ export const projects: Project[] = [
     blurb: "A curated list of the best applications and tools for Windows.",
     media: [
       {
-        kind: "image",
-        src: "/work/awesome-windows/desktop.webp",
-        alt: "The awesome-windows README on GitHub lists NanaZip, LightShot, LittleBigMouse, WizTree and RustDesk, each with a short description.",
-        width: 2560,
-        height: 1600,
+        kind: "video",
+        src: "/work/awesome-windows/desktop.mp4",
+        poster: "/work/awesome-windows/desktop-poster.webp",
+        alt: "A graphic of the awesome-windows list shows the icons of 20 listed Windows apps in a grid while a card steps through the README entries for Microsoft PowerToys, Windhawk and five of its mods, LittleBigMouse and WinRAR.",
+        width: 1280,
+        height: 800,
         frame: "desktop",
       },
     ],
@@ -1426,7 +1427,7 @@ export const projects: Project[] = [
       {
         kind: "image",
         src: "/work/myspeed-og/desktop.webp",
-        alt: "The MySpeed Open Graph image on a dark background, showing the MySpeed logo, the date and time in UTC, 120.47 Mbps download, 72.93 Mbps upload and a 14 ms ping.",
+        alt: "Two Discord link previews of the same MySpeed link side by side: before, a small embed with the MySpeed logo as its thumbnail, and after, a large embed with the MySpeed card showing 487.36 Mbps download, 42.18 Mbps upload and a 12 ms ping.",
         width: 2560,
         height: 1600,
         frame: "desktop",
@@ -1544,6 +1545,17 @@ export const projects: Project[] = [
     date: "2020-02-11",
     blurb:
       "A Discord bot that swaps a user’s role based on whether they are playing Apex.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/apex-status-bot/desktop.mp4",
+        poster: "/work/apex-status-bot/desktop-poster.webp",
+        alt: "In a Discord member list, Emma starts playing Apex Legends and moves up into the Playing Apex group with Jake, then Jake and Emma drop back to Online as each stops playing, and Jake moves back up on launching Apex again.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "minecraft-status-bot",
@@ -1575,7 +1587,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/uwu-bot/desktop.mp4",
         poster: "/work/uwu-bot/desktop-poster.webp",
-        alt: 'In a Discord channel, Priya sends !uwu after Jonah\'s message "Hello friends, good morning!" and the uwu bot reposts it as "Hewwo fwiends, good myownying! uwu", then answers Jonah\'s uwu with uwu.',
+        alt: 'In a Discord channel, Augie sends !uwu after Jonah\'s message "Hello friends, good morning!" and the uwu bot reposts it as "Hewwo fwiends, good myownying! uwu", then answers Jonah\'s uwu with uwu.',
         width: 1280,
         height: 800,
         frame: "desktop",
