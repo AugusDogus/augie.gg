@@ -168,3 +168,35 @@ describe("Showcase.aspect", () => {
     );
   });
 });
+
+describe("Showcase.clock", () => {
+  const desktopVideo: Media = {
+    kind: "video",
+    src: "/desktop.mp4",
+    poster: "/desktop.webp",
+    alt: "desktop",
+    width: 1280,
+    height: 800,
+    frame: "desktop",
+  };
+
+  test("is the lead's video when the phone or TV plays beside it", () => {
+    const showcase = Showcase.of([desktopVideo, phoneVideo, tvVideo]);
+    expect(showcase && Showcase.clock(showcase)).toBe("/desktop.mp4");
+  });
+
+  test("is the phone's video when the lead is a still and the TV plays beside the phone", () => {
+    const showcase = Showcase.of([desktop("/a.webp"), phoneVideo, tvVideo]);
+    expect(showcase && Showcase.clock(showcase)).toBe("/phone.mp4");
+  });
+
+  test("is null when only one video plays", () => {
+    const pairs = [
+      Showcase.of([desktop("/a.webp"), phoneVideo]),
+      Showcase.of([phoneVideo]),
+      Showcase.of([desktopVideo]),
+    ];
+    for (const showcase of pairs)
+      expect(showcase && Showcase.clock(showcase)).toBeNull();
+  });
+});

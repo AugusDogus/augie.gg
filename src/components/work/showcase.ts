@@ -93,6 +93,18 @@ export const Showcase = {
       }
     }
   },
+  /**
+   * The source of the video the others keep time to when the composition plays
+   * more than one: the first of lead, phone and TV that is a video. Null when
+   * at most one plays.
+   */
+  clock(showcase: Showcase): string | null {
+    if (showcase.kind === "phone") return null;
+    const [first, second] = [showcase.lead, showcase.phone, showcase.tv].filter(
+      (media) => media?.kind === "video",
+    );
+    return first?.kind === "video" && second !== undefined ? first.src : null;
+  },
   /** The composition's lengths, as shares of its width, for laying it out in container units. */
   OVERHANG,
   LONE_PHONE,

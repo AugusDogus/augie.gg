@@ -3,7 +3,9 @@
 import Image from "next/image";
 import {
   type CSSProperties,
+  createContext,
   type ReactNode,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -12,6 +14,7 @@ import { usePlaying } from "~/components/flight-background";
 import type { Capture, Media } from "~/content/projects";
 import { cn } from "~/lib/utils";
 import { BoardScreen } from "./board-screen";
+import { PlaybackGroup } from "./playback";
 import { Showcase } from "./showcase";
 
 /**
@@ -21,6 +24,14 @@ import { Showcase } from "./showcase";
  */
 export const SCREEN_FRAME =
   "relative overflow-hidden bg-[#05090b] shadow-[0_0_0_1px_#ffffff1f,0_1px_2px_#00000066,0_16px_40px_-16px_#000000b3] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_0_0_0_1px_#0000004d]";
+
+/**
+ * A composition's videos cut to one timeline, kept in step: the group, and the
+ * source of the video the others follow. Null where only one video plays.
+ */
+const InStep = createContext<{ group: PlaybackGroup; clock: string } | null>(
+  null,
+);
 
 /** Save-Data, where the browser reports it. */
 function savesData(): boolean {
@@ -97,8 +108,10 @@ function Video({
   className: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
+  // State rather than a ref, so effects run again once the element exists.
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const { playing, reduced } = usePlaying();
+  const inStep = useContext(InStep);
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [started, setStarted] = useState(false);
@@ -117,17 +130,24 @@ function Video({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (video === null || inStep === null) return undefined;
+    return inStep.group.join(
+      video,
+      media.src === inStep.clock ? "lead" : "follow",
+    );
+  }, [video, inStep, media.src]);
+
   // It autoplays as it mounts; after that, this pauses and resumes it.
   useEffect(() => {
-    const element = video.current;
-    if (!element) return;
+    if (video === null) return;
     if (!wanted) {
-      element.pause();
+      video.pause();
       return;
     }
     // A refused play() (autoplay policy, an interrupted load) leaves the poster up.
-    element.play().catch(() => undefined);
-  }, [wanted]);
+    video.play().catch(() => undefined);
+  }, [video, wanted]);
 
   return (
     <div ref={root} className="absolute inset-0">
@@ -141,7 +161,7 @@ function Video({
       />
       {mounted && (
         <video
-          ref={video}
+          ref={setVideo}
           autoPlay
           muted
           loop
@@ -232,6 +252,37 @@ export function MediaShowcase({
   /** The composition's rendered width. */
   sizes: string;
   /** Whether the card takes input: a board opens its viewer only then. */
+  interactive: boolean;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const clock = Showcase.clock(showcase);
+  const [group] = useState(() => new PlaybackGroup());
+  const composition = (
+    <Composition
+      showcase={showcase}
+      sizes={sizes}
+      interactive={interactive}
+      className={className}
+      style={style}
+    />
+  );
+  return clock === null ? (
+    composition
+  ) : (
+    <InStep value={{ group, clock }}>{composition}</InStep>
+  );
+}
+
+function Composition({
+  showcase,
+  sizes,
+  interactive,
+  className,
+  style,
+}: {
+  showcase: Showcase;
+  sizes: string;
   interactive: boolean;
   className?: string;
   style?: CSSProperties;
