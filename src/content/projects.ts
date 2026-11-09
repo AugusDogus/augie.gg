@@ -942,7 +942,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/trpc-chrome/desktop.mp4",
         poster: "/work/trpc-chrome/desktop-poster.webp",
-        alt: "A Chrome extension popup sends the invalid URL trpc.io to its background script and shows the zod validation error that comes back, then sends https://trpc.io and the background opens it in a new tab.",
+        alt: "In VS Code the popup's trpc.openNewTab.mutate call autocompletes and shows the { url: string } input type from background.ts, then the Chrome extension popup sends example.com over chrome.runtime.Port, the service worker rejects it as an invalid URL and the error returns to the popup, and https://example.com is accepted and opened in a new tab.",
         width: 1280,
         height: 800,
         frame: "desktop",
@@ -1708,6 +1708,17 @@ export const projects: Project[] = [
     blurb:
       "A fork of fechanique/cordova-plugin-fcm, Google FCM push notifications for Cordova.",
     fork: true,
+    media: [
+      {
+        kind: "video",
+        src: "/work/cordova-plugin-fcm/desktop.mp4",
+        poster: "/work/cordova-plugin-fcm/desktop-poster.webp",
+        alt: "An Android phone shows an Out for delivery push notification from a Cordova app called Parcels, and tapping it opens Parcel 1042 while the app's FCMPlugin.onNotification handler logs wasTapped true; a second push that arrives with the app open takes the handler's else branch and marks the parcel Delivered.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "Re-Spite-Proxy",
@@ -1737,7 +1748,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/disc-golf-scorekeeper/phone.mp4",
         poster: "/work/disc-golf-scorekeeper/phone-poster.webp",
-        alt: "On an Android phone, Register on the Disc Golf Scorekeeper sign-in card opens the Register form, where the name Augie, augie@example.com and a password are typed before Cancel returns to the sign-in card.",
+        alt: "On an Android phone, a password is typed into the Disc Golf Scorekeeper sign-in card for augie@example.com, then a recreated Riverside Park scorecard takes plus and minus taps for a birdie by Augie and a bogey by Sam on hole 4 and a birdie by Jake on hole 5, each total against par updating, and the leaderboard shows Augie at -2, Jake at even and Sam at +1 before signing out.",
         width: 592,
         height: 1280,
         frame: "phone",
