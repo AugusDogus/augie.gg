@@ -927,6 +927,17 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/hytale-plugin-template",
     date: "2026-01-13",
     blurb: "A development template for creating Hytale server plugins.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/hytale-plugin-template/desktop.mp4",
+        poster: "/work/hytale-plugin-template/desktop-poster.webp",
+        alt: "A VS Code window shows the template's TemplatePlugin class, runs ./gradlew runServer in the terminal, and opens the server log, where the line Enabled plugin Example:TemplatePlugin is selected.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
 
   // 2025
