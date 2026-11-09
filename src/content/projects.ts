@@ -1353,9 +1353,9 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/bun-opencv/desktop.mp4",
         poster: "/work/bun-opencv/desktop-poster.webp",
-        alt: "A terminal shows a short bun-opencv script, then runs its template match on the repo's Super Mario Bros test frame, prints 19 matches and shows the frame with a box around each coin.",
-        width: 1920,
-        height: 1200,
+        alt: "In the repo's Super Mario Bros test frame, bun-opencv matches a coin template to all 19 coins and then a Mario template to Mario, with a box scored 1.00 on each match, while the terminal under the short find.ts script prints matches: 19 and matches: 1.",
+        width: 1280,
+        height: 800,
         frame: "desktop",
       },
     ],
@@ -1625,6 +1625,17 @@ export const projects: Project[] = [
     date: "2019-12-11",
     blurb:
       "A containerized Halo CE dedicated server running SAPP, converted from a Docker image originally built for Eldewrito.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/docker-haloce-sapp/desktop.mp4",
+        poster: "/work/docker-haloce-sapp/desktop-poster.webp",
+        alt: "A diagram shows docker-compose up -d creating the haloceded container, which checks the /game volume for haloceded.exe, downloads SAPP v10.1 into it, copies a default init.txt and starts the Halo CE dedicated server under Wine and Xvfb as its log prints each step, then opens UDP ports 2302 and 2303 to players.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "jwt-pwa-boilerplate",
@@ -1665,6 +1676,17 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/plexguide-node-http-server",
     date: "2019-01-29",
     blurb: "A wrapper around node-http-server for use with PlexGuide.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/plexguide-node-http-server/desktop.mp4",
+        poster: "/work/plexguide-node-http-server/desktop-poster.webp",
+        alt: "A browser reloads example.com:8080, and plexguide-node-http-server, which runs node-http-server on port 8080 beside Plex Media Server on a PlexGuide server, answers the requests for index.html and lib/basic.css with 200 OK, so the browser shows the node-http-server example page.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
 
   // 2018
