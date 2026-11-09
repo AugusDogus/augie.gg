@@ -1795,6 +1795,17 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/casper",
     date: "2018-02-09",
     blurb: "A third-party Snapchat client.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/casper/phone.mp4",
+        poster: "/work/casper/phone-poster.webp",
+        alt: "On an Android phone, Casper's Snaps inbox holds blurred new snaps from Sam Carter and Emma Brooks; each tap slides up a full-screen photo, a mountain lake and then a pepperoni pizza, that counts down for 2 seconds and closes as opened, before signing out to Casper's blue sign-in page, where augie@example.com and a password are typed and Sign In returns to the inbox.",
+        width: 592,
+        height: 1280,
+        frame: "phone",
+      },
+    ],
   },
 
   // 2017
