@@ -725,9 +725,9 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/aur-cursor-bin-updater/desktop.mp4",
         poster: "/work/aur-cursor-bin-updater/desktop-poster.webp",
-        alt: "A terminal checks Cursor's nightly channel, where jq shows the packaged version 3.29.12, the latest 3.29.14 and an available update, then the updater rewrites packaging/nightly/PKGBUILD to 3.29.14.",
-        width: 1920,
-        height: 1200,
+        alt: "An animated diagram follows one release: Cursor's nightly channel moves from 3.29.12 to 3.29.14, the hourly Update AUR Nightly Package workflow checks, updates the PKGBUILD, commits it and publishes it, the AUR's cursor-nightly-bin by augusdogus changes from 3.29.12-1 to 3.29.14-1 with Last Updated 2026-11-07 07:11, and yay -Sua, which found nothing to do on the run before, then lists cursor-nightly-bin 3.29.12-1 -> 3.29.14-1.",
+        width: 1280,
+        height: 800,
         frame: "desktop",
       },
     ],
@@ -821,6 +821,17 @@ export const projects: Project[] = [
     date: "2026-02-20",
     blurb:
       "A Discord “Go Live” recorder built on discord.js-selfbot-v13 and FFmpeg.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/discord-mov/desktop.mp4",
+        poster: "/work/discord-mov/desktop-poster.webp",
+        alt: 'Sam Carter, already live in a Discord voice channel, mentions Recorder, which replies "Recording your stream.", joins muted and starts watching, while samcarter_2026-02-21T03-42-07-318Z.mkv appears in a recordings folder in GNOME Files and grows to 1.3 MB until Sam stops streaming and Recorder leaves.',
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "nimbus",
@@ -1419,6 +1430,17 @@ export const projects: Project[] = [
     blurb:
       "Publishes what you are watching on Plex to Discord Rich Presence, using Bun, Drizzle, and the Discord IPC API.",
     labels: ["wip"],
+    media: [
+      {
+        kind: "video",
+        src: "/work/plex-rich-presence-cli/desktop.mp4",
+        poster: "/work/plex-rich-presence-cli/desktop-poster.webp",
+        alt: "An episode of Superman, Billion Dollar Limited (1942), plays in Plex Web while a Discord profile card for Jake shows Watching Superman, Streaming on Plex, Season 1 • Episode 3 with the Plex icon, and the activity clears when the player is closed.",
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "gnmyt/MySpeed",
