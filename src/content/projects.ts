@@ -1405,6 +1405,17 @@ export const projects: Project[] = [
     date: "2024-11-02",
     blurb:
       "A Vendetta plugin for recoloring usernames in Discord’s mobile client.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/username-colors/phone.mp4",
+        poster: "/work/username-colors/phone-poster.webp",
+        alt: "In a Discord chat on a phone, Jake's name is amber and Emma's is green; on the Username Colors settings page Jake's entry is tapped, the hue bar is dragged from amber to blue and Select is tapped, and back in the chat every one of Jake's names is blue.",
+        width: 592,
+        height: 1280,
+        frame: "phone",
+      },
+    ],
   },
   {
     title: "ct3a-electron",
@@ -1738,6 +1749,17 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/gc-rom-dl",
     date: "2018-04-14",
     blurb: "A GameCube ROM downloader.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/gc-rom-dl/desktop.mp4",
+        poster: "/work/gc-rom-dl/desktop-poster.webp",
+        alt: 'The GameCube ROM Downloader window shows search results for "brine" with made-up game titles, the pointer clicks Brine Rush to open its cover with a red Not Downloaded ribbon, then clicks the cloud download icon, and the ribbon turns orange Downloading with the toast "Attempting to download Brine_Rush_(USA).7z.." and then green Downloaded with the toast "Downloaded ~/Downloads/GC ROMS/Brine_Rush_(USA).7z" before a click outside closes it.',
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "plex-anime-support",
