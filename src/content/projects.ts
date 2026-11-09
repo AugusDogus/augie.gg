@@ -1826,6 +1826,17 @@ export const projects: Project[] = [
     date: "2017-11-08",
     blurb: "A Unity RPG project in C#.",
     labels: ["archived"],
+    media: [
+      {
+        kind: "video",
+        src: "/work/rpg/desktop.mp4",
+        poster: "/work/rpg/desktop-poster.webp",
+        alt: 'In the project\'s low-poly Main scene, a right-click on the white Interactable sphere runs the player onto the bridge to it, the console logs "Interacted with Interactable", and a left-click sends the player back.',
+        width: 1280,
+        height: 800,
+        frame: "desktop",
+      },
+    ],
   },
   {
     title: "Yang / Mars",
