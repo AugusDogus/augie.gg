@@ -1776,7 +1776,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/gc-rom-dl/desktop.mp4",
         poster: "/work/gc-rom-dl/desktop-poster.webp",
-        alt: 'The GameCube ROM Downloader window shows search results for "brine" with made-up game titles, the pointer clicks Brine Rush to open its cover with a red Not Downloaded ribbon, then clicks the cloud download icon, and the ribbon turns orange Downloading with the toast "Attempting to download Brine_Rush_(USA).7z.." and then green Downloaded with the toast "Downloaded ~/Downloads/GC ROMS/Brine_Rush_(USA).7z" before a click outside closes it.',
+        alt: 'The GameCube ROM Downloader window shows search results for "mario" (Super Mario Sunshine, Mario Kart: Double Dash!!, Paper Mario: The Thousand-Year Door, Super Mario Strikers, Mario Party 4, Mario Golf: Toadstool Tour, Mario Power Tennis, Mario Superstar Baseball and Mario Party 5), the pointer opens Super Mario Sunshine\'s cover with a red Not Downloaded ribbon and clicks the cloud download icon, and the ribbon turns orange Downloading with the toast "Attempting to download Super_Mario_Sunshine_(USA).7z.." and then green Downloaded with the toast "Downloaded ~/Downloads/GC ROMS/Super_Mario_Sunshine_(USA).7z" before a click outside closes it.',
         width: 1280,
         height: 800,
         frame: "desktop",
