@@ -1592,7 +1592,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/minecraft-status-bot/desktop.mp4",
         poster: "/work/minecraft-status-bot/desktop-poster.webp",
-        alt: "In a new Discord channel, Priya runs /players, the bot's reply shows Sending command and then an embed listing the three players online out of 20, while its member list status reads Watching 3 / 20 online.",
+        alt: "In a new Discord channel, Nick runs /players, the bot's reply shows Sending command and then an embed listing the three players online out of 20, while its member list status reads Watching 3 / 20 online.",
         width: 1280,
         height: 800,
         frame: "desktop",
@@ -1721,6 +1721,17 @@ export const projects: Project[] = [
     href: "https://github.com/AugusDogus/disc-golf-scorekeeper",
     date: "2018-05-12",
     blurb: "Just another disc golf scorekeeper.",
+    media: [
+      {
+        kind: "video",
+        src: "/work/disc-golf-scorekeeper/phone.mp4",
+        poster: "/work/disc-golf-scorekeeper/phone-poster.webp",
+        alt: "On an Android phone, Register on the Disc Golf Scorekeeper sign-in card opens the Register form, where the name Augie, augie@example.com and a password are typed before Cancel returns to the sign-in card.",
+        width: 592,
+        height: 1280,
+        frame: "phone",
+      },
+    ],
   },
   {
     title: "gc-rom-dl",
