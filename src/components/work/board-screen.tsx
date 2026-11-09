@@ -168,13 +168,12 @@ function Viewer({ board, frame }: { board: Board; frame: HTMLDivElement }) {
 
 /**
  * A circuit board in the shared frame: its poster, and wherever the card takes
- * input (pinned on the stage, or in the sheet), the interactive viewer of its
- * 3D model, PCB, and schematic over it in the same box, so nothing shifts. The
- * poster shows until the viewer paints.
+ * input (shown on the stage, previewed or pinned, or in the sheet), the
+ * interactive viewer of its 3D model, PCB, and schematic over it in the same
+ * box, so nothing shifts. The poster shows until the viewer paints.
  *
- * A hover preview shows the poster alone and loads nothing for the viewer, and
- * a card that stops taking input drops the viewer, which frees its WebGL
- * context.
+ * A card that stops taking input (a stage card no longer shown) drops the
+ * viewer, which frees its WebGL context.
  */
 export function BoardScreen({
   board,

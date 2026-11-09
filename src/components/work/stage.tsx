@@ -129,7 +129,8 @@ function Layer({
       <ProjectView
         project={project}
         sizes={`${width - CHROME}px`}
-        interactive={pinned}
+        // The shown card takes the pointer, previewed or pinned, so a board's viewer opens on hover too.
+        interactive={active}
         mediaHeight={`${media}px`}
         titleId={titleId}
         bodyRef={measureBody}
