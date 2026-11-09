@@ -661,7 +661,7 @@ export const projects: Project[] = [
         kind: "video",
         src: "/work/superflight/desktop.mp4",
         poster: "/work/superflight/desktop-poster.webp",
-        alt: "Two wingsuit flyers, a yellow one labeled Flyer 4821 and a red one, glide side by side through a long right turn low over green hills while the HUD reads 2 flyers live.",
+        alt: "A red wingsuit flyer and a yellow one labeled Flyer 4821 fly into a green valley on separate lines, then a dotted ring around the red flyer fills as it skims the ground, turns violet, and drains as it boosts and draws level with the yellow flyer while the HUD speed climbs from about 93 to 118.",
         width: 1280,
         height: 800,
         frame: "desktop",
