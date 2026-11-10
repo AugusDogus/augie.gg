@@ -19,7 +19,6 @@ import {
   useId,
   useRef,
   useState,
-  useSyncExternalStore,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
@@ -35,7 +34,7 @@ import {
   type Entry,
   type ProjectEntry,
 } from "./entries";
-import { useApple, withModifier } from "./platform";
+import { useApple, useCoarse, withModifier } from "./platform";
 import { closeMenu, handOffMenu } from "./store";
 
 const ACTIONS: readonly ActionId[] = [
@@ -54,13 +53,6 @@ const KEYWORDS: Readonly<Record<ActionId, readonly string[]>> = {
 type Copy = "idle" | "copied" | "failed";
 /** The highlighted row; null means the first enabled one. Only keyboard moves scroll it into view. */
 type Selection = { key: string; via: "keyboard" | "pointer" } | null;
-
-const COARSE = "(pointer: coarse)";
-function subscribeCoarse(listener: () => void) {
-  const media = matchMedia(COARSE);
-  media.addEventListener("change", listener);
-  return () => media.removeEventListener("change", listener);
-}
 
 function openTab(href: string) {
   window.open(href, "_blank", "noopener,noreferrer");
@@ -106,11 +98,7 @@ export function CommandPanel() {
   const apple = useApple();
   const { playing, reduced } = usePlaying();
   // Touch adds a Cancel button, which leaves phones room for only a short placeholder.
-  const coarse = useSyncExternalStore(
-    subscribeCoarse,
-    () => matchMedia(COARSE).matches,
-    () => false,
-  );
+  const coarse = useCoarse();
   const [query, setQuery] = useState("");
   const [selection, setSelection] = useState<Selection>(null);
   const [copy, setCopy] = useState<Copy>("idle");

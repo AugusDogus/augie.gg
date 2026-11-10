@@ -142,6 +142,7 @@ function Layer({
             className="-my-0.5 -mr-1.5 opacity-0 transition-opacity duration-150 ease-out data-[pinned=true]:opacity-100"
           >
             <PeekControls
+              project={project}
               previous={Catalog.neighbor(sequence, project.title, -1)}
               next={Catalog.neighbor(sequence, project.title, 1)}
               onStep={onStep}
