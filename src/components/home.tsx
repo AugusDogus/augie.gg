@@ -35,9 +35,16 @@ export function Home() {
               Augie Luebbers
             </h1>
             <p className="text-fg-2 rise mt-5 max-w-[31em] text-[17px]/[1.55] text-pretty select-text [--i:1]">
-              Product engineer in Pensacola, FL. I notice something annoying,
-              fix it, and move&nbsp;on. Sometimes the fix is a Plex client for
-              the GameCube.
+              Product engineer in Pensacola, FL. Building things with{" "}
+              <a
+                href="https://www.amli.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="decoration-fg-3 hover:decoration-fg underline underline-offset-[3px] transition-[text-decoration-color] duration-150 ease-out"
+              >
+                AMLI
+              </a>
+              .
             </p>
             <div className="rise mt-8 flex flex-wrap gap-2.5 [--i:2]">
               <CopyEmailButton />
