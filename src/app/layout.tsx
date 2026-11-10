@@ -6,7 +6,7 @@ import { FlightBackground } from "~/components/flight-background";
 import { Settled } from "~/components/settled";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { WhaleArt } from "~/lib/flight/whale-art";
-import { DEFAULT_APP_TITLE } from "~/lib/site";
+import { DEFAULT_APP_TITLE, SITE_URL } from "~/lib/site";
 import artwork from "../../public/flight4cover_redux_spread.jpg";
 
 // Inter with its optical-size axis: the display cut at headline sizes, text cut below.
@@ -26,7 +26,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://augie.gg"),
+  metadataBase: new URL(SITE_URL),
   alternates: { canonical: "/" },
   title: { default: DEFAULT_APP_TITLE, template: `%s | ${DEFAULT_APP_TITLE}` },
   description: "Product engineer in Pensacola, FL. Building things with AMLI.",

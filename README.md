@@ -118,6 +118,17 @@ name; Geist Mono only draws keyboard hints.
 The résumé remains in `src/app/resume/page.mdx` on the same glass. Print styles
 keep it in a single black-on-white column on one US Letter page.
 
+The résumé's PDF button opens `public/resume.pdf` in a new tab, to print or
+save from the browser's viewer. It is that print committed as a file, with
+links within the site pointed at augie.gg. A deploy
+has no browser to print with, so print it again after changing the résumé:
+
+```sh
+bun run build && CHROME_PATH=<chrome or chromium binary> bun run resume:pdf
+```
+
+A test fails while the file is older than `page.mdx` or `resume.css`.
+
 The résumé's Twitch line shows the channel's subscriber badge with the months
 on hover, the months beside it on touch screens, and the words alone in print.
 

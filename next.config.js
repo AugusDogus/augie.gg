@@ -38,6 +38,17 @@ const nextConfig = {
         source: "/work/:project/:file(.+\\.kicad_(?:pcb|sch))",
         headers: [{ key: "Content-Type", value: "text/plain; charset=utf-8" }],
       },
+      {
+        // The résumé opens in the browser's viewer, and saves from there
+        // under a name that says whose it is.
+        source: "/resume.pdf",
+        headers: [
+          {
+            key: "Content-Disposition",
+            value: 'inline; filename="augie-luebbers-resume.pdf"',
+          },
+        ],
+      },
     ];
   },
 };
