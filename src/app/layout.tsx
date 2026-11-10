@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ConsoleGreeting } from "~/components/console-greeting";
 import { FlightBackground } from "~/components/flight-background";
+import { Settled } from "~/components/settled";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { WhaleArt } from "~/lib/flight/whale-art";
 import { DEFAULT_APP_TITLE } from "~/lib/site";
@@ -67,6 +68,7 @@ export default function RootLayout({
         <div className="relative">
           <TooltipProvider>{children}</TooltipProvider>
         </div>
+        <Settled />
       </body>
     </html>
   );

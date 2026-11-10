@@ -5,6 +5,8 @@
   color: var(--color-fg-2);
 }
 .resume-sheet h1 {
+  /* Hugs the name, which travels here from home (NameHeading). */
+  width: fit-content;
   font-size: 32px;
   font-weight: 600;
   line-height: 1.15;

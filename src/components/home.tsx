@@ -5,8 +5,8 @@ import { CommandMenu, CommandMenuTrigger } from "~/components/command-menu";
 import { CopyEmailButton } from "~/components/copy-email";
 import { Dock } from "~/components/dock";
 import { GithubButton } from "~/components/github-button";
+import { NameHeading } from "~/components/name-heading";
 import { ProjectPeek } from "~/components/project-peek";
-import { Settled } from "~/components/settled";
 import { Button } from "~/components/ui/button";
 import { OpenSource } from "~/components/work/open-source";
 import { WorkList } from "~/components/work-list";
@@ -31,9 +31,7 @@ export function Home() {
           className="relative z-10 px-(--gutter) pb-10 [@media(width>1000px)_and_(aspect-ratio>5/4)]:pb-28"
         >
           <section className="max-w-[600px] pt-[clamp(40px,8vh,128px)]">
-            <h1 className="display rise text-[clamp(44px,5.2vw,76px)] select-text [--i:0]">
-              Augie Luebbers
-            </h1>
+            <NameHeading className="display rise w-fit text-[clamp(44px,5.2vw,76px)] select-text [--i:0]" />
             <p className="text-fg-2 rise mt-5 max-w-[31em] text-[17px]/[1.55] text-pretty select-text [--i:1]">
               Product engineer in Pensacola, FL. Building things with{" "}
               <a
@@ -66,7 +64,6 @@ export function Home() {
       </div>
       <ProjectPeek />
       <CommandMenu />
-      <Settled />
     </>
   );
 }
