@@ -95,6 +95,9 @@ addEventListener("message", (event: MessageEvent<ToRenderer>) => {
       page.hidden = message.value;
       background?.setHidden(message.value);
       return;
+    case "cheer":
+      background?.cheer();
+      return;
     case "shown":
       background?.shown(message.live);
       return;

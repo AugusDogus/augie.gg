@@ -34,6 +34,12 @@ function subscribeMotion(listener: () => void) {
   media.addEventListener("change", listener);
   return () => media.removeEventListener("change", listener);
 }
+/** The running painting, for whatever on the page has something to tell it. */
+let live: Flight | null = null;
+/** Something on the page went well: the whales in view flick their flukes. */
+export function cheer() {
+  live?.cheer();
+}
 /** Pauses or resumes the artwork; shared by the dock and the command menu. */
 export function toggleAnimation() {
   paused = !paused;
@@ -88,9 +94,11 @@ export function FlightBackground() {
           reason,
         );
         flight.current = null;
+        live = null;
         setReady(false);
       },
     });
+    live = flight.current;
     if (process.env.NODE_ENV === "development")
       void import("~/lib/flight/poster").then((tools) =>
         tools.installFlightDebug(artwork.src),
@@ -98,6 +106,7 @@ export function FlightBackground() {
     return () => {
       flight.current?.dispose();
       flight.current = null;
+      live = null;
     };
   }, []);
   return (

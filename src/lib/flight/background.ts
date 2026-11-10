@@ -188,6 +188,10 @@ export function createBackground(
       playing = value;
       sync();
     },
+    /** The whales in view flick their flukes; a still painting stays still. */
+    cheer() {
+      if (playing && !hidden) renderer.pod.cheer();
+    },
     /** Whether the page's tab is hidden. */
     setHidden(value: boolean) {
       hidden = value;

@@ -807,6 +807,25 @@ describe("pod with a visitor", () => {
     expect(slot(pod.write().streams.veil.bodies, 1)).toEqual([0, 0, 1, 0]);
   });
 
+  test("a cheer flicks every whale in view once, and a calm drops one not yet spent", () => {
+    const pod = new Pod(haze, new Rig());
+    pod.step(STEP, sense(AWAY));
+    expect(pod.mood("hero")).toBe("cruising");
+    pod.cheer();
+    // Nothing moves until the next tick.
+    expect(pod.mood("hero")).toBe("cruising");
+    pod.step(STEP, sense(AWAY));
+    expect(pod.mood("hero")).toBe("startled");
+    expect(pod.mood("calf")).toBe("startled");
+    // The flick fades back to cruising, and no second one follows it.
+    for (let i = 0; i < 60 * 8; i++) pod.step(STEP, sense(AWAY));
+    expect(pod.mood("hero")).toBe("cruising");
+    pod.cheer();
+    pod.calm();
+    pod.step(STEP, sense(AWAY));
+    expect(pod.mood("hero")).toBe("cruising");
+  });
+
   test("a tap flicks a whale, else plucks the nearest current, else reaches the rig", () => {
     const rig = new Rig();
     const pod = new Pod(haze, rig);

@@ -22,6 +22,8 @@ export type ToRenderer =
   | { type: "leave" }
   | { type: "playing"; value: boolean }
   | { type: "hidden"; value: boolean }
+  /** Something on the page went well: the whales in view flick their flukes. */
+  | { type: "cheer" }
   /** The page now shows the canvas a "show" asked for. */
   | { type: "shown"; live: boolean };
 
