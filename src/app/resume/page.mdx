@@ -2,49 +2,42 @@
 
 Pensacola,&nbsp;FL&nbsp;· [hi@augie.gg](mailto:hi@augie.gg)<span className="resume-sep">&nbsp;·</span><br className="resume-break" /> [augie.gg](/)&nbsp;· [github.com/AugusDogus](https://github.com/AugusDogus)
 
+I lead AMLI.com and built Ask AMLI, the company's internal AI assistant. On my own time I build and ship products, including a salvage yard search engine with paid plans and an end-to-end encrypted messenger.
+
 ---
 
 ## Work Experience
 
 <div className="resume-role">
 
-### Senior Software Developer<span className="resume-sep">,</span> <span className="resume-org">Provalus (Remote)</span>
+### Senior Software Developer<span className="resume-sep">,</span> <span className="resume-org">AMLI, via Provalus (Remote)</span>
 
 _Jan 2023 – Present_
 
 </div>
 
-- Lead maintainer and primary point of contact for AMLI.com, overseeing architecture, reliability, feature development, and stakeholder coordination.
-- Designed and led the migration from a legacy Create React App codebase to a modern Next.js platform using TypeScript, Tailwind, tRPC, and shadcn/ui.
-- Architected and implemented CI/CD pipelines in Azure DevOps, improving build speed, deployment reliability, and automation coverage.
-- Built an end-to-end Playwright test suite to increase stability and reduce regressions.
-- Improved performance, uptime, latency, error rates, and build times through targeted application and infrastructure optimizations.
-- Introduced structured logging, monitoring, and observability improvements using Sentry.
-- Mentored junior and mid-level developers through code reviews, technical guidance, and onboarding.
-- Worked closely with Marketing and Business teams to streamline requirements and reduce delivery bottlenecks.
-- Led modernization initiatives across the team, introducing improved tooling, architecture patterns, and development workflows.
-- Drove adoption of AI-assisted development tools such as Cursor and CodeRabbit.
-- Participated in interviewing and evaluating candidates for software development roles.
-- Led technical meetings, collaborated with leadership on design requirements, and liaised with external vendors.
+- Lead maintainer and primary point of contact for [AMLI.com](https://www.amli.com), responsible for architecture, reliability, and delivery.
+- Designed and led the migration from Create React App to Next.js with TypeScript, Tailwind, tRPC, and shadcn/ui. The first migrated page cut Speed Index from 6.1s to 1.1s and Total Blocking Time from 2,940ms to 620ms in PageSpeed Insights.
+- Designed and built Ask AMLI, an internal AI assistant with role-scoped access to company data, Power BI, and financial reporting. It rolled out company-wide in October 2026 and passed 120 active users in its first month.
+- Architected the CI/CD pipelines in Azure DevOps and cut build and deploy time from over 30 minutes to about 6.
+- Built the test suites: 110+ end-to-end Playwright tests on AMLI.com that run on every pull request and nightly, and 2,000+ automated tests on Ask AMLI.
+- Instrumented AMLI.com with Sentry for error tracking, performance monitoring, and cache observability.
+- Led the team's adoption of modern tooling and AI-assisted development with Cursor and CodeRabbit.
+- Mentored junior and mid-level developers through code review and onboarding, and interviewed developer candidates.
+- Worked directly with Marketing, leadership, and external vendors to shape requirements and unblock delivery.
 
 <div className="resume-role">
 
-### Mid-Level Software Developer<span className="resume-sep">,</span> <span className="resume-org">Provalus (Remote)</span>
+### Software Developer<span className="resume-sep">,</span> <span className="resume-org">AMLI, via Provalus (Remote)</span>
 
 _Jun 2020 – Dec 2022_
 
 </div>
 
-- Implemented new features and enhancements within existing applications based on documented requirements.
-- Resolved bugs, production issues, and UI inconsistencies to improve usability and stability.
-- Performed routine refactoring to improve code clarity and maintainability while following existing architecture.
-- Assisted teammates in breaking down tasks, estimating effort, and completing sprint work.
-- Converted mockups and wireframes into responsive frontend components using established patterns.
-- Created and maintained unit tests to ensure reliability and reduce regressions.
-- Participated in daily standups, sprint planning, and retrospectives to support predictable delivery.
-- Followed established coding standards and adhered to pre-existing architectural guidelines.
-- Provided light peer feedback in code reviews while focusing on individual contributor tasks.
-- Updated internal documentation to clarify application behavior when implementing changes.
+- Shipped floor plan, image, form, and tour scheduling features on the legacy React site, from mockups to responsive components.
+- Rebuilt Prismic content caching on Redis with webhook invalidation, after which 503 downtime alerts fell from 24 in four months to near zero.
+- Set up Dependabot on Azure Pipelines for automated dependency updates, and wrote and maintained unit tests.
+- Resolved production issues, accessibility findings, and UI bugs, and helped teammates break down and estimate sprint work.
 
 <div className="resume-role">
 
@@ -55,31 +48,32 @@ _Jan 2017 – Jul 2019_
 </div>
 
 - Designed and developed applications used by faculty, staff, and students.
-- Evaluated and tested new and existing software for quality and correctness.
-- Followed Agile development practices to ensure consistent delivery.
-- Translated UI/UX designs into functional frontend components.
-- Built a multi-platform Progressive Web App for Web, Android, and iOS.
+- Built a multi-platform Progressive Web App for web, Android, and iOS.
+- Translated UI/UX designs into frontend components, and tested new and existing software for quality and correctness.
+
+---
+
+## Projects
+
+- **[junkyardindex.com](https://junkyardindex.com):** One search across salvage yard inventory nationwide, with alerts when a match arrives. 220k+ vehicles across 200+ yards and seven inventory networks, with paid plans.
+- **[whisp.chat](https://whisp.chat):** Ephemeral photos, videos, and messages for close friends. End-to-end encrypted with MLS (RFC 9420) via OpenMLS in Rust, bridged to React Native.
+- **[opentab.sh](https://opentab.sh):** Sends tabs between a browser and a phone. iOS, Android, and a browser extension on one tRPC API, with tabs arriving live over SSE.
+- **[multiplex](https://github.com/AugusDogus/multiplex):** Synced Plex watch parties, built after Plex retired Watch Together. Native GameCube and Wii clients in C (H.264 over HLS, TLS 1.2), in sync with web viewers.
+- **Open source:** Upstream contributions to [Bun](https://github.com/oven-sh/bun/pull/8875), [T3 Code](https://github.com/pingdotgg/t3code/pull/7421), [Tunarr](https://github.com/chrisbenincasa/tunarr/pull/1039), [Electrobun](https://github.com/blackboardsh/electrobun/pull/83), [Portless](https://github.com/vercel-labs/portless/pull/122), and [swagger-typescript-api](https://github.com/acacode/swagger-typescript-api/pull/1046).
 
 ---
 
 ## Technical Skills
 
-- **Frontend:** JavaScript/TypeScript, React/Next.js, Tailwind CSS
-- **Backend:** Node.js, Express.js, Fastify, Hono, GraphQL, tRPC
-- **Databases:** MS SQL, PostgreSQL, SQLite/libSQL, Redis
-- **ORMs / Query Builders:** Prisma, Drizzle, Kysely
-- **Testing & Observability:** Playwright, Sentry
-- **Tooling:** Git, Cursor, CodeRabbit, Bun
+- **Languages:** TypeScript/JavaScript, Rust, C
+- **Frontend & Mobile:** React, Next.js, Tailwind CSS, shadcn/ui, React Native, Expo
+- **Backend & AI:** Node.js, Bun, Hono, Fastify, Express.js, tRPC, GraphQL, AI SDK, MCP
+- **Data:** PostgreSQL, MS SQL, SQLite/libSQL, Redis, Prisma, Drizzle, Kysely
+- **Testing & Delivery:** Playwright, Sentry, Azure DevOps, Docker, Git
 
 ---
 
 ## Education
-
-### Pace High School
-
-- GPA: 4.2
-- Academic Excellence Award
-- Dual Enrollment (University of West Florida and Pensacola State College)
 
 ### University of West Florida
 
