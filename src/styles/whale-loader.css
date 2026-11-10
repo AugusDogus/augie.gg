@@ -1,0 +1,105 @@
+/*
+ * What a capture's frame shows while its pixels load (WhaleLoader): the
+ * painting's whales swimming in place over the frame's dark ground. It waits
+ * a beat before appearing, so a quick load never flashes it.
+ */
+.whale-loader {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  animation: whale-loader-in 1ms linear 150ms both;
+}
+/* Sparse two-pixel specks in the painting's whites and cyans, one tile wider than the frame. */
+.whale-loader-specks {
+  position: absolute;
+  inset: 0 -192px 0 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='128' shape-rendering='crispEdges'%3E%3Cg fill='%23e0fff1' fill-opacity='.3'%3E%3Crect x='14' y='22' width='2' height='2'/%3E%3Crect x='126' y='10' width='2' height='2'/%3E%3Crect x='72' y='96' width='2' height='2'/%3E%3Crect x='168' y='70' width='2' height='2'/%3E%3C/g%3E%3Cg fill='%2390dce9' fill-opacity='.22'%3E%3Crect x='46' y='58' width='2' height='2'/%3E%3Crect x='98' y='38' width='2' height='2'/%3E%3Crect x='150' y='112' width='2' height='2'/%3E%3Crect x='22' y='104' width='2' height='2'/%3E%3Crect x='184' y='30' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* A second, sparser layer on its own period, so the tiling never lines up. */
+.whale-loader-specks::after {
+  position: absolute;
+  inset: 0 -272px 0 0;
+  content: "";
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='272' height='176' shape-rendering='crispEdges'%3E%3Cg fill='%23e0fff1' fill-opacity='.42'%3E%3Crect x='38' y='140' width='2' height='2'/%3E%3Crect x='204' y='52' width='2' height='2'/%3E%3C/g%3E%3Cg fill='%2390dce9' fill-opacity='.3'%3E%3Crect x='112' y='16' width='2' height='2'/%3E%3Crect x='246' y='128' width='2' height='2'/%3E%3Crect x='156' y='88' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E");
+}
+/*
+ * The pod's window onto its strip: one frame wide, centred in the frame. A
+ * printed cell is two pixels, as in the painting; a narrow frame, such as a
+ * lone phone's, prints at one, and a frame too small for that keeps the specks.
+ */
+.whale-loader-pod {
+  --whale-cell: 1px;
+  --whale-w: calc(var(--whale-cols) * var(--whale-cell));
+  --whale-h: calc(var(--whale-rows) * var(--whale-cell));
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: none;
+  width: var(--whale-w);
+  height: var(--whale-h);
+  margin: calc(var(--whale-h) / -2) 0 0 calc(var(--whale-w) / -2);
+  overflow: hidden;
+}
+@container (min-width: 100px) {
+  .whale-loader-pod {
+    display: block;
+  }
+}
+@container (min-width: 220px) {
+  .whale-loader-pod {
+    --whale-cell: 2px;
+  }
+}
+.whale-loader-strip {
+  display: block;
+  width: calc(var(--whale-w) * var(--whale-frames));
+  height: 100%;
+  background-image: var(--whale-strip);
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .whale-loader {
+    animation: whale-loader-in 400ms var(--ease-out) 150ms both;
+  }
+  .whale-loader-specks {
+    animation: whale-loader-drift 16s linear infinite;
+  }
+  .whale-loader-specks::after {
+    animation: whale-loader-drift-near 12s linear infinite;
+  }
+  .whale-loader-strip {
+    animation: whale-loader-swim var(--whale-stroke) steps(var(--whale-frames))
+      infinite;
+  }
+  .whale-loader[data-playing="false"] > * {
+    animation-play-state: paused;
+  }
+  .whale-loader[data-playing="false"] .whale-loader-specks::after,
+  .whale-loader[data-playing="false"] .whale-loader-strip {
+    animation-play-state: paused;
+  }
+}
+@keyframes whale-loader-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Specks fall behind the whales by one tile, then repeat. */
+@keyframes whale-loader-drift {
+  to {
+    transform: translateX(-192px);
+  }
+}
+/* The nearer layer rides on the far one's drift, so it passes faster. */
+@keyframes whale-loader-drift-near {
+  to {
+    transform: translateX(-272px);
+  }
+}
+/* One frame per step, and never the strip's far end. */
+@keyframes whale-loader-swim {
+  to {
+    transform: translateX(-100%);
+  }
+}

@@ -16,11 +16,13 @@ import { cn } from "~/lib/utils";
 import { BoardScreen } from "./board-screen";
 import { PlaybackGroup } from "./playback";
 import { Showcase } from "./showcase";
+import { Still } from "./still";
 
 /**
  * Every screen capture's frame, image or video alike: a hairline border, an
- * inner hairline over the pixels, a soft drop shadow, and a dark ground while
- * it loads. Callers set the radius, so thumbnails can sit tighter.
+ * inner hairline over the pixels, a soft drop shadow, and a dark ground that
+ * a capture's whales swim over while it loads (Still). Callers set the
+ * radius, so thumbnails can sit tighter.
  */
 export const SCREEN_FRAME =
   "relative overflow-hidden bg-[#05090b] shadow-[0_0_0_1px_#ffffff1f,0_1px_2px_#00000066,0_16px_40px_-16px_#000000b3] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_0_0_0_1px_#0000004d]";
@@ -76,7 +78,7 @@ function Screen({
       style={{ aspectRatio: `${media.width} / ${media.height}` }}
     >
       {media.kind === "image" ? (
-        <Image
+        <Still
           src={media.src}
           alt={alt}
           width={media.width}
@@ -151,7 +153,7 @@ function Video({
 
   return (
     <div ref={root} className="absolute inset-0">
-      <Image
+      <Still
         src={media.poster}
         alt={alt}
         width={media.width}

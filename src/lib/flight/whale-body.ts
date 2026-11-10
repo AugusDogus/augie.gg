@@ -32,6 +32,9 @@ const SHADE = {
 /** Rigid fluke crescent as (back, ventral) body lengths from the root: root, upper tip, notch, lower tip, root. */
 const FLUKE = [0, -0.025, 0.16, -0.1, 0.07, 0, 0.15, 0.09, 0, 0.025];
 
+/** What a whale's body reads from its current: the centerline it follows. */
+export type Current = Pick<Stream, "centerline">;
+
 export type WhalePose = {
   /** Nose arc along the stream route. */
   s: number;
@@ -136,7 +139,12 @@ type Node = {
 const route: RouteFrame = { x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0 };
 const node: Node = { x: 0, y: 0, tx: 0, ty: 0, bx: 0, by: 0, arc: 0 };
 
-function place(pose: WhalePose, stream: Stream, time: number, i: number): Node {
+function place(
+  pose: WhalePose,
+  stream: Current,
+  time: number,
+  i: number,
+): Node {
   const x = (SPINE_LENGTH * i) / (SPINE_NODES - 1);
   node.arc = pose.s - x * pose.length;
   stream.centerline(node.arc, time, route);
@@ -205,7 +213,7 @@ function writeFin(
   fin: Fin,
   angle: number,
   pose: WhalePose,
-  stream: Stream,
+  stream: Current,
   time: number,
   out: Float32Array,
   first: number,
@@ -237,7 +245,7 @@ function writeFin(
 /** Writes one whale's WHALE_VERTICES × (x, y, shade, arc) starting at vertex `first`. Allocation-free. */
 export function writeWhale(
   pose: WhalePose,
-  stream: Stream,
+  stream: Current,
   time: number,
   out: Float32Array,
   first: number,

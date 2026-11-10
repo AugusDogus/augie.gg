@@ -84,6 +84,11 @@ name; Geist Mono only draws keyboard hints.
   capture set in front of the lead screen as picture-in-picture. Videos play
   only while on screen, and show their poster with reduced motion or
   Save-Data.
+- While a capture is still loading, the painting's mother and calf swim in
+  its frame (`WhaleLoader`), and the capture fades in over them. The same
+  whale model prints them once, in a worker, as a dithered strip that CSS
+  steps through, so they keep time while the page is busy. A capture that
+  arrives within 150ms never shows them.
 - The activity panel prints the last year of GitHub contributions with streaks
   and the busiest day, readable by hover, touch, or arrow keys.
 - The dock pauses the painting (or press P), credits it, and shows the time in
