@@ -14,6 +14,22 @@ export function useApple(): boolean | null {
   );
 }
 
+const COARSE = "(pointer: coarse)";
+function subscribeCoarse(listener: () => void) {
+  const media = matchMedia(COARSE);
+  media.addEventListener("change", listener);
+  return () => media.removeEventListener("change", listener);
+}
+
+/** Whether the main pointer is a finger; false while hydrating. */
+export function useCoarse(): boolean {
+  return useSyncExternalStore(
+    subscribeCoarse,
+    () => matchMedia(COARSE).matches,
+    () => false,
+  );
+}
+
 /** Whether the platform's shortcut modifier is held: ⌘ on Apple platforms, Ctrl elsewhere. */
 export function withModifier(event: { metaKey: boolean; ctrlKey: boolean }) {
   return APPLE.test(navigator.userAgent) ? event.metaKey : event.ctrlKey;

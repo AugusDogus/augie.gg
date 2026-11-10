@@ -20,6 +20,17 @@ describe("Share", () => {
     expect(Share.card("Yang / Mars")).toBe("/og/Yang%20/%20Mars");
   });
 
+  test("links to a project the way the address bar names it", () => {
+    expect(Share.link("oven-sh/bun", "https://augie.gg")).toBe(
+      "https://augie.gg/?p=oven-sh%2Fbun",
+    );
+    for (const project of projects) {
+      const link = new URL(Share.link(project.title, "https://augie.gg"));
+      expect(link.pathname).toBe("/");
+      expect(link.searchParams.get("p")).toBe(project.title);
+    }
+  });
+
   test("finds nothing for a path that names no project, or is not valid encoding", () => {
     expect(Share.find(["nope"])).toBeUndefined();
     expect(Share.find(["%E0%A4%A"])).toBeUndefined();

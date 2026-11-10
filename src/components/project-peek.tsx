@@ -149,7 +149,12 @@ function Sheet({ project, open }: { project: Project; open: boolean }) {
               </span>
             )}
             <div className="ml-auto">
-              <PeekControls previous={previous} next={next} onStep={step} />
+              <PeekControls
+                project={project}
+                previous={previous}
+                next={next}
+                onStep={step}
+              />
             </div>
           </div>
           <div

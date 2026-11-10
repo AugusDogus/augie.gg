@@ -25,6 +25,12 @@ export const Share = {
   find(segments: readonly string[]): Project | undefined {
     return Catalog.find(segments.map(decode).join("/"));
   },
+  /** The link that opens a project, as the address bar writes it (lib/peek.ts). */
+  link(title: string, origin: string): string {
+    const url = new URL("/", origin);
+    url.searchParams.set("p", title);
+    return url.href;
+  },
   /** Where a project's card is served. */
   card(title: string): string {
     return `/og/${Share.segments(title).map(encodeURIComponent).join("/")}`;
