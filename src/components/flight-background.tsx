@@ -71,7 +71,8 @@ export function FlightBackground() {
   const flight = useRef<Flight | null>(null);
   const pathname = usePathname();
   const { playing } = usePlaying();
-  const active = playing && pathname === "/";
+  // The résumé is for reading: the painting holds still behind it.
+  const active = playing && pathname !== "/resume";
   const activeRef = useRef(active);
   const [ready, setReady] = useState(false);
   useEffect(() => {
