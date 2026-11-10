@@ -73,32 +73,29 @@ export function FlightBackground() {
     flight.current?.setPlaying(active);
   }, [active]);
   useEffect(() => {
-    function start() {
-      flight.current = startFlight(frame.current, {
-        artwork: artwork.src,
-        playing: activeRef.current,
-        onReady: () => setReady(true),
-        onFailed(reason) {
-          console.warn(
-            "The animated artwork could not run. The pre-rendered background remains available.",
-            reason,
-          );
-          flight.current = null;
-          setReady(false);
-        },
-      });
-    }
     // No entrance plays on a later visit to home, or with reduced motion.
     const entering =
       !("settled" in document.documentElement.dataset) &&
       !matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timer = setTimeout(start, entering ? ENTRANCE_MS : 0);
+    flight.current = startFlight(frame.current, {
+      artwork: artwork.src,
+      playing: activeRef.current,
+      delay: entering ? ENTRANCE_MS : 0,
+      onReady: () => setReady(true),
+      onFailed(reason) {
+        console.warn(
+          "The animated artwork could not run. The pre-rendered background remains available.",
+          reason,
+        );
+        flight.current = null;
+        setReady(false);
+      },
+    });
     if (process.env.NODE_ENV === "development")
       void import("~/lib/flight/poster").then((tools) =>
         tools.installFlightDebug(artwork.src),
       );
     return () => {
-      clearTimeout(timer);
       flight.current?.dispose();
       flight.current = null;
     };

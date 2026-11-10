@@ -303,19 +303,19 @@
   @media (prefers-reduced-motion: no-preference) {
     :root:not([data-settled]) .rise {
       animation: rise 700ms var(--ease-out) both;
-      animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+      animation-delay: calc(var(--i, 0) * 70ms + 40ms);
     }
     /* Glass panels animate themselves: an animated ancestor would cut off
        their backdrop blur until it finished. */
     :root:not([data-settled]) .rise-each > * {
       animation: settle 700ms var(--ease-out) both;
-      animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+      animation-delay: calc(var(--i, 0) * 70ms + 40ms);
     }
     :root:not([data-settled]) .rise-each > :nth-child(2) {
-      animation-delay: calc(var(--i, 0) * 70ms + 190ms);
+      animation-delay: calc(var(--i, 0) * 70ms + 110ms);
     }
     :root:not([data-settled]) .rise-each > :nth-child(3) {
-      animation-delay: calc(var(--i, 0) * 70ms + 260ms);
+      animation-delay: calc(var(--i, 0) * 70ms + 180ms);
     }
   }
   /* Display headline: Inter's display cut with a light-to-mist fill. */

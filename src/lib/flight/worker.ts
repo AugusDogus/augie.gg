@@ -6,7 +6,7 @@
 import { createBackground } from "./background";
 import { SurfaceStart } from "./flow-surface";
 import type { FromRenderer, ToRenderer } from "./protocol";
-import { decodeArtwork } from "./texture";
+import { decodeArtwork, type Artwork } from "./texture";
 
 type Background = ReturnType<typeof createBackground>;
 
@@ -19,20 +19,18 @@ let begun: {
   coarse: boolean;
   start: SurfaceStart | null;
 } | null = null;
+/** The painting, decoding from the moment its file arrives. */
+let artwork: Promise<Artwork> | null = null;
+let creating = false;
 let background: Background | null = null;
 
-async function create(file: Blob) {
-  if (!begun) {
-    send({
-      type: "failed",
-      reason:
-        "The renderer received the artwork before its canvases. The poster stays; reload to retry.",
-    });
-    return;
-  }
+/** Builds the renderer once the canvases and the painting are both here, in either order. */
+async function create() {
+  if (creating || !begun || !artwork) return;
+  creating = true;
   const { sky, coarse, start } = begun;
   try {
-    const image = await decodeArtwork(file);
+    const image = await artwork;
     background = createBackground(sky, image, {
       width: page.width,
       height: page.height,
@@ -66,9 +64,14 @@ addEventListener("message", (event: MessageEvent<ToRenderer>) => {
         coarse: message.coarse,
         start: SurfaceStart.begin(message.surface),
       };
+      void create();
       return;
     case "artwork":
-      void create(message.file);
+      artwork = decodeArtwork(message.file);
+      // create() reports a failed decode; this only keeps the rejection
+      // handled while the canvases are still to come.
+      artwork.catch(() => undefined);
+      void create();
       return;
     case "resize":
       page.width = message.width;
