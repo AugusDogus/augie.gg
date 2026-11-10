@@ -7,6 +7,29 @@ const nextConfig = {
   experimental: {
     mdxRs: { mdxType: "gfm" },
   },
+  // The project cards are drawn at build and served as files. Their route
+  // reads each capture by a path it works out, which would otherwise pull
+  // every capture and video into its function.
+  outputFileTracingExcludes: { "/og/**": ["./public/work/**/*"] },
+  // A link to an open project, `/?p=<title>`, is served by the page that
+  // carries that project's link preview. The address stays as it is.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/",
+          has: [{ type: "query", key: "p", value: "(?<project>.+)" }],
+          destination: "/p/:project",
+        },
+      ],
+    };
+  },
+  // That page's own address opens nothing, so a visit to it goes to the link it stands for.
+  async redirects() {
+    return [
+      { source: "/p/:title*", destination: "/?p=:title*", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {
