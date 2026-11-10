@@ -6,13 +6,6 @@ import { startFlight, type Flight } from "~/lib/flight/page";
 import artwork from "../../public/flight4cover_redux_spread.jpg";
 
 /**
- * How long after hydration the entrance (globals.css, `rise`) is still
- * playing. The renderer's shader compiles occupy the GPU process, which also
- * draws the page, so it starts once the entrance cannot drop a frame to it.
- */
-const ENTRANCE_MS = 1000;
-
-/**
  * The poster as markup, because its fade must not wait for hydration: it
  * runs from the image's own load event. An image that loaded before the
  * first paint (a repeat visit) just shows.
@@ -76,14 +69,9 @@ export function FlightBackground() {
     flight.current?.setPlaying(active);
   }, [active]);
   useEffect(() => {
-    // No entrance plays on a later visit to home, or with reduced motion.
-    const entering =
-      !("settled" in document.documentElement.dataset) &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches;
     flight.current = startFlight(frame.current, {
       artwork: artwork.src,
       playing: activeRef.current,
-      delay: entering ? ENTRANCE_MS : 0,
       onReady: () => setReady(true),
       onFailed(reason) {
         console.warn(

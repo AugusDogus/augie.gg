@@ -11,11 +11,6 @@ export type FlightOptions = {
   /** The painting's URL. */
   artwork: string;
   playing: boolean;
-  /**
-   * How long to hold the renderer's GPU work, ms. Its script and the painting
-   * load and decode meanwhile.
-   */
-  delay: number;
   /** The first frame is on the page: the poster can go. */
   onReady: () => void;
   /** The renderer stopped; the canvases are gone and the poster should show. */
@@ -38,18 +33,12 @@ function supported() {
 }
 
 /**
- * Adds #sky and #sky-gl to `frame` and, after `delay`, starts the renderer on
- * them. Null where a worker cannot draw them: the poster stays.
+ * Adds #sky and #sky-gl to `frame` and starts the renderer on them. Null
+ * where a worker cannot draw them: the poster stays.
  */
 export function startFlight(
   frame: HTMLElement | null,
-  {
-    artwork,
-    playing: initiallyPlaying,
-    delay,
-    onReady,
-    onFailed,
-  }: FlightOptions,
+  { artwork, playing, onReady, onFailed }: FlightOptions,
 ): Flight | null {
   if (!frame || !supported()) return null;
   // Still frames; and while the art animates, WebGL draws straight onto the
@@ -115,32 +104,25 @@ export function startFlight(
     send({ type: "resize", ...size() }),
   );
   const download = new AbortController();
-  let playing = initiallyPlaying,
-    begun = false,
-    disposed = false;
-  /** Hands the renderer the canvases: from here it uses the GPU. */
-  function begin() {
-    begun = true;
-    const offscreenSky = sky.transferControlToOffscreen();
-    const offscreenSurface = surface.transferControlToOffscreen();
-    send(
-      {
-        type: "start",
-        sky: offscreenSky,
-        surface: offscreenSurface,
-        ...size(),
-        coarse: matchMedia("(pointer: coarse)").matches,
-        playing,
-        hidden: document.hidden,
-      },
-      [offscreenSky, offscreenSurface],
-    );
-  }
-  const timer = setTimeout(begin, delay);
+  let disposed = false;
+  // The renderer compiles its shaders while the painting downloads.
+  const offscreenSky = sky.transferControlToOffscreen();
+  const offscreenSurface = surface.transferControlToOffscreen();
+  send(
+    {
+      type: "start",
+      sky: offscreenSky,
+      surface: offscreenSurface,
+      ...size(),
+      coarse: matchMedia("(pointer: coarse)").matches,
+      playing,
+      hidden: document.hidden,
+    },
+    [offscreenSky, offscreenSurface],
+  );
   function dispose() {
     if (disposed) return;
     disposed = true;
-    clearTimeout(timer);
     download.abort();
     observer.disconnect();
     document.removeEventListener("pointermove", move);
@@ -221,11 +203,10 @@ export function startFlight(
   window.addEventListener("blur", leave);
   return {
     setPlaying(value: boolean) {
-      playing = value;
-      if (begun && !disposed) send({ type: "playing", value });
+      if (!disposed) send({ type: "playing", value });
     },
     cheer() {
-      if (begun && !disposed) send({ type: "cheer" });
+      if (!disposed) send({ type: "cheer" });
     },
     dispose,
   };
