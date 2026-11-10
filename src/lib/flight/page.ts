@@ -24,6 +24,8 @@ export type FlightOptions = {
 
 export type Flight = {
   setPlaying(value: boolean): void;
+  /** Something on the page went well: the whales in view flick their flukes. */
+  cheer(): void;
   dispose(): void;
 };
 
@@ -221,6 +223,9 @@ export function startFlight(
     setPlaying(value: boolean) {
       playing = value;
       if (begun && !disposed) send({ type: "playing", value });
+    },
+    cheer() {
+      if (begun && !disposed) send({ type: "cheer" });
     },
     dispose,
   };

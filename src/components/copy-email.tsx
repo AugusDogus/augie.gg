@@ -2,6 +2,7 @@
 
 import { CheckIcon, CopyIcon, EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cheer } from "~/components/flight-background";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { EMAIL } from "~/lib/site";
 
@@ -64,6 +65,7 @@ function useCopyEmail() {
   );
 
   function copied(instant: boolean) {
+    cheer();
     clearTimeout(timer.current);
     setState({ phase: "copied", instant });
     timer.current = setTimeout(

@@ -235,6 +235,8 @@ export class Pod {
   private elapsed = 0;
   private waiting = false;
   private grip: Grip = LOOSE;
+  /** A cheer the next tick spends. */
+  private cheering = false;
   private readonly forwarded: Gesture[] = [];
   private readonly swipe: Swipe = { x0: 0, y0: 0, x1: 0, y1: 0, speed: 0 };
   private readonly spot = { s: 0, d: 0 };
@@ -353,6 +355,14 @@ export class Pod {
     return this.crew[whale].attention.mood.kind;
   }
 
+  /**
+   * Something on the page went well: every whale in view flicks its flukes
+   * once, as it does for a tap on its body.
+   */
+  cheer() {
+    this.cheering = true;
+  }
+
   /** Pause, hidden tab or sync: drops input, moods and stirs; a live wisp drifts off as a gust. */
   calm() {
     for (const { attention } of this.members) attention.calm();
@@ -363,6 +373,7 @@ export class Pod {
     this.queued.length = 0;
     this.waiting = false;
     this.grip = LOOSE;
+    this.cheering = false;
   }
 
   private tick(fresh: boolean) {
@@ -374,6 +385,13 @@ export class Pod {
     for (const { whale, stream, body } of this.members)
       locate(body, whale, stream, time, this.visible(whale, stream));
 
+    if (this.cheering) {
+      this.cheering = false;
+      // Alternate sides, so the pod does not move as one.
+      this.members.forEach((member, index) => {
+        if (member.body.visible) this.flick(member, index % 2 ? 1 : -1);
+      });
+    }
     const swipe = fresh ? this.swiped(this.from, hand) : null;
     const forwarded = this.forwarded;
     forwarded.length = 0;
@@ -448,6 +466,19 @@ export class Pod {
     return swipe;
   }
 
+  /** One flick of a whale's flukes toward `side`, and the wake it leaves. */
+  private flick(
+    { body, whale, stream, attention, wake }: Member,
+    side: 1 | -1,
+  ) {
+    attention.flick(this.time, side, body.length);
+    stream.wakes.emit(
+      whale.s - whale.length,
+      this.time,
+      side * ATTENTION.tap.wake * wake,
+    );
+  }
+
   /** Tap resolution, first hit wins: a whale body flicks, else the nearest current within reach plucks. */
   private tapped(x: number, y: number) {
     let target: Member | null = null,
@@ -461,17 +492,11 @@ export class Pod {
       nearest = distance;
     }
     if (target) {
-      const { body, whale, stream, attention, wake } = target;
+      const { body } = target;
       const lateral =
         (x - valueAt(body.spine, 0)) * body.nx +
         (y - valueAt(body.spine, 1)) * body.ny;
-      const side = lateral > 0 ? -1 : 1;
-      attention.flick(this.time, side, body.length);
-      stream.wakes.emit(
-        whale.s - whale.length,
-        this.time,
-        side * ATTENTION.tap.wake * wake,
-      );
+      this.flick(target, lateral > 0 ? -1 : 1);
       return true;
     }
     let current: Stream | null = null,
