@@ -163,12 +163,23 @@
     --gutter: max(18px, env(safe-area-inset-left), env(safe-area-inset-right));
   }
 }
+/* The name travels between home and the résumé (NameHeading): one move,
+   on the sheet's curve. Nothing else on the page takes part. */
+::view-transition-group(.name-travel) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-drawer);
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 .artwork-poster {
