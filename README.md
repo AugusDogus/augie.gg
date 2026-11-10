@@ -89,6 +89,17 @@ name; Geist Mono only draws keyboard hints.
   whale model prints them once, in a worker, as a dithered strip that CSS
   steps through, so they keep time while the page is busy. They wait 400ms
   before appearing, so a capture that is only a little late never shows them.
+- Where projects open in the sheet, the featured projects' captures are
+  fetched once the page has loaded and settled, and an open project's
+  neighbours' as it opens (`Warm`), so the sheet usually opens onto them.
+  Nothing is fetched ahead with Save-Data.
+- A link to an open project, `/?p=<title>`, previews with that project's own
+  card: its name and blurb beside its lead capture, over the painting.
+  `next.config.js` rewrites the link to `/p/[...title]`, which is home under
+  that project's metadata, and `/og/[...title]` draws every card at build.
+- Copying the email makes the whales in view flick their flukes.
+- The console greets whoever opens it with the whales as text and a link to
+  this repository.
 - The activity panel prints the last year of GitHub contributions with streaks
   and the busiest day, readable by hover, touch, or arrow keys.
 - The dock pauses the painting (or press P), credits it, and shows the time in
