@@ -2,28 +2,54 @@ import type { SurfaceStart } from "./flow-surface";
 import { FramePolicy } from "./frame-policy";
 import { Instrument, type PointerKind } from "./instrument";
 import { FlightRenderer } from "./renderer";
-import type { Artwork } from "./texture";
-import {
-  ART_HEIGHT,
-  ART_WIDTH,
-  FEATHER,
-  fitArt,
-  pointerToArt,
-} from "./viewport";
+import { context2d, type Artwork, type Canvas } from "./texture";
+import { ART_HEIGHT, ART_WIDTH, FEATHER, fitArt } from "./viewport";
+
+/** A pointer event as the page located it: x, y in display-art units, the rest as the event had them. */
+export type PointerSample = {
+  x: number;
+  y: number;
+  /** Off the art, or over the page's UI. */
+  blocked: boolean;
+  kind: PointerKind;
+  clientX: number;
+  clientY: number;
+  buttons: number;
+  timeStamp: number;
+};
+
+export type BackgroundOptions = {
+  /** The canvas box in device px. */
+  width: number;
+  height: number;
+  /** A coarse pointer: 30 fps. */
+  coarse: boolean;
+  /**
+   * Whether the page should now show the WebGL canvas (live) or `canvas`.
+   * Called whenever that changes, after the canvas to show holds its frame.
+   */
+  show: (live: boolean) => void;
+  /** Begun before the image decoded, so shaders compile meanwhile. */
+  start?: SurfaceStart | null;
+};
 
 /**
- * The React owner decodes the image before allocating a disposable renderer,
- * and may begin the GPU `start` before that, so shaders compile meanwhile.
+ * The painting's simulation and drawing, with no page of its own: it runs in
+ * the worker, and the page sends sizes, pointers, and visibility. `canvas` is
+ * #sky, for still frames; the WebGL canvas is the `start`'s.
  */
 export function createBackground(
-  canvas: HTMLCanvasElement,
+  canvas: Canvas,
   image: Artwork,
-  start?: SurfaceStart | null,
+  {
+    width: startWidth,
+    height: startHeight,
+    coarse,
+    show,
+    start,
+  }: BackgroundOptions,
 ) {
-  const canvasContext = canvas.getContext("2d");
-  if (!canvasContext)
-    throw new Error("The artwork renderer could not create a 2D canvas");
-  const context = canvasContext;
+  const context = context2d(canvas);
   const renderer = FlightRenderer.create(
     image,
     {
@@ -38,9 +64,6 @@ export function createBackground(
     },
     start,
   );
-  // Animating frames draw straight onto this canvas, laid over #sky.
-  const surface = renderer.canvas;
-  const coarse = matchMedia("(pointer: coarse)").matches;
   const policy = new FramePolicy(coarse || !renderer.accelerated ? 30 : 60);
   const instrument = new Instrument();
   // Gradients resolve against the transform at fill time, so one per edge suffices.
@@ -53,6 +76,7 @@ export function createBackground(
   feathers.tall.addColorStop(0, "transparent");
   feathers.tall.addColorStop(1, "black");
   let playing = false,
+    hidden = false,
     presenting = false,
     frameId = 0,
     // The canvas box in device px, at most 1.5 per CSS px.
@@ -66,14 +90,11 @@ export function createBackground(
    */
   function draw() {
     const live = playing && renderer.present(width, height);
-    if (surface && live !== presenting) {
-      presenting = live;
-      surface.style.visibility = live ? "" : "hidden";
-      canvas.style.visibility = live ? "hidden" : "";
-      // Hidden, #sky need not hold a frame; paint() sizes it again.
-      if (live) canvas.width = 0;
-    }
     if (!live) paint();
+    if (live !== presenting) {
+      presenting = live;
+      show(live);
+    }
   }
   function paint() {
     if (width !== canvas.width || height !== canvas.height) {
@@ -100,12 +121,8 @@ export function createBackground(
       );
     context.globalCompositeOperation = "source-over";
   }
-  /** Sizes the frame to the canvas box and redraws; `force` redraws at an unchanged size too. */
-  function layout(force: boolean) {
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.min(devicePixelRatio || 1, 1.5);
-    const w = Math.round(rect.width * ratio),
-      h = Math.round(rect.height * ratio);
+  /** Sizes the frame to the canvas box, `w`x`h` device px, and redraws; `force` redraws at an unchanged size too. */
+  function layout(w: number, h: number, force: boolean) {
     // Assigning a size reallocates and clears a canvas even when it is
     // unchanged, as on the observer's first callback, so keep that frame.
     if (!force && w === width && h === height) return;
@@ -134,101 +151,58 @@ export function createBackground(
     policy.reset();
     instrument.clear();
     renderer.pod.calm();
-    if (playing && !document.hidden) frameId = requestAnimationFrame(frame);
+    if (playing && !hidden) frameId = requestAnimationFrame(frame);
   }
-  /** Pointer in display-art units; off the art or over the UI counts as blocked. */
-  function locate(event: PointerEvent) {
-    const art = pointerToArt(
-      canvas.getBoundingClientRect(),
-      event.clientX,
-      event.clientY,
-    );
-    const blocked =
-      (event.target instanceof Element &&
-        !!event.target.closest("button,a,input,.material")) ||
-      art.x < 0 ||
-      art.x > 1 ||
-      art.y < 0 ||
-      art.y > 1;
-    const kind: PointerKind =
-      event.pointerType === "touch" || event.pointerType === "pen"
-        ? event.pointerType
-        : "mouse";
-    return { ...art, blocked, kind };
-  }
-  function move(event: PointerEvent) {
-    const { x, y, blocked, kind } = locate(event);
-    // No buttons held means any press lost its pointerup (e.g. to a context menu).
-    if (kind !== "touch" && event.buttons === 0) instrument.cancel();
-    instrument.move(x, y, kind, blocked, event.timeStamp);
-  }
-  function down(event: PointerEvent) {
-    if (event.button !== 0) return;
-    const { x, y, blocked, kind } = locate(event);
-    instrument.down(
-      x,
-      y,
-      kind,
-      blocked,
-      event.clientX,
-      event.clientY,
-      event.timeStamp,
-    );
-  }
-  function up(event: PointerEvent) {
-    const { x, y, blocked, kind } = locate(event);
-    instrument.up(x, y, kind, event.clientX, event.clientY, event.timeStamp);
-    // Releasing over the card or a link must not leave a hover behind it.
-    instrument.move(x, y, kind, blocked, event.timeStamp);
-  }
-  const cancel = () => instrument.cancel();
-  const leave = () => instrument.leave();
-  // Draw before subscribing, so a failed first render cannot leak listeners.
+  // A failed first render must not strand the GPU context.
   try {
-    layout(true);
+    layout(startWidth, startHeight, true);
   } catch (error) {
     renderer.dispose();
     canvas.width = 0;
     throw error;
   }
-  if (surface) {
-    surface.id = "sky-gl";
-    surface.style.visibility = "hidden";
-    canvas.after(surface);
-  }
-  const observer = new ResizeObserver(() => layout(false));
-  observer.observe(canvas);
-  // Passive and never prevented, so touch scrolling and text selection still win.
-  const passive = { passive: true };
-  document.addEventListener("pointermove", move, passive);
-  document.addEventListener("pointerdown", down, passive);
-  document.addEventListener("pointerup", up, passive);
-  document.addEventListener("pointercancel", cancel, passive);
-  document.addEventListener("contextmenu", cancel, passive);
-  document.addEventListener("pointerleave", leave, passive);
-  document.addEventListener("scroll", cancel, passive);
-  document.addEventListener("visibilitychange", sync);
-  window.addEventListener("blur", leave);
   return {
+    resize(w: number, h: number) {
+      layout(w, h, false);
+    },
+    move({ x, y, blocked, kind, buttons, timeStamp }: PointerSample) {
+      // No buttons held means any press lost its pointerup (e.g. to a context menu).
+      if (kind !== "touch" && buttons === 0) instrument.cancel();
+      instrument.move(x, y, kind, blocked, timeStamp);
+    },
+    down({ x, y, blocked, kind, clientX, clientY, timeStamp }: PointerSample) {
+      instrument.down(x, y, kind, blocked, clientX, clientY, timeStamp);
+    },
+    up({ x, y, blocked, kind, clientX, clientY, timeStamp }: PointerSample) {
+      instrument.up(x, y, kind, clientX, clientY, timeStamp);
+      // Releasing over the card or a link must not leave a hover behind it.
+      instrument.move(x, y, kind, blocked, timeStamp);
+    },
+    cancel() {
+      instrument.cancel();
+    },
+    leave() {
+      instrument.leave();
+    },
     setPlaying(value: boolean) {
       playing = value;
       sync();
     },
+    /** Whether the page's tab is hidden. */
+    setHidden(value: boolean) {
+      hidden = value;
+      sync();
+    },
+    /**
+     * The page now shows what show() asked for. Behind the WebGL canvas,
+     * #sky need not hold a frame; paint() sizes it again.
+     */
+    shown(live: boolean) {
+      if (live && presenting) canvas.width = 0;
+    },
     dispose() {
       playing = false;
       cancelAnimationFrame(frameId);
-      observer.disconnect();
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerdown", down);
-      document.removeEventListener("pointerup", up);
-      document.removeEventListener("pointercancel", cancel);
-      document.removeEventListener("contextmenu", cancel);
-      document.removeEventListener("pointerleave", leave);
-      document.removeEventListener("scroll", cancel);
-      document.removeEventListener("visibilitychange", sync);
-      window.removeEventListener("blur", leave);
-      surface?.remove();
-      canvas.style.visibility = "";
       renderer.dispose();
       canvas.width = 0;
     },

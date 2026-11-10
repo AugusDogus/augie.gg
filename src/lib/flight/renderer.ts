@@ -9,6 +9,8 @@ import {
   canvas2d,
   renderTexture,
   type Artwork,
+  type Canvas,
+  type Context2D,
   type PrintedArt,
 } from "./texture";
 import { ART_HEIGHT, ART_WIDTH, PAINT_ZOOM, toPainting } from "./viewport";
@@ -26,7 +28,7 @@ export class FlightRenderer {
   readonly flow = new Flow();
   readonly specks = new Specks();
   elapsed = 0;
-  private overlay: HTMLCanvasElement | null = null;
+  private overlay: Canvas | null = null;
 
   private constructor(
     private print: PrintedArt,
@@ -104,7 +106,7 @@ export class FlightRenderer {
   }
 
   /** The art-space frame, with specks, into a 2D context at art scale. */
-  paint(context: CanvasRenderingContext2D) {
+  paint(context: Context2D) {
     const sky = this.pod.write();
     const scene = this.surface?.render(this.elapsed, this.flow.brushes, sky);
     if (scene) context.drawImage(scene, 0, 0, ART_WIDTH, ART_HEIGHT);
@@ -119,7 +121,7 @@ export class FlightRenderer {
   }
 
   /** Printed art and flat near-layer whale silhouettes, without currents, wind, or brush. */
-  private paintFallback(context: CanvasRenderingContext2D, sky: SkyFrame) {
+  private paintFallback(context: Context2D, sky: SkyFrame) {
     const { x, y, width, height } = CROP;
     context.drawImage(
       this.print.canvas,

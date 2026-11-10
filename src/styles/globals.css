@@ -55,10 +55,12 @@
 .artwork::before {
   content: "";
   position: absolute;
+  /* The margin once hid the blur's fading edge; kept so the image maps as it did. */
   inset: -45px;
   background-position: center;
   background-size: cover;
-  filter: blur(32px) brightness(0.72) saturate(0.78);
+  /* The image is already blurred (flight-poster.css): no blur to compute here. */
+  filter: brightness(0.72) saturate(0.78);
 }
 /* Past its feather the drawn painting is opaque, so clip the backdrop to the
    feather side (4px inside the opaque edge): the compositor then stops drawing
@@ -178,6 +180,13 @@
   filter: brightness(0.76) saturate(0.8);
   mask-image: linear-gradient(black 80.0915%, transparent);
 }
+/* The poster, over its blurred placeholder once it has loaded. */
+.artwork-poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 @media (aspect-ratio > 1200 / 874) {
   .artwork-poster {
     mask-image: linear-gradient(90deg, transparent, black 16.6667%);
@@ -185,7 +194,7 @@
   /* Wide windows show more blurred backdrop beside the painting; keep it a
      dark field, not a grey haze. */
   .artwork::before {
-    filter: blur(32px) brightness(0.5) saturate(0.78);
+    filter: brightness(0.5) saturate(0.78);
   }
 }
 .artwork[data-ready="true"] :is(#sky, #sky-gl) {

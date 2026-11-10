@@ -11,7 +11,12 @@ import {
 } from "./sky-layer";
 import type { Speck } from "./specks";
 import type { Stream, StreamId } from "./streams";
-import type { PrintedArt } from "./texture";
+import {
+  blankCanvas,
+  isOffscreen,
+  type Canvas,
+  type PrintedArt,
+} from "./texture";
 import { ART_HEIGHT, ART_WIDTH } from "./viewport";
 
 export type SurfaceSources = {
@@ -58,6 +63,21 @@ function compile(scope: GlScope): Programs {
 const UNAVAILABLE =
   "Interactive artwork is unavailable. Using the 2D background.";
 
+// While the art animates, the page shows this canvas, feathered through
+// its alpha. Without a preserved buffer each frame swaps in uncopied.
+const CONTEXT: WebGLContextAttributes = {
+  antialias: false,
+  depth: false,
+  stencil: false,
+  preserveDrawingBuffer: false,
+  failIfMajorPerformanceCaveat: true,
+};
+const pageWebgl = (canvas: HTMLCanvasElement) =>
+  canvas.getContext("webgl", CONTEXT);
+/** The canvas's WebGL context. The two canvas types' overloads do not unify, so each branch calls its own. */
+const webgl = (canvas: Canvas) =>
+  isOffscreen(canvas) ? canvas.getContext("webgl", CONTEXT) : pageWebgl(canvas);
+
 /**
  * A WebGL context whose programs are already compiling, so the driver works
  * while the artwork loads and prints. FlowSurface.create takes it over; until
@@ -67,30 +87,31 @@ export class SurfaceStart {
   private taken = false;
 
   private constructor(
-    readonly canvas: HTMLCanvasElement,
+    readonly canvas: Canvas,
     readonly gl: WebGLRenderingContext,
     readonly scope: GlScope,
     readonly programs: Programs,
+    /** Whether begin() made the canvas, and so may make another. */
+    readonly ownsCanvas: boolean,
   ) {}
 
-  /** Null without WebGL, or when its programs cannot even be issued. */
-  static begin() {
-    const canvas = document.createElement("canvas");
-    canvas.width = ART_WIDTH;
-    canvas.height = ART_HEIGHT;
-    // While the art animates, the page shows this canvas, feathered through
-    // its alpha. Without a preserved buffer each frame swaps in uncopied.
-    const gl = canvas.getContext("webgl", {
-      antialias: false,
-      depth: false,
-      stencil: false,
-      preserveDrawingBuffer: false,
-      failIfMajorPerformanceCaveat: true,
-    });
+  /**
+   * On `canvas`, the page's own handed to the worker, or on a new one. Null
+   * without WebGL, or when its programs cannot even be issued.
+   */
+  static begin(canvas?: Canvas) {
+    const target = canvas ?? blankCanvas(ART_WIDTH, ART_HEIGHT);
+    const gl = webgl(target);
     if (!gl) return null;
     const scope = new GlScope(gl);
     try {
-      const start = new SurfaceStart(canvas, gl, scope, compile(scope));
+      const start = new SurfaceStart(
+        target,
+        gl,
+        scope,
+        compile(scope),
+        canvas === undefined,
+      );
       // Send the compiles now rather than with the next draw.
       gl.flush();
       return start;
@@ -98,7 +119,7 @@ export class SurfaceStart {
       console.warn(UNAVAILABLE, error);
       scope.dispose();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
-      canvas.width = 0;
+      target.width = 0;
       return null;
     }
   }
@@ -129,7 +150,7 @@ export class FlowSurface {
   private brushData = new Float32Array(32);
 
   private constructor(
-    readonly canvas: HTMLCanvasElement,
+    readonly canvas: Canvas,
     private gl: WebGLRenderingContext,
     private scope: GlScope,
     private sources: SurfaceSources,
@@ -142,7 +163,9 @@ export class FlowSurface {
   /**
    * Takes over `start`, or returns null for the 2D renderer. A start that was
    * refused (say, mid GPU restart) or lost while the artwork loaded, with
-   * nothing yet listening to restore it, is begun again here.
+   * nothing yet listening to restore it, is begun again here on a new canvas.
+   * The page's own canvas cannot be replaced: one lost that early leaves the
+   * 2D renderer.
    */
   static create(
     sources: SurfaceSources,
@@ -151,8 +174,10 @@ export class FlowSurface {
   ) {
     let owned = (start ?? SurfaceStart.begin())?.take();
     if (owned?.gl.isContextLost()) {
-      owned.canvas.width = 0;
-      owned = SurfaceStart.begin()?.take();
+      const replaceable = owned.ownsCanvas;
+      owned.scope.dispose();
+      if (replaceable) owned.canvas.width = 0;
+      owned = replaceable ? SurfaceStart.begin()?.take() : null;
     }
     if (!owned) return null;
     const { canvas, gl, scope, programs } = owned;

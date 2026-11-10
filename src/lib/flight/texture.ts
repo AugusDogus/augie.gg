@@ -50,14 +50,45 @@ export function hash(n: number) {
   return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
 }
 
-export function canvas2d(width: number, height: number, readOften = false) {
+/** A canvas on the page or, in the worker that runs the renderer, off it. */
+export type Canvas = HTMLCanvasElement | OffscreenCanvas;
+export type Context2D =
+  | CanvasRenderingContext2D
+  | OffscreenCanvasRenderingContext2D;
+
+/** Older browsers have no OffscreenCanvas at all. */
+export const isOffscreen = (canvas: Canvas): canvas is OffscreenCanvas =>
+  typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas;
+
+/** The canvas's 2D context. The two canvas types' overloads do not unify, so each branch calls its own. */
+export function context2d(canvas: Canvas, readOften = false): Context2D {
+  const context = isOffscreen(canvas)
+    ? canvas.getContext("2d", { willReadFrequently: readOften })
+    : pageContext2d(canvas, readOften);
+  if (!context)
+    throw new Error("The artwork renderer could not create a 2D canvas");
+  return context;
+}
+const pageContext2d = (canvas: HTMLCanvasElement, readOften: boolean) =>
+  canvas.getContext("2d", { willReadFrequently: readOften });
+
+/** A canvas with no context yet. Without a document this is the renderer's worker. */
+export function blankCanvas(width: number, height: number): Canvas {
+  if (typeof document === "undefined")
+    return new OffscreenCanvas(width, height);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const context = canvas.getContext("2d", { willReadFrequently: readOften });
-  if (!context)
-    throw new Error("The artwork renderer could not create a 2D canvas");
-  return { canvas, context };
+  return canvas;
+}
+
+export function canvas2d(
+  width: number,
+  height: number,
+  readOften = false,
+): { canvas: Canvas; context: Context2D } {
+  const canvas = blankCanvas(width, height);
+  return { canvas, context: context2d(canvas, readOften) };
 }
 
 /** The seeded LCG behind the print grain, shared so other layers stay reproducible. */
@@ -71,13 +102,17 @@ export function random(seed: number) {
 
 /**
  * The decoded painting. `bitmap` holds CPU pixels for the sample and the GPU
- * upload, so neither decodes the JPEG again on the main thread. The print's
- * full-size blend still draws `image`: an accelerated canvas decodes an <img>
- * its own way, a level off the bitmap in places, and the approved print and
- * its poster come from that path.
+ * upload. The print's full-size blend draws `image`: on the page that is the
+ * <img>, which an accelerated canvas decodes its own way, a level off the
+ * bitmap in places, and the poster is captured from that path. In the worker
+ * it is the bitmap again; under the blend's 15% the difference rounds away.
  */
-export type Artwork = { image: HTMLImageElement; bitmap: ImageBitmap };
+export type Artwork = {
+  image: HTMLImageElement | ImageBitmap;
+  bitmap: ImageBitmap;
+};
 
+/** The painting through an <img>, for the page's capture tools. */
 export async function loadArtwork(src: string): Promise<Artwork> {
   const image = new Image();
   image.src = src;
@@ -85,9 +120,15 @@ export async function loadArtwork(src: string): Promise<Artwork> {
   return { image, bitmap: await createImageBitmap(image) };
 }
 
+/** The painting from its file, decoded off the page: the worker's path. */
+export async function decodeArtwork(file: Blob): Promise<Artwork> {
+  const bitmap = await createImageBitmap(file);
+  return { image: bitmap, bitmap };
+}
+
 export type PrintedArt = {
   /** The 1200x874 print. */
-  canvas: HTMLCanvasElement;
+  canvas: Canvas;
   /** The 600x437 dithered lattice drawn into the print. */
   cells: ImageData;
   /** The 600x437 downsample before contrast and dither. */

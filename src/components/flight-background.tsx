@@ -2,9 +2,23 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { createBackground } from "~/lib/flight/background";
-import { SurfaceStart } from "~/lib/flight/flow-surface";
-import { loadArtwork } from "~/lib/flight/texture";
+import poster from "~/assets/flight-poster.avif";
+import { startFlight, type Flight } from "~/lib/flight/page";
+import artwork from "../../public/flight4cover_redux_spread.jpg";
+
+/**
+ * How long after hydration the entrance (globals.css, `rise`) is still
+ * playing. The renderer's shader compiles occupy the GPU process, which also
+ * draws the page, so it starts once the entrance cannot drop a frame to it.
+ */
+const ENTRANCE_MS = 1000;
+
+/**
+ * The poster as markup, because its fade must not wait for hydration: it
+ * runs from the image's own load event. An image that loaded before the
+ * first paint (a repeat visit) just shows.
+ */
+const POSTER = `<img src="${poster.src}" alt="" fetchpriority="high" onload="performance.getEntriesByType('paint').length&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&this.animate({opacity:[0,1]},{duration:450,easing:'ease-out'})">`;
 
 // The persistent root background and the home dock share one motion preference.
 let paused = false;
@@ -40,9 +54,15 @@ export function usePlaying() {
   return { playing: !userPaused && !reduced, reduced };
 }
 
+/**
+ * The painting behind every page: its poster, and over it the canvases the
+ * renderer draws from its own thread (lib/flight/page.ts), so nothing here
+ * waits on WebGL. Browsers that cannot draw a canvas from a worker keep the
+ * poster.
+ */
 export function FlightBackground() {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const renderer = useRef<ReturnType<typeof createBackground> | null>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const flight = useRef<Flight | null>(null);
   const pathname = usePathname();
   const { playing } = usePlaying();
   const active = playing && pathname === "/";
@@ -50,47 +70,45 @@ export function FlightBackground() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     activeRef.current = active;
-    renderer.current?.setPlaying(active);
+    flight.current?.setPlaying(active);
   }, [active]);
   useEffect(() => {
-    let disposed = false;
-    const artwork = loadArtwork("/flight4cover_redux_spread.jpg");
-    // The shaders compile while the artwork decodes.
-    const start = SurfaceStart.begin();
-    async function initialize() {
-      try {
-        const image = await artwork;
-        if (disposed || !canvas.current) return;
-        const background = createBackground(canvas.current, image, start);
-        renderer.current = background;
-        background.setPlaying(activeRef.current);
-        setReady(true);
-        if (process.env.NODE_ENV === "development")
-          void import("~/lib/flight/poster").then((poster) =>
-            poster.installFlightDebug(image),
+    function start() {
+      flight.current = startFlight(frame.current, {
+        artwork: artwork.src,
+        playing: activeRef.current,
+        onReady: () => setReady(true),
+        onFailed(reason) {
+          console.warn(
+            "The animated artwork could not run. The pre-rendered background remains available.",
+            reason,
           );
-      } catch (error) {
-        console.warn(
-          "The animated artwork could not load. The pre-rendered background remains available.",
-          error,
-        );
-      } finally {
-        // A no-op once the renderer took it.
-        start?.dispose();
-      }
+          flight.current = null;
+          setReady(false);
+        },
+      });
     }
-    void initialize();
+    // No entrance plays on a later visit to home, or with reduced motion.
+    const entering =
+      !("settled" in document.documentElement.dataset) &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = setTimeout(start, entering ? ENTRANCE_MS : 0);
+    if (process.env.NODE_ENV === "development")
+      void import("~/lib/flight/poster").then((tools) =>
+        tools.installFlightDebug(artwork.src),
+      );
     return () => {
-      disposed = true;
-      start?.dispose();
-      renderer.current?.dispose();
-      renderer.current = null;
+      clearTimeout(timer);
+      flight.current?.dispose();
+      flight.current = null;
     };
   }, []);
   return (
-    <div className="artwork" data-ready={ready} aria-hidden="true">
-      <div className="artwork-poster" />
-      <canvas id="sky" ref={canvas} />
+    <div ref={frame} className="artwork" data-ready={ready} aria-hidden="true">
+      <div
+        className="artwork-poster"
+        dangerouslySetInnerHTML={{ __html: POSTER }}
+      />
     </div>
   );
 }

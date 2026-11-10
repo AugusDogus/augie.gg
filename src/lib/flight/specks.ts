@@ -1,4 +1,5 @@
 import type { Pointer } from "./flow";
+import type { Context2D } from "./texture";
 type SpeckBase = {
   id: number;
   x: number;
@@ -128,10 +129,7 @@ export function forEachSpeckMark(
   }
 }
 
-export function drawSpecks(
-  context: CanvasRenderingContext2D,
-  points: readonly Speck[],
-) {
+export function drawSpecks(context: Context2D, points: readonly Speck[]) {
   context.save();
   let filled: boolean | null = null;
   forEachSpeckMark(points, (x, y, width, height, alpha, cyan) => {

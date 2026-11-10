@@ -136,8 +136,13 @@ fixed clock and returns frames, for judging interactions frame by frame.
 
 ### Poster
 
+The painting shows three things in turn: a 1 KB blurred placeholder inline in
+the stylesheet, the poster (`src/assets/flight-poster.avif`, faded in when it
+loads), and then the live canvas, drawn by a worker (`src/lib/flight/worker.ts`)
+so the page's main thread never waits on WebGL.
+
 `bun test` fails when the model, shader, or speck inputs of the t=0 frame
-change, because the inline poster would no longer match the first live frame.
+change, because the poster would no longer match the first live frame.
 Changes to the print bake in `texture.ts` or to the speck painter need the same
 recapture, by hand:
 
@@ -145,5 +150,5 @@ recapture, by hand:
    browser console. It downloads `flight-poster.png`, the 1200×874 frame before
    viewport scaling and feathering.
 2. Run `bun scripts/flight-poster.ts ~/Downloads/flight-poster.png`. It needs
-   `avifenc` (libavif) and rewrites the AVIF and `poster-key` in
-   `flight-poster.css`.
+   `avifenc` (libavif) and `magick` (ImageMagick), and rewrites the AVIF, the
+   placeholder, and `poster-key` in `flight-poster.css`.

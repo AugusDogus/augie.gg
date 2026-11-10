@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { FlightBackground } from "~/components/flight-background";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { DEFAULT_APP_TITLE } from "~/lib/site";
+import artwork from "../../public/flight4cover_redux_spread.jpg";
 
 // Inter with its optical-size axis: the display cut at headline sizes, text cut below.
 const inter = localFont({
@@ -43,7 +44,18 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${geistMono.variable} dark`}>
       <head>
-        <link rel="preload" as="image" href="/flight4cover_redux_spread.jpg" />
+        {/*
+          The painting the renderer animates, fetched as its fetch() will ask
+          for it (flight-background.tsx). Low priority: the poster, fonts, and
+          scripts paint the page first.
+        */}
+        <link
+          rel="preload"
+          as="fetch"
+          crossOrigin="anonymous"
+          fetchPriority="low"
+          href={artwork.src}
+        />
       </head>
       <body className="min-h-dvh antialiased [text-rendering:optimizeLegibility]">
         <a className="skip-link" href="#main">

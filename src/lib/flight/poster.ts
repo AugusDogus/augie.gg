@@ -7,9 +7,17 @@ import * as shaders from "./shaders";
 import { Specks } from "./specks";
 import { STREAM_IDS, STREAMS } from "./streams";
 import { SUBJECTS, Subjects } from "./subjects";
-import { canvas2d, type Artwork } from "./texture";
+import { context2d, loadArtwork, type Artwork } from "./texture";
 import { ART_HEIGHT, ART_WIDTH, PAINT_ZOOM } from "./viewport";
 import { WHALE_INDICES } from "./whale-body";
+
+/** An art-size canvas on the page: only a page canvas has toDataURL. */
+function pageCanvas() {
+  const canvas = document.createElement("canvas");
+  canvas.width = ART_WIDTH;
+  canvas.height = ART_HEIGHT;
+  return { canvas, context: context2d(canvas) };
+}
 
 const round = (values: ArrayLike<number>) =>
   Array.from(values, (value) => Math.round(value * 1000) / 1000);
@@ -57,7 +65,7 @@ export async function captureFrame(image: Artwork, seconds = 0) {
     const idle = { x: 0.5, y: 0.5, active: false };
     for (let i = 0; i < Math.round(seconds * 60); i++)
       renderer.step(1 / 60, STILL, idle);
-    const { canvas, context } = canvas2d(ART_WIDTH, ART_HEIGHT);
+    const { canvas, context } = pageCanvas();
     renderer.paint(context);
     const url = canvas.toDataURL("image/png");
     canvas.width = 0;
@@ -90,7 +98,7 @@ export async function captureScript(
   const frames: string[] = [];
   try {
     if (!renderer.accelerated) throw new Error("Scripted capture needs WebGL.");
-    const { canvas, context } = canvas2d(ART_WIDTH, ART_HEIGHT);
+    const { canvas, context } = pageCanvas();
     const toArt = (x: number, y: number) => ({
       x: ((x - ART_WIDTH / 2) / PAINT_ZOOM + ART_WIDTH / 2) / ART_WIDTH,
       y: ((y - ART_HEIGHT / 2) / PAINT_ZOOM + ART_HEIGHT / 2) / ART_HEIGHT,
@@ -142,11 +150,15 @@ declare global {
 /**
  * Development only: `await flight.capturePoster()` downloads flight-poster.png;
  * `flight.captureFrame(seconds)` returns a later frame as a PNG data URL.
+ * These render on the page, apart from the worker, from the painting at `src`
+ * decoded through an <img> on first use.
  */
-export function installFlightDebug(image: Artwork) {
+export function installFlightDebug(src: string) {
+  let loading: Promise<Artwork> | null = null;
+  const artwork = () => (loading ??= loadArtwork(src));
   window.flight = {
     async capturePoster() {
-      const url = await captureFrame(image);
+      const url = await captureFrame(await artwork());
       const link = document.createElement("a");
       link.href = url;
       link.download = "flight-poster.png";
@@ -154,8 +166,9 @@ export function installFlightDebug(image: Artwork) {
       console.info(`Captured poster ${posterKey()}`);
       return url;
     },
-    captureFrame: (seconds) => captureFrame(image, seconds),
-    captureScript: (events, shots) => captureScript(image, events, shots),
+    captureFrame: async (seconds) => captureFrame(await artwork(), seconds),
+    captureScript: async (events, shots) =>
+      captureScript(await artwork(), events, shots),
     posterKey,
   };
 }
