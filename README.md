@@ -118,6 +118,9 @@ name; Geist Mono only draws keyboard hints.
 The résumé remains in `src/app/resume/page.mdx` on the same glass. Print styles
 keep it in a single black-on-white column on one US Letter page.
 
+The résumé's Twitch line shows the channel's subscriber badge with the months
+on hover, the months beside it on touch screens, and the words alone in print.
+
 The background uses Kazu Kibuishi's _Flight_ artwork, linked to its
 [Gallery Nucleus listing](https://www.gallerynucleus.com/detail/2126/).
 The artwork belongs to its artist, not this repository's code license.
