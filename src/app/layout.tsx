@@ -1,8 +1,10 @@
 import "~/styles/globals.css";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { ConsoleGreeting } from "~/components/console-greeting";
 import { FlightBackground } from "~/components/flight-background";
 import { TooltipProvider } from "~/components/ui/tooltip";
+import { WhaleArt } from "~/lib/flight/whale-art";
 import { DEFAULT_APP_TITLE } from "~/lib/site";
 import artwork from "../../public/flight4cover_redux_spread.jpg";
 
@@ -61,6 +63,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <FlightBackground />
+        <ConsoleGreeting art={WhaleArt.lines().join("\n")} />
         <div className="relative">
           <TooltipProvider>{children}</TooltipProvider>
         </div>
