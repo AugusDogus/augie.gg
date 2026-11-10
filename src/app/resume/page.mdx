@@ -1,5 +1,5 @@
 import { NameHeading } from "~/components/name-heading";
-import { SubMonths } from "~/components/sub-months";
+import { SubBadge } from "~/components/sub-badge";
 import { TwitchSub } from "~/lib/twitch-sub";
 
 <NameHeading />
@@ -91,16 +91,16 @@ _Jan 2017 – Jul 2019_
 
 <div className="resume-role">
 
-### Community member<span className="resume-sep">,</span> <span className="resume-org">Theo Browne's community (t3.gg)</span>
+### Eagle Scout<span className="resume-sep">,</span> <span className="resume-org">Troop 400</span>
 
-_Twitch sub for <SubMonths initial={TwitchSub.months(new Date())} /> months_
+_Feb 2017_
 
 </div>
 
 <div className="resume-role">
 
-### Eagle Scout<span className="resume-sep">,</span> <span className="resume-org">Troop 400</span>
+### Community member<span className="resume-sep">,</span> <span className="resume-org">t3.gg (Theo Browne)</span>
 
-_Feb 2017_
+_<SubBadge initial={TwitchSub.months(new Date())} />_
 
 </div>
