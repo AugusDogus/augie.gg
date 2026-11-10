@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
 import poster from "~/assets/flight-poster.avif";
 import { startFlight, type Flight } from "~/lib/flight/page";
 import artwork from "../../public/flight4cover_redux_spread.jpg";
@@ -69,10 +68,7 @@ export function usePlaying() {
 export function FlightBackground() {
   const frame = useRef<HTMLDivElement>(null);
   const flight = useRef<Flight | null>(null);
-  const pathname = usePathname();
-  const { playing } = usePlaying();
-  // The résumé is for reading: the painting holds still behind it.
-  const active = playing && pathname !== "/resume";
+  const { playing: active } = usePlaying();
   const activeRef = useRef(active);
   const [ready, setReady] = useState(false);
   useEffect(() => {

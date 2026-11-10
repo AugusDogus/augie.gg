@@ -152,7 +152,7 @@ and masks match the poster.
   that drifts off as a gust. Taps work on touch without blocking scrolling.
 - Wind displacement, cursor combing, and drifting specks.
 
-The animation runs at up to 60 fps and stops on the résumé, when the tab is
+The animation runs at up to 60 fps and stops when the tab is
 hidden, when paused, or when reduced motion is requested. Without WebGL, or
 while a lost GPU context recovers, a 2D path draws the print, flat whale
 silhouettes, and specks. Loading or canvas failure preserves the pre-rendered
