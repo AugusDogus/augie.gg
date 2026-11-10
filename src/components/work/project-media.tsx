@@ -10,11 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { usePlaying } from "~/components/flight-background";
 import type { Capture, Media } from "~/content/projects";
 import { cn } from "~/lib/utils";
 import { BoardScreen } from "./board-screen";
-import { PlaybackGroup } from "./playback";
+import { Playback, PlaybackGroup } from "./playback";
 import { savesData } from "./save-data";
 import { Showcase } from "./showcase";
 import { Still } from "./still";
@@ -35,6 +36,13 @@ export const SCREEN_FRAME =
 const InStep = createContext<{ group: PlaybackGroup; clock: string } | null>(
   null,
 );
+
+/**
+ * Where a composition's loop bar goes: a hairline under all of it, on the
+ * card rather than over a capture, so it reads the same on any screen and no
+ * phone or TV set in front covers it.
+ */
+const LoopSlot = createContext<HTMLElement | null>(null);
 
 /**
  * Pixel art stays nearest neighbor once each of its columns gets a device
@@ -107,6 +115,10 @@ function Video({
   const [mounted, setMounted] = useState(false);
   const [started, setStarted] = useState(false);
   const wanted = visible && playing;
+  const bar = useRef<HTMLDivElement>(null);
+  const slot = useContext(LoopSlot);
+  // One video fills the composition's loop bar: its only one, or the one the others follow.
+  const timed = inStep === null || media.src === inStep.clock;
   // Mounted on first play and kept, so scrolling away and back resumes in place.
   if (wanted && !mounted && !savesData()) setMounted(true);
 
@@ -140,6 +152,31 @@ function Video({
     video.play().catch(() => undefined);
   }, [video, wanted]);
 
+  // Drawn every frame while it plays: the video's own time events come a few
+  // times a second, which would step.
+  useEffect(() => {
+    if (video === null || !timed) return undefined;
+    let frame = 0;
+    const draw = () => {
+      if (bar.current !== null)
+        bar.current.style.transform = `scaleX(${Playback.progress(video.currentTime, video.duration)})`;
+      frame = requestAnimationFrame(draw);
+    };
+    const stop = () => cancelAnimationFrame(frame);
+    const start = () => {
+      stop();
+      draw();
+    };
+    video.addEventListener("playing", start);
+    video.addEventListener("pause", stop);
+    if (!video.paused) start();
+    return () => {
+      video.removeEventListener("playing", start);
+      video.removeEventListener("pause", stop);
+      stop();
+    };
+  }, [video, timed]);
+
   return (
     <div ref={root} className="absolute inset-0">
       <Still
@@ -172,6 +209,24 @@ function Video({
           <source src={media.src} type="video/mp4" />
         </video>
       )}
+      {mounted &&
+        timed &&
+        slot !== null &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            data-loop-bar=""
+            data-started={started && !reduced}
+            className="bg-line h-0.5 overflow-hidden rounded-full opacity-0 transition-opacity duration-300 ease-out data-[started=true]:opacity-100"
+          >
+            <div
+              ref={bar}
+              className="bg-fg/60 size-full origin-left"
+              style={{ transform: "scaleX(0)" }}
+            />
+          </div>,
+          slot,
+        )}
     </div>
   );
 }
@@ -270,19 +325,25 @@ export function MediaShowcase({
 }) {
   const clock = Showcase.clock(showcase);
   const [group] = useState(() => new PlaybackGroup());
+  // State rather than a ref, so the bar renders once its slot exists.
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   const composition = (
-    <Composition
-      showcase={showcase}
-      sizes={sizes}
-      interactive={interactive}
-      className={className}
-      style={style}
-    />
+    <Composition showcase={showcase} sizes={sizes} interactive={interactive} />
   );
-  return clock === null ? (
-    composition
-  ) : (
-    <InStep value={{ group, clock }}>{composition}</InStep>
+  return (
+    <div className={cn("relative", className)} style={style}>
+      <LoopSlot value={slot}>
+        {clock === null ? (
+          composition
+        ) : (
+          <InStep value={{ group, clock }}>{composition}</InStep>
+        )}
+      </LoopSlot>
+      {Showcase.plays(showcase) && (
+        // Hangs in the room ProjectView leaves under a composition that plays.
+        <div ref={setSlot} className="absolute inset-x-0 top-full mt-1.5" />
+      )}
+    </div>
   );
 }
 
@@ -290,19 +351,15 @@ function Composition({
   showcase,
   sizes,
   interactive,
-  className,
-  style,
 }: {
   showcase: Showcase;
   sizes: string;
   interactive: boolean;
-  className?: string;
-  style?: CSSProperties;
 }) {
   switch (showcase.kind) {
     case "desktop":
       return (
-        <div className={cn("@container relative", className)} style={style}>
+        <div className="@container relative">
           <div
             style={
               showcase.phone === null && showcase.tv === null
@@ -361,7 +418,7 @@ function Composition({
       );
     case "phone":
       return (
-        <div className={cn("@container", className)} style={style}>
+        <div className="@container">
           <div
             className="mx-auto"
             style={{ width: `${Showcase.LONE_PHONE * 100}cqw` }}

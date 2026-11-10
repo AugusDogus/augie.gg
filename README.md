@@ -83,7 +83,8 @@ name; Geist Mono only draws keyboard hints.
 - Captures share one frame whether they are images or videos, with a phone
   capture set in front of the lead screen as picture-in-picture. Videos play
   only while on screen, and show their poster with reduced motion or
-  Save-Data.
+  Save-Data. A hairline under a playing composition fills as its loop runs
+  and holds while the animation is paused.
 - While a capture is still loading, the painting's mother and calf swim in
   its frame (`WhaleLoader`), and the capture fades in over them. The same
   whale model prints them once, in a worker, as a dithered strip that CSS

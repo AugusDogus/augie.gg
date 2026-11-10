@@ -280,6 +280,24 @@ describe("Showcase.clock", () => {
   });
 });
 
+describe("Showcase.plays", () => {
+  test("is true when any capture shown is a video", () => {
+    const playing = [
+      Showcase.of([phoneVideo]),
+      Showcase.of([desktop("/a.webp"), phoneVideo]),
+      Showcase.of([desktop("/a.webp"), tvVideo]),
+    ];
+    for (const showcase of playing)
+      expect(showcase && Showcase.plays(showcase)).toBe(true);
+  });
+
+  test("is false for stills and for a board", () => {
+    const still = [Showcase.of([desktop("/a.webp")]), Showcase.of([board])];
+    for (const showcase of still)
+      expect(showcase && Showcase.plays(showcase)).toBe(false);
+  });
+});
+
 describe("Showcase TV framing", () => {
   test("frames a lone TV capture in its bezel, deeper at the bottom", () => {
     const showcase = Showcase.of([tvVideo]);

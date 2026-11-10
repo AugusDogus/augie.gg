@@ -150,10 +150,12 @@ export function ProjectView({
   const showcase = Showcase.of(project.media);
   // Without captures, the evidence line stands in for them.
   const cover = showcase === null ? (project.highlight ?? null) : null;
-  // Tighter under a phone's overhang, which already leaves room, and with nothing above.
+  // Tighter under a phone's overhang, which already leaves room unless a loop
+  // bar hangs there, and with nothing above.
   const tight =
     (showcase?.kind === "desktop" &&
-      (showcase.phone !== null || showcase.tv !== null)) ||
+      (showcase.phone !== null || showcase.tv !== null) &&
+      !Showcase.plays(showcase)) ||
     (showcase === null && cover === null);
   const destination = Destination.of(project);
   const started = monthYear(project.date);

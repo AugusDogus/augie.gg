@@ -45,6 +45,13 @@ export const Playback = {
     if (Math.abs(drift) <= IN_STEP) return 1;
     return 1 - Math.max(-MAX_EASE, Math.min(MAX_EASE, drift));
   },
+
+  /** The share of its loop a clip has played, 0 to 1; 0 while its length is unknown. */
+  progress(time: number, duration: number): number {
+    // Also false while the length is unknown (NaN).
+    if (!(duration > 0)) return 0;
+    return Math.max(0, Math.min(1, time / duration));
+  },
 } as const;
 
 /**
