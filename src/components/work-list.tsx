@@ -40,7 +40,7 @@ const archive = groupByYear(archivedProjects);
 
 /** Shared row chrome: instant hover on, a 150ms fade off, and a lit open row. */
 const ROW =
-  "w-full scroll-mt-12 rounded-[10px] px-3 text-left transition-[background-color] duration-150 ease-out -outline-offset-2 pointer-fine:hover:bg-white/[.05] pointer-fine:hover:duration-0 aria-expanded:bg-white/[.09] aria-expanded:shadow-[inset_0_0_0_1px_#ffffff17]";
+  "w-full scroll-mt-12 rounded-lg px-3 text-left transition-[background-color] duration-150 ease-out -outline-offset-2 pointer-fine:hover:bg-white/[.05] pointer-fine:hover:duration-0 aria-expanded:bg-white/[.09] aria-expanded:shadow-[inset_0_0_0_1px_#ffffff17]";
 
 type RowProps = {
   project: Project;

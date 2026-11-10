@@ -139,7 +139,7 @@ function Layer({
           <div
             inert={!pinned}
             data-pinned={pinned}
-            className="-my-0.5 -mr-1.5 opacity-0 transition-opacity duration-150 ease-out data-[pinned=true]:opacity-100"
+            className="-my-0.5 -mr-[11px] opacity-0 transition-opacity duration-150 ease-out data-[pinned=true]:opacity-100"
           >
             <PeekControls
               project={project}
