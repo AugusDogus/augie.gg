@@ -7,8 +7,12 @@ import { WhaleSprite } from "~/lib/flight/whale-sprite";
 /** One loop is one of the mother's strokes, at her pace in the painting. */
 const STROKE_MS = 3400;
 
-/** A loader shows nothing for this long, so a prompt still never flashes it; the stylesheet's delay matches. */
-const PROMPT_MS = 150;
+/**
+ * How long a loader has waited before the strip is asked for: most stills
+ * arrive first. It is well inside the stylesheet's 400ms before the whales
+ * show, so the strip is usually there when they do.
+ */
+const PRINT_MS = 150;
 
 /** The strip's measures in cells, for the stylesheet, which sizes a cell. */
 const POD: CSSProperties & Record<`--whale-${string}`, string | number> = {
@@ -53,9 +57,8 @@ function print() {
  */
 export function WhaleLoader() {
   const { playing } = usePlaying();
-  // Printed only once a loader is about to show: most stills arrive first.
   useEffect(() => {
-    const timer = setTimeout(print, PROMPT_MS);
+    const timer = setTimeout(print, PRINT_MS);
     return () => clearTimeout(timer);
   }, []);
   return (

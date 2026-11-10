@@ -1,13 +1,13 @@
 /*
  * What a capture's frame shows while its pixels load (WhaleLoader): the
  * painting's whales swimming in place over the frame's dark ground. It waits
- * a beat before appearing, so a quick load never flashes it.
+ * 400ms before appearing, so only a capture that is really slow shows it.
  */
 .whale-loader {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  animation: whale-loader-in 1ms linear 150ms both;
+  animation: whale-loader-in 1ms linear 400ms both;
 }
 /* Sparse two-pixel specks in the painting's whites and cyans, one tile wider than the frame. */
 .whale-loader-specks {
@@ -60,7 +60,7 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .whale-loader {
-    animation: whale-loader-in 400ms var(--ease-out) 150ms both;
+    animation: whale-loader-in 400ms var(--ease-out) 400ms both;
   }
   .whale-loader-specks {
     animation: whale-loader-drift 16s linear infinite;
