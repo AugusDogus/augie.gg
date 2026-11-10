@@ -155,6 +155,13 @@ export const Showcase = {
     );
     return first?.kind === "video" && second !== undefined ? first.src : null;
   },
+  /** Whether any capture the composition shows is a video, and so has a loop to mark. */
+  plays(showcase: Showcase): boolean {
+    if (showcase.kind === "phone") return showcase.phone.kind === "video";
+    return [showcase.lead, showcase.phone, showcase.tv].some(
+      (media) => media?.kind === "video",
+    );
+  },
   /**
    * How far a TV inset with a console in front of it rises off the bottom, as
    * a share of the composition's width: the console stands on the bottom edge

@@ -38,6 +38,25 @@ describe("Playback.drift", () => {
   });
 });
 
+describe("Playback.progress", () => {
+  test("is the share of the loop already played", () => {
+    expect(Playback.progress(0, 10)).toBe(0);
+    expect(Playback.progress(2.5, 10)).toBeCloseTo(0.25);
+    expect(Playback.progress(10, 10)).toBe(1);
+  });
+
+  test("stays within the loop when the clock runs past either end", () => {
+    expect(Playback.progress(10.02, 10)).toBe(1);
+    expect(Playback.progress(-0.01, 10)).toBe(0);
+  });
+
+  test("is nothing while the length is unknown", () => {
+    expect(Playback.progress(3, Number.NaN)).toBe(0);
+    expect(Playback.progress(3, 0)).toBe(0);
+    expect(Playback.progress(3, Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});
+
 describe("PlaybackGroup", () => {
   test("puts a follower on the lead's time when it starts playing", () => {
     const group = new PlaybackGroup();
