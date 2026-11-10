@@ -323,11 +323,13 @@
     color: transparent;
   }
 }
+/* Opacity and transform only: the compositor runs them while the main thread
+   is still busy starting the painting. A filter here waited on it, so the
+   name stayed hidden until the painting was up. */
 @keyframes rise {
   from {
     opacity: 0;
     transform: translateY(10px);
-    filter: blur(6px);
   }
 }
 @keyframes settle {
