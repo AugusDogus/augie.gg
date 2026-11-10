@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   Tooltip,
@@ -8,6 +7,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import type { Board } from "~/content/projects";
+import { Still } from "./still";
 
 /** The viewer page (public/kicad-viewer/embed.html), on this board's files. */
 function viewerUrl(board: Board): string {
@@ -192,7 +192,7 @@ export function BoardScreen({
       className="@container relative outline-none [&:fullscreen]:bg-[#0a1317]"
       style={{ aspectRatio: `${board.width} / ${board.height}` }}
     >
-      <Image
+      <Still
         src={board.poster}
         alt={board.alt}
         width={board.width}
