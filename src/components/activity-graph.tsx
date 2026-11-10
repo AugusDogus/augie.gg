@@ -256,7 +256,7 @@ export function ActivityGraph({
         }
         // rtl starts the scroll at the latest weeks with no script and no jump,
         // so until it is measured a phone's graph hides its oldest weeks on the left.
-        className="group/graph -mx-5 -my-1.5 overflow-x-auto overscroll-x-contain px-5 py-1.5 [direction:rtl] [scrollbar-width:none] max-sm:[mask-image:linear-gradient(90deg,transparent,#000_32px)] [&::-webkit-scrollbar]:hidden"
+        className="group/graph -mx-4.5 -my-1.5 overflow-x-auto overscroll-x-contain px-4.5 py-1.5 [direction:rtl] [scrollbar-width:none] max-sm:[mask-image:linear-gradient(90deg,transparent,#000_32px)] [&::-webkit-scrollbar]:hidden"
       >
         {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- role="application": one tab stop that reads days with the arrow keys */}
         <div

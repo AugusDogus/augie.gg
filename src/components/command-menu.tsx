@@ -106,7 +106,7 @@ export function CommandMenuTrigger() {
     <Button
       variant="secondary"
       // Without script the menu can't open, so the header keeps only GitHub.
-      className="text-fg-2 hover:text-fg gap-2.5 bg-[#16232acc] pr-1.5 hover:bg-[#213038d9] pointer-coarse:h-10 pointer-coarse:pr-3.5 noscript:hidden"
+      className="text-fg-2 hover:text-fg bg-[#16232acc] pr-1.5 hover:bg-[#213038d9] pointer-coarse:h-10 pointer-coarse:pr-3.5 noscript:hidden"
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-keyshortcuts={apple === false ? "Control+K" : "Meta+K"}

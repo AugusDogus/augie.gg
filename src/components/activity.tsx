@@ -27,7 +27,7 @@ export async function Activity() {
   const unbroken = current === longest && current > 0;
   const busiest = busiestDay(days);
   return (
-    <section aria-labelledby="activity-title" className="material p-5">
+    <section aria-labelledby="activity-title" className="material p-4.5">
       <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[13px]">
         <h2 id="activity-title" className="text-fg-2 font-medium">
           Activity
