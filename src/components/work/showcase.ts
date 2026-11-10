@@ -69,6 +69,34 @@ export type Showcase =
 /** The still a thumbnail crops. */
 export type Cover = { src: string; width: number; height: number };
 
+/**
+ * A still the composition shows, and how the page asks for it: the width it
+ * is shown at, as an image's `sizes`, and whether it is served as the file
+ * itself, as pixel art is, or resized.
+ */
+export type Still = Cover & { sizes: string; original: boolean };
+
+/**
+ * The widths a phone and a TV set in front of a lead, and a phone on its own,
+ * are shown at. A lead's width depends on where the composition sits.
+ */
+const SIZES = {
+  phone: "(max-width: 640px) 25vw, 180px",
+  tv: "(max-width: 640px) 35vw, 260px",
+  lone: "(max-width: 640px) 40vw, 320px",
+} as const;
+
+/** A capture's own pixels, a video's frame, or a board's render: never the viewer itself. */
+function cover(media: Media): Cover {
+  const src = media.kind === "image" ? media.src : media.poster;
+  return { src, width: media.width, height: media.height };
+}
+
+function still(media: Media, sizes: string): Still {
+  const original = media.kind === "image" && media.pixelated === true;
+  return { ...cover(media), sizes, original };
+}
+
 export const Showcase = {
   /** Null when there is nothing to show. */
   of(media: readonly Media[] | undefined): Showcase | null {
@@ -84,13 +112,19 @@ export const Showcase = {
   },
   /** The still a thumbnail crops: the lead's, or a lone phone's. */
   cover(showcase: Showcase): Cover {
-    const media = showcase.kind === "desktop" ? showcase.lead : showcase.phone;
-    const src =
-      media.kind === "image"
-        ? media.src
-        : // A video's frame, or a board's render: never the viewer itself.
-          media.poster;
-    return { src, width: media.width, height: media.height };
+    return cover(showcase.kind === "desktop" ? showcase.lead : showcase.phone);
+  },
+  /**
+   * Every still the composition shows, lead first, as the page asks for
+   * each. `lead` is the width the lead is shown at, as an image's `sizes`.
+   */
+  stills(showcase: Showcase, lead: string): Still[] {
+    if (showcase.kind === "phone") return [still(showcase.phone, SIZES.lone)];
+    return [
+      still(showcase.lead, lead),
+      ...(showcase.phone === null ? [] : [still(showcase.phone, SIZES.phone)]),
+      ...(showcase.tv === null ? [] : [still(showcase.tv, SIZES.tv)]),
+    ];
   },
   /** Width over height of the whole composition, for fitting it into a box before it renders. */
   aspect(showcase: Showcase): number {
@@ -132,6 +166,7 @@ export const Showcase = {
       TV_CHIN * TV_INSET * CHIN_COVER
     );
   },
+  SIZES,
   /** The composition's lengths, as shares of its width, for laying it out in container units. */
   OVERHANG,
   LONE_PHONE,

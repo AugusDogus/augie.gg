@@ -11,6 +11,7 @@ import { PeekKeys } from "~/components/work/peek-keys";
 import { ProjectView } from "~/components/work/project-view";
 import { Stage } from "~/components/work/stage";
 import { useSheetDrag } from "~/components/work/use-sheet-drag";
+import { SHEET_LEAD, Warm } from "~/components/work/warm";
 import type { Project } from "~/content/projects";
 import { closeProject, openProject, usePeek } from "~/lib/peek";
 
@@ -57,6 +58,12 @@ function Sheet({ project, open }: { project: Project; open: boolean }) {
   const next = Catalog.neighbor(sequence, project.title, 1);
   const position = Catalog.position(sequence, project.title);
   const { body, backdrop, handlers } = useSheetDrag(closeProject);
+
+  // Stepping is the likeliest next move: have both neighbours' captures on the way.
+  useEffect(() => {
+    Warm.project(previous);
+    Warm.project(next);
+  }, [previous, next]);
 
   function step(target: Project | null) {
     if (target === null) return;
@@ -157,7 +164,7 @@ function Sheet({ project, open }: { project: Project; open: boolean }) {
             >
               <ProjectView
                 project={project}
-                sizes="(max-width: 640px) calc(100vw - 12px), 628px"
+                sizes={SHEET_LEAD}
                 // Closing keeps it until the sheet is gone, so the slide out shows what was there.
                 interactive
                 mediaHeight="min(52dvh, 440px)"

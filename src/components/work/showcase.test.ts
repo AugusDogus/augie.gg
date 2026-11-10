@@ -114,6 +114,85 @@ describe("Showcase.of", () => {
   });
 });
 
+describe("Showcase.stills", () => {
+  const LEAD = "640px";
+
+  test("lists the lead at the given width, then the phone and TV at theirs", () => {
+    const showcase = Showcase.of([desktop("/a.webp"), phoneVideo, tvVideo]);
+    expect(showcase && Showcase.stills(showcase, LEAD)).toEqual([
+      {
+        src: "/a.webp",
+        width: 1280,
+        height: 800,
+        sizes: LEAD,
+        original: false,
+      },
+      {
+        src: "/phone.webp",
+        width: 1179,
+        height: 2556,
+        sizes: Showcase.SIZES.phone,
+        original: false,
+      },
+      {
+        src: "/tv.webp",
+        width: 1280,
+        height: 960,
+        sizes: Showcase.SIZES.tv,
+        original: false,
+      },
+    ]);
+  });
+
+  test("a lone phone has its own width, whatever the lead's", () => {
+    const showcase = Showcase.of([phoneVideo]);
+    expect(showcase && Showcase.stills(showcase, LEAD)).toEqual([
+      {
+        src: "/phone.webp",
+        width: 1179,
+        height: 2556,
+        sizes: Showcase.SIZES.lone,
+        original: false,
+      },
+    ]);
+  });
+
+  test("pixel art is served as the file itself", () => {
+    const art: Media = {
+      kind: "image",
+      src: "/pixels.png",
+      alt: "pixels",
+      width: 640,
+      height: 480,
+      frame: "desktop",
+      pixelated: true,
+    };
+    const showcase = Showcase.of([art]);
+    expect(showcase && Showcase.stills(showcase, LEAD)).toEqual([
+      {
+        src: "/pixels.png",
+        width: 640,
+        height: 480,
+        sizes: LEAD,
+        original: true,
+      },
+    ]);
+  });
+
+  test("a board shows its poster", () => {
+    const showcase = Showcase.of([board]);
+    expect(showcase && Showcase.stills(showcase, LEAD)).toEqual([
+      {
+        src: "/board.webp",
+        width: 2560,
+        height: 1600,
+        sizes: LEAD,
+        original: false,
+      },
+    ]);
+  });
+});
+
 describe("Showcase.cover", () => {
   test("crops an image itself", () => {
     const showcase = Showcase.of([desktop("/a.webp", 1600, 1000)]);
