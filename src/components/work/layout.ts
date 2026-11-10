@@ -16,6 +16,11 @@ function subscribe(listener: () => void) {
   return () => media.removeEventListener("change", listener);
 }
 
+/** Whether projects open on the stage right now, for code outside React. */
+export function stageLayout(): boolean {
+  return matchMedia(STAGE_QUERY).matches;
+}
+
 export function useStageLayout(): boolean {
   return useSyncExternalStore(
     subscribe,

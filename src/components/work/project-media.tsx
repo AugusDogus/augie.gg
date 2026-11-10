@@ -15,6 +15,7 @@ import type { Capture, Media } from "~/content/projects";
 import { cn } from "~/lib/utils";
 import { BoardScreen } from "./board-screen";
 import { PlaybackGroup } from "./playback";
+import { savesData } from "./save-data";
 import { Showcase } from "./showcase";
 import { Still } from "./still";
 
@@ -34,18 +35,6 @@ export const SCREEN_FRAME =
 const InStep = createContext<{ group: PlaybackGroup; clock: string } | null>(
   null,
 );
-
-/** Save-Data, where the browser reports it. */
-function savesData(): boolean {
-  if (!("connection" in navigator)) return false;
-  const connection: unknown = navigator.connection;
-  return (
-    typeof connection === "object" &&
-    connection !== null &&
-    "saveData" in connection &&
-    connection.saveData === true
-  );
-}
 
 /**
  * Pixel art stays nearest neighbor once each of its columns gets a device
@@ -339,7 +328,7 @@ function Composition({
             >
               <ProjectMedia
                 media={showcase.tv}
-                sizes="(max-width: 640px) 35vw, 260px"
+                sizes={Showcase.SIZES.tv}
                 interactive={interactive}
               />
             </div>
@@ -363,7 +352,7 @@ function Composition({
             <div className="absolute right-[5cqw] bottom-0 w-[20cqw] drop-shadow-[0_18px_30px_#000000a6]">
               <ProjectMedia
                 media={showcase.phone}
-                sizes="(max-width: 640px) 25vw, 180px"
+                sizes={Showcase.SIZES.phone}
                 interactive={interactive}
               />
             </div>
@@ -379,7 +368,7 @@ function Composition({
           >
             <ProjectMedia
               media={showcase.phone}
-              sizes="(max-width: 640px) 40vw, 320px"
+              sizes={Showcase.SIZES.lone}
               interactive={interactive}
             />
           </div>

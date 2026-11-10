@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   type Ref,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -18,6 +19,7 @@ import { useStageLayout } from "~/components/work/layout";
 import { Preview } from "~/components/work/preview";
 import { SCREEN_FRAME } from "~/components/work/project-media";
 import { Showcase } from "~/components/work/showcase";
+import { Warm } from "~/components/work/warm";
 import { rovingTarget } from "~/components/work/roving";
 import type { Project } from "~/content/projects";
 import { closeProject, openProject, usePeek } from "~/lib/peek";
@@ -191,6 +193,8 @@ export function WorkList() {
   const rows = useRef(new Map<string, HTMLButtonElement>());
   /** The row keyboard focus previewed, so a pointer click's focus never hides the stage on blur. */
   const focusPreview = useRef<string | null>(null);
+  // Where rows open the sheet, the featured projects' captures arrive ahead of a tap.
+  useEffect(() => (stage ? undefined : Warm.featured()), [stage]);
   const panel = useRef<HTMLElement>(null);
   const order = expanded ? allTitles : featuredTitles;
   const tabStop =
