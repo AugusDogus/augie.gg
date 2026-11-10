@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CaretLeftIcon } from "@phosphor-icons/react/ssr";
+import {
+  ArrowUpRightIcon,
+  CaretLeftIcon,
+  FilePdfIcon,
+} from "@phosphor-icons/react/ssr";
 import { Dock } from "~/components/dock";
-import { PrintResume } from "~/components/print-resume";
 import { Button } from "~/components/ui/button";
+import { ResumePdf } from "~/lib/resume-pdf";
 import { cn } from "~/lib/utils";
 
 export const metadata: Metadata = {
   title: "Résumé",
   description:
     "Senior software developer building AMLI.com and Ask AMLI, based in Pensacola, FL. Next.js, TypeScript, React Native, and Rust.",
-  alternates: { canonical: "/resume" },
+  alternates: {
+    canonical: "/resume",
+    types: { "application/pdf": ResumePdf.HREF },
+  },
 };
 
 // The toolbar spans the sheet, yet its right end can still sit over bright sky
@@ -37,7 +44,19 @@ export default function ResumeLayout({
               augie.gg
             </Link>
           </Button>
-          <PrintResume className={toolbarButton} />
+          {/* The browser's own viewer prints it or saves it. */}
+          <Button variant="secondary" className={toolbarButton} asChild>
+            <a
+              href={ResumePdf.HREF}
+              target="_blank"
+              rel="noopener"
+              aria-label="Open the résumé as a PDF"
+            >
+              <FilePdfIcon aria-hidden="true" />
+              PDF
+              <ArrowUpRightIcon aria-hidden="true" />
+            </a>
+          </Button>
         </div>
       </header>
       <main
