@@ -8,7 +8,7 @@ import { cn } from "~/lib/utils";
 export const metadata: Metadata = {
   title: "Résumé",
   description:
-    "Senior software developer at Provalus since January 2023, based in Pensacola, FL. Next.js, TypeScript, CI/CD, and Playwright.",
+    "Senior software developer building AMLI.com and Ask AMLI, based in Pensacola, FL. Next.js, TypeScript, React Native, and Rust.",
   alternates: { canonical: "/resume" },
 };
 

@@ -17,14 +17,22 @@
 }
 .resume-sheet > p:first-of-type > a {
   color: var(--color-fg);
+}
+.resume-sheet > p:first-of-type > a,
+.resume-sheet li a {
   text-decoration-color: #ffffff40;
   text-decoration-thickness: 1px;
   transition: text-decoration-color 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
-  .resume-sheet > p:first-of-type > a:hover {
+  .resume-sheet > p:first-of-type > a:hover,
+  .resume-sheet li a:hover {
     text-decoration-color: var(--color-fg-2);
   }
+}
+/* The summary, under the contact line. */
+.resume-sheet > p + p {
+  margin-top: 14px;
 }
 .resume-sheet h2 {
   margin: 32px 0 4px;
@@ -168,9 +176,13 @@
     margin: 0 0 6pt;
     font-size: 9.5pt;
   }
-  .resume-sheet > p:first-of-type > a {
+  .resume-sheet > p:first-of-type > a,
+  .resume-sheet li a {
     color: inherit;
     text-decoration: none;
+  }
+  .resume-sheet > p + p {
+    margin: 0 0 6pt;
   }
   .resume-sheet h2 {
     font-size: 11.5pt;
