@@ -55,7 +55,17 @@ function Divider({ className }: { className?: string }) {
   );
 }
 
-export function Dock() {
+/**
+ * Pinned bottom-right only once the pill clears the page's content column;
+ * otherwise it closes the page, centered under that column.
+ */
+const COLUMN = {
+  home: "max-w-[calc(600px+2*var(--gutter))] [@media(width>1000px)_and_(aspect-ratio>5/4)]:fixed [@media(width>1000px)_and_(aspect-ratio>5/4)]:right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] [@media(width>1000px)_and_(aspect-ratio>5/4)]:bottom-5 [@media(width>1000px)_and_(aspect-ratio>5/4)]:z-20 [@media(width>1000px)_and_(aspect-ratio>5/4)]:p-0",
+  resume:
+    "max-w-[calc(760px+2*var(--gutter))] min-[1240px]:fixed min-[1240px]:right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] min-[1240px]:bottom-5 min-[1240px]:z-20 min-[1240px]:p-0",
+} as const;
+
+export function Dock({ column = "home" }: { column?: keyof typeof COLUMN }) {
   const { playing, reduced } = usePlaying();
   const time = useLocalTime();
   useEffect(() => {
@@ -82,11 +92,14 @@ export function Dock() {
       ? "Pause animation"
       : "Play animation";
 
-  // Pinned bottom-right only once the pill clears the 600px content column;
-  // otherwise it closes the page, centered under that column. Without the
-  // animation (reduced motion, or no script) the pill is just the credit.
+  // Without the animation (reduced motion, or no script) the pill is just the credit.
   return (
-    <footer className="flex max-w-[calc(600px+2*var(--gutter))] justify-center px-(--gutter) pb-6 [@media(width>1000px)_and_(aspect-ratio>5/4)]:fixed [@media(width>1000px)_and_(aspect-ratio>5/4)]:right-[calc(var(--gutter)+var(--removed-body-scroll-bar-size,0px))] [@media(width>1000px)_and_(aspect-ratio>5/4)]:bottom-5 [@media(width>1000px)_and_(aspect-ratio>5/4)]:z-20 [@media(width>1000px)_and_(aspect-ratio>5/4)]:p-0">
+    <footer
+      className={cn(
+        "flex justify-center px-(--gutter) pb-6 print:hidden",
+        COLUMN[column],
+      )}
+    >
       <div className="material flex h-10 max-w-full items-center gap-3 rounded-full pr-3.5 pl-1 text-[12.5px] whitespace-nowrap motion-reduce:pl-3.5 max-[480px]:gap-2 max-[480px]:pr-3 max-[480px]:motion-reduce:pl-3 max-[420px]:text-[12px] noscript:pl-3.5 max-[480px]:noscript:pl-3">
         <Tooltip>
           <TooltipTrigger asChild>

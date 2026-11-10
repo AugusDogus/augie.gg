@@ -9,13 +9,14 @@ export const metadata: Metadata = { title: "Not found" };
 
 export default function NotFound() {
   return (
-    <>
+    // A drag over the painting steers it, so only the card starts a text selection.
+    <div className="select-none">
       <main
         id="main"
         tabIndex={-1}
         className="relative z-10 px-(--gutter) pt-[clamp(56px,18vh,224px)] pb-10 [@media(width>1000px)_and_(aspect-ratio>5/4)]:pb-28"
       >
-        <section className="material max-w-[600px] p-1.5">
+        <section className="material max-w-[600px] p-1.5 select-text">
           {/* The painting's mother and calf, swimming over the card's own glass: no ground of their own, and gone into it at either side. */}
           <div className="@container relative aspect-[3/1] max-h-[172px] [mask-image:linear-gradient(90deg,transparent,#000_22%,#000_78%,transparent)]">
             <WhaleLoader />
@@ -50,6 +51,6 @@ export default function NotFound() {
       </main>
       {/* The painting plays here as it does at home, so its pause and credit come too. */}
       <Dock />
-    </>
+    </div>
   );
 }

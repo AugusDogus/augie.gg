@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CaretLeftIcon } from "@phosphor-icons/react/ssr";
+import { Dock } from "~/components/dock";
 import { PrintResume } from "~/components/print-resume";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
@@ -22,7 +23,8 @@ export default function ResumeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    // A drag over the painting steers it, so only the sheet starts a text selection.
+    <div className="select-none">
       <header className="resume-nav relative z-20 px-(--gutter) pt-5">
         <div className="flex max-w-[760px] items-center justify-between gap-1.5">
           <Button
@@ -41,12 +43,14 @@ export default function ResumeLayout({
       <main
         id="main"
         tabIndex={-1}
-        className="resume-page relative z-10 px-(--gutter) pt-[clamp(28px,6vh,64px)] pb-28"
+        className="resume-page relative z-10 px-(--gutter) pt-[clamp(28px,6vh,64px)] pb-10 min-[1240px]:pb-28"
       >
-        <article className="material resume-sheet max-w-[760px]">
+        <article className="material resume-sheet max-w-[760px] select-text">
           {children}
         </article>
       </main>
-    </>
+      {/* The painting plays here as it does at home, so its pause and credit come too. */}
+      <Dock column="resume" />
+    </div>
   );
 }
