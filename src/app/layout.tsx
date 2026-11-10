@@ -26,8 +26,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://augie.gg"),
   alternates: { canonical: "/" },
   title: { default: DEFAULT_APP_TITLE, template: `%s | ${DEFAULT_APP_TITLE}` },
-  description:
-    "Product engineer in Pensacola, FL. I notice something annoying, fix it, and move on. Sometimes the fix is a Plex client for the GameCube.",
+  description: "Product engineer in Pensacola, FL. Building things with AMLI.",
   twitter: { card: "summary_large_image" },
 };
 
