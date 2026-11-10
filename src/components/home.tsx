@@ -21,7 +21,12 @@ export function Home() {
         in the cards return to auto, so clicking a row selects nothing.
       */}
       <div className="select-none">
-        <header className="relative z-20 flex items-center justify-end gap-1.5 px-(--gutter) pt-5">
+        {/*
+          Where the dock is pinned, so are these: they stay over the painting,
+          clear of the column, as the page scrolls. Only the buttons take the
+          pointer, so the page under the rest of the row still does.
+        */}
+        <header className="pointer-events-none relative z-20 flex items-center justify-end gap-1.5 px-(--gutter) pt-5 *:pointer-events-auto [@media(width>1000px)_and_(aspect-ratio>5/4)]:sticky [@media(width>1000px)_and_(aspect-ratio>5/4)]:top-0">
           <CommandMenuTrigger />
           <GithubButton />
         </header>
