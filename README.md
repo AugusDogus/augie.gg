@@ -97,13 +97,22 @@ name; Geist Mono only draws keyboard hints.
   card: its name and blurb beside its lead capture, over the painting.
   `next.config.js` rewrites the link to `/p/[...title]`, which is home under
   that project's metadata, and `/og/[...title]` draws every card at build.
+- The open project's controls include a share button: a phone gets the
+  system's share sheet, everything else copies the `?p=` link and says so.
 - Copying the email makes the whales in view flick their flukes.
+- On the 404 page the loader's mother and calf swim over the card's glass,
+  above the message. The painting plays there too, with the dock to pause it.
 - The console greets whoever opens it with the whales as text and a link to
   this repository.
 - The activity panel prints the last year of GitHub contributions with streaks
   and the busiest day, readable by hover, touch, or arrow keys.
 - The dock pauses the painting (or press P), credits it, and shows the time in
   Pensacola.
+- The name is one element to a navigation between home and the résumé, so
+  it travels to its new place and size (`NameHeading`, a view transition)
+  while the rest of the page changes under it.
+- On wide screens the search and GitHub buttons stay pinned as the page
+  scrolls, like the dock.
 
 The résumé remains in `src/app/resume/page.mdx` on the same glass. Print styles
 keep it in a single black-on-white column on one US Letter page.
