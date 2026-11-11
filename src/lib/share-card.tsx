@@ -1,17 +1,32 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { DEFAULT_APP_TITLE } from "~/lib/site";
+import { DEFAULT_APP_TITLE, SITE_URL } from "~/lib/site";
 
-/** What every share card is drawn on: the painting under a scrim, and the site's two faces. */
+/** A share card's size: what link previews ask for. */
 export const CARD_SIZE = { width: 1200, height: 630 };
 
 // Literal paths keep the build's file tracing to these three assets.
-const [art, display, text] = await Promise.all([
-  readFile(join(process.cwd(), "public/flight4cover_redux_spread.jpg")),
+const [backdrop, display, text] = await Promise.all([
+  readFile(join(process.cwd(), "src/assets/card-backdrop.jpg")),
   readFile(join(process.cwd(), "src/assets/fonts/og/inter-display-600.ttf")),
   readFile(join(process.cwd(), "src/assets/fonts/og/inter-text-400.ttf")),
 ]);
-const artSrc = `data:image/jpeg;base64,${art.toString("base64")}`;
+
+/**
+ * What a project's card is drawn on: the site's own background at a card's
+ * size, the painting dimmed and faded into the blurred backdrop under the
+ * scrim, as scripts/og-video.tsx takes it from the built site.
+ */
+export const CARD_BACKDROP = backdrop;
+
+/**
+ * A card's video, as metadata names it. Its address is in full: unlike an
+ * image's, a video's is not resolved against the metadata's base.
+ */
+export function cardVideo(href: string) {
+  const url = new URL(href, SITE_URL).href;
+  return { url, secureUrl: url, type: "video/mp4", ...CARD_SIZE };
+}
 
 export const CARD_FONTS = [
   { name: "Inter Display", data: display, weight: 600 as const },
@@ -21,44 +36,20 @@ export const CARD_FONTS = [
 /** The page's dark, under everything a card shows. */
 export const CARD_GROUND = "#0a1317";
 
-/** Where the painting sits on a card: its right 1000px, a little above the top. */
+/** Where the painting sits on a card, as the site sets it in a window this wide: its right 1000px, a little above the top. */
 export const CARD_ART = { left: 200, top: -49, width: 1000, height: 728 };
 
-const FILL = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  width: CARD_SIZE.width,
-  height: CARD_SIZE.height,
-} as const;
-
-/** The dark the painting fades into at the left, where the words go. */
-export function CardScrim() {
-  return (
-    <div
-      style={{
-        ...FILL,
-        background:
-          "linear-gradient(90deg, #060d11 17%, #060d11f0 26%, #060d11a6 48%, #060d1133 72%, #060d111a 100%)",
-      }}
-    />
-  );
-}
-
-/** The painting at the right, under the scrim. */
+/** The site's background, filling the card. */
 export function CardBackdrop() {
   return (
-    <div style={{ ...FILL, display: "flex" }}>
-      {/* oxlint-disable-next-line nextjs/no-img-element -- ImageResponse renders plain elements, not next/image. */}
-      <img
-        alt=""
-        src={artSrc}
-        width={CARD_ART.width}
-        height={CARD_ART.height}
-        style={{ position: "absolute", left: CARD_ART.left, top: CARD_ART.top }}
-      />
-      <CardScrim />
-    </div>
+    // oxlint-disable-next-line nextjs/no-img-element -- ImageResponse renders plain elements, not next/image.
+    <img
+      alt=""
+      src={`data:image/jpeg;base64,${CARD_BACKDROP.toString("base64")}`}
+      width={CARD_SIZE.width}
+      height={CARD_SIZE.height}
+      style={{ position: "absolute", left: 0, top: 0 }}
+    />
   );
 }
 

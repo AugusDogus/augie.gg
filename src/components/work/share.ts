@@ -1,6 +1,12 @@
-import type { Project } from "~/content/projects";
+import type { Media, Project } from "~/content/projects";
 import { Blurb } from "./blurb";
 import { Catalog } from "./catalog";
+import { Showcase } from "./showcase";
+
+/** A blurb longer than this is more than a card's column holds comfortably. */
+const LONG = 150;
+/** A first sentence: up to its stop, where a space and a capital follow. */
+const FIRST_SENTENCE = /^(.*?[.!?])\s+(?=[A-Z])/s;
 
 function decode(segment: string): string {
   try {
@@ -38,5 +44,36 @@ export const Share = {
   /** What a preview says under the title: the blurb as it reads. */
   description(project: Project): string {
     return Blurb.plain(project.blurb);
+  },
+  /**
+   * What a card says under the title: the blurb as it reads, or only its
+   * first sentence when it runs long.
+   */
+  tagline({ blurb }: Pick<Project, "blurb">): string {
+    const whole = Blurb.plain(blurb);
+    if (whole.length <= LONG) return whole;
+    return FIRST_SENTENCE.exec(whole)?.[1] ?? whole;
+  },
+  /** A project's title as a file name. */
+  slug(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9.]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  },
+  /** The video a card's capture plays: the project's lead capture, when it is one. */
+  clip({
+    media,
+  }: Pick<Project, "media">): Extract<Media, { kind: "video" }> | null {
+    const showcase = Showcase.of(media);
+    if (showcase === null) return null;
+    const lead = showcase.kind === "desktop" ? showcase.lead : showcase.phone;
+    return lead.kind === "video" ? lead : null;
+  },
+  /** Where a project's preview video is served: its card with that capture playing. Null without one. */
+  video(project: Pick<Project, "title" | "media">): string | null {
+    return Share.clip(project) === null
+      ? null
+      : `/og-video/${Share.slug(project.title)}.mp4`;
   },
 } as const;
