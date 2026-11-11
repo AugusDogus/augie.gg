@@ -98,6 +98,15 @@ name; Geist Mono only draws keyboard hints.
   card: its name and blurb beside its lead capture, over the painting.
   `next.config.js` rewrites the link to `/p/[...title]`, which is home under
   that project's metadata, and `/og/[...title]` draws every card at build.
+- A link to the site itself previews with the home card, and where a preview
+  plays video the card's painting moves: `og:video` points at
+  `public/og-video.mp4`. It runs for one pass of the mother and calf, about
+  31 seconds, and its end meets its start in the moment between passes when
+  neither shows (`Pass`), so it loops with no whale in two places.
+  `bun run og:video` draws it on the site's own renderer and writes its first
+  frame as the card, `src/app/opengraph-image.jpg`, so the two cannot differ.
+  It needs `CHROME_PATH` set to a Chrome or Chromium binary, and ffmpeg. Run
+  it again after a change to how the painting looks or how the pod swims.
 - The open project's controls include a share button: a phone gets the
   system's share sheet, everything else copies the `?p=` link and says so.
 - Copying the email makes the whales in view flick their flukes.
