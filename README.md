@@ -95,18 +95,30 @@ name; Geist Mono only draws keyboard hints.
   neighbours' as it opens (`Warm`), so the sheet usually opens onto them.
   Nothing is fetched ahead with Save-Data.
 - A link to an open project, `/?p=<title>`, previews with that project's own
-  card: its name and blurb beside its lead capture, over the painting.
-  `next.config.js` rewrites the link to `/p/[...title]`, which is home under
-  that project's metadata, and `/og/[...title]` draws every card at build.
+  card (`ProjectCard`), drawn as the site shows the project: its name and
+  blurb at the left over the site's background, and its lead capture at the
+  right in the site's glass panel, with its status and when it began. The
+  name is set as large as fits and breaks only between words. `next.config.js` rewrites the link to `/p/[...title]`, which is
+  home under that project's metadata, and `/og/[...title]` draws every card
+  at build.
+- Where a preview plays video, a project whose lead capture is a clip
+  previews with its card and the clip playing in it:
+  `public/og-video/<project>.mp4`. `bun run og:projects` renders them all
+  (it needs ffmpeg), and `bun test` fails when a card, a clip or a blurb has
+  changed since.
 - A link to the site itself previews with the home card, and where a preview
   plays video the card's painting moves: `og:video` points at
   `public/og-video.mp4`. It runs for one pass of the mother and calf, about
   31 seconds, and its end meets its start in the moment between passes when
   neither shows (`Pass`), so it loops with no whale in two places.
-  `bun run og:video` draws it on the site's own renderer and writes its first
-  frame as the card, `src/app/opengraph-image.jpg`, so the two cannot differ.
-  It needs `CHROME_PATH` set to a Chrome or Chromium binary, and ffmpeg. Run
-  it again after a change to how the painting looks or how the pod swims.
+  `bun run og:video` draws it on the site's own renderer, sets it in the
+  site's own background (taken from the built site, so run `bun run build`
+  first), and writes its first frame as the card,
+  `src/app/opengraph-image.jpg`, so the two cannot differ. The same frame
+  without the words, `src/assets/card-backdrop.jpg`, is what every project's
+  card is drawn on. It needs `CHROME_PATH` set to a Chrome or Chromium
+  binary, and ffmpeg. Run it again after a change to how the painting or the
+  site's background looks, or how the pod swims.
 - The open project's controls include a share button: a phone gets the
   system's share sheet, everything else copies the `?p=` link and says so.
 - Copying the email makes the whales in view flick their flukes.

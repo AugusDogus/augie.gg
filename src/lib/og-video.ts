@@ -10,7 +10,8 @@ export const OgVideo = {
   FILE: "public/og-video.mp4",
   /** Its first frame, which is the card a preview without video shows. */
   STILL: "src/app/opengraph-image.jpg",
-  TYPE: "video/mp4",
+  /** That frame without the card's words: what every project's card is drawn on. */
+  BACKDROP: "src/assets/card-backdrop.jpg",
   FPS: 30,
   /** How long the end of the pass dissolves into its start, while no whale of the pair shows. */
   DISSOLVE_SECONDS: 0.5,
