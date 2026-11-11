@@ -6,6 +6,8 @@ import { FlightBackground } from "~/components/flight-background";
 import { Settled } from "~/components/settled";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { WhaleArt } from "~/lib/flight/whale-art";
+import { OgVideo } from "~/lib/og-video";
+import { CARD_SIZE } from "~/lib/share-card";
 import { DEFAULT_APP_TITLE, SITE_URL } from "~/lib/site";
 import artwork from "../../public/flight4cover_redux_spread.jpg";
 
@@ -25,11 +27,26 @@ const geistMono = localFont({
   adjustFontFallback: false,
 });
 
+// In full: unlike an image's, a video's address is not resolved against the base.
+const video = new URL(OgVideo.HREF, SITE_URL).href;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: "/" },
   title: { default: DEFAULT_APP_TITLE, template: `%s | ${DEFAULT_APP_TITLE}` },
   description: "Product engineer in Pensacola, FL. Building things with AMLI.",
+  // Where a link preview plays video, the card's painting moves
+  // (scripts/og-video.tsx). The card itself is opengraph-image.tsx.
+  openGraph: {
+    videos: [
+      {
+        url: video,
+        secureUrl: video,
+        type: OgVideo.TYPE,
+        ...CARD_SIZE,
+      },
+    ],
+  },
   twitter: { card: "summary_large_image" },
 };
 

@@ -12,6 +12,7 @@
     "format:write": "oxfmt .",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
+    "og:video": "bun scripts/og-video.tsx",
     "preview": "next build && next start",
     "resume:pdf": "bun scripts/resume-pdf.ts",
     "start": "next start",

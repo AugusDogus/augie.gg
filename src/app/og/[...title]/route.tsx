@@ -5,7 +5,12 @@ import sharp from "sharp";
 import { Share } from "~/components/work/share";
 import { Showcase } from "~/components/work/showcase";
 import { projects } from "~/content/projects";
-import { CARD_FONTS, CARD_SIZE, CardBackdrop } from "~/lib/share-card";
+import {
+  CARD_FONTS,
+  CARD_GROUND,
+  CARD_SIZE,
+  CardBackdrop,
+} from "~/lib/share-card";
 import { DEFAULT_APP_TITLE } from "~/lib/site";
 
 type Props = { params: Promise<{ title: string[] }> };
@@ -58,7 +63,7 @@ export async function GET(_request: Request, { params }: Props) {
         display: "flex",
         width: "100%",
         height: "100%",
-        background: "#0a1317",
+        background: CARD_GROUND,
       }}
     >
       <CardBackdrop />
